@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docentes - Academia Integral XXI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Academia Integral XXI</h1>
+        <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="user-info">Rol: Administrador</div>
+    </header>
+
+    <nav id="mainNav">
+        <h3>Módulos</h3>
+        <a href="index.html">Inicio / Panel</a>
+        <a href="alumnos.html">Alumnos</a>
+        <a href="cursos.html">Cursos</a>
+        <a href="docentes.html" class="active">Docentes</a>
+        <a href="pagos.html">Pagos y Cuotas</a>
+        <a href="reportes.html">Reportes</a>
+    </nav>
+
+    <main>
+        <section class="welcome-card">
+            <div>
+                <p class="eyebrow">Personal</p>
+                <h2>Gestión de docentes</h2>
+            </div>
+            <p>Control de personal, asignación de materias, disponibilidad y seguimiento de actividades.</p>
+        </section>
+
+        <section class="dashboard-grid top-stats">
+            <article class="card stat-card">
+                <h4>Docentes activos</h4>
+                <div class="number">22</div>
+                <span class="trend positive">100% del plantel</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Materias cubiertas</h4>
+                <div class="number">18</div>
+                <span class="trend neutral">Asignaciones</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Disponibles</h4>
+                <div class="number">9</div>
+                <span class="trend positive">Horarios abiertos</span>
+            </article>
+        </section>
+
+        <section class="two-column-layout">
+            <article class="card">
+                <div class="section-header">
+                    <h3>Nuevo docente</h3>
+                </div>
+                <form class="student-form">
+                    <label>
+                        Nombre completo
+                        <input type="text" placeholder="Nombre del docente">
+                    </label>
+                    <label>
+                        Especialidad
+                        <input type="text" placeholder="Ej: Programación">
+                    </label>
+                    <label>
+                        Turno
+                        <select>
+                            <option>Mañana</option>
+                            <option>Tarde</option>
+                            <option>Noche</option>
+                        </select>
+                    </label>
+                    <button type="button" class="action-btn">Registrar</button>
+                </form>
+            </article>
+
+            <article class="card">
+                <div class="section-header">
+                    <h3>Asignación actual</h3>
+                </div>
+                <ul class="list-simple">
+                    <li><span>María Varela</span><strong>Desarrollo Web</strong></li>
+                    <li><span>Jorge Almeida</span><strong>Diseño Gráfico</strong></li>
+                    <li><span>Laura Gómez</span><strong>Inglés</strong></li>
+                    <li><span>Federico Ruiz</span><strong>Robótica</strong></li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="card schedule-card">
+            <div class="section-header">
+                <h3>Plantel docente</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Docente</th>
+                        <th>Especialidad</th>
+                        <th>Turno</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>María Varela</td>
+                        <td>Programación</td>
+                        <td>Tarde</td>
+                        <td><span class="status status-success">Activo</span></td>
+                    </tr>
+                    <tr>
+                        <td>Jorge Almeida</td>
+                        <td>Diseño</td>
+                        <td>Mañana</td>
+                        <td><span class="status status-success">Activo</span></td>
+                    </tr>
+                    <tr>
+                        <td>Laura Gómez</td>
+                        <td>Idiomas</td>
+                        <td>Noche</td>
+                        <td><span class="status status-info">Disponible</span></td>
+                    </tr>
+                    <tr>
+                        <td>Federico Ruiz</td>
+                        <td>Robótica</td>
+                        <td>Tarde</td>
+                        <td><span class="status status-warning">Revisión</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Academia Integral XXI - Educación, Compromiso y Futuro.</p>
+    </footer>
+
+    <script src="menu.js"></script>
+</body>
+</html>

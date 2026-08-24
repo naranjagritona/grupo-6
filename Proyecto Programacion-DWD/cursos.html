@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursos - Academia Integral XXI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Academia Integral XXI</h1>
+        <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="user-info">Rol: Administrador</div>
+    </header>
+
+    <nav id="mainNav">
+        <h3>Módulos</h3>
+        <a href="index.html">Inicio / Panel</a>
+        <a href="alumnos.html">Alumnos</a>
+        <a href="cursos.html" class="active">Cursos</a>
+        <a href="docentes.html">Docentes</a>
+        <a href="pagos.html">Pagos y Cuotas</a>
+        <a href="reportes.html">Reportes</a>
+    </nav>
+
+    <main>
+        <section class="welcome-card">
+            <div>
+                <p class="eyebrow">Academia</p>
+                <h2>Gestión de cursos</h2>
+            </div>
+            <p>Administración de horarios, cupos, contenidos y progreso de cada materia activa.</p>
+        </section>
+
+        <section class="dashboard-grid top-stats">
+            <article class="card stat-card">
+                <h4>Cursos vigentes</h4>
+                <div class="number">16</div>
+                <span class="trend positive">+2 este trimestre</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Vacantes</h4>
+                <div class="number">28</div>
+                <span class="trend neutral">Disponibles</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Promedio</h4>
+                <div class="number">8.7</div>
+                <span class="trend positive">Calificación general</span>
+            </article>
+        </section>
+
+        <section class="two-column-layout">
+            <article class="card">
+                <div class="section-header">
+                    <h3>Nuevo curso</h3>
+                </div>
+                <form class="student-form">
+                    <label>
+                        Nombre del curso
+                        <input type="text" placeholder="Ej: Diseño UX">
+                    </label>
+                    <label>
+                        Profesor a cargo
+                        <input type="text" placeholder="Nombre del docente">
+                    </label>
+                    <label>
+                        Horario
+                        <input type="text" placeholder="Lunes y Miércoles 18:00">
+                    </label>
+                    <button type="button" class="action-btn">Guardar curso</button>
+                </form>
+            </article>
+
+            <article class="card">
+                <div class="section-header">
+                    <h3>Disponibilidad</h3>
+                </div>
+                <ul class="list-simple">
+                    <li><span>Desarrollo Web</span><strong>24/30</strong></li>
+                    <li><span>Diseño Gráfico</span><strong>18/24</strong></li>
+                    <li><span>Robótica</span><strong>11/15</strong></li>
+                    <li><span>Inglés</span><strong>15/20</strong></li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="card schedule-card">
+            <div class="section-header">
+                <h3>Listado de cursos</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Curso</th>
+                        <th>Docente</th>
+                        <th>Horario</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Desarrollo Web 6°3</td>
+                        <td>María Varela</td>
+                        <td>Lu-Mi 18:00</td>
+                        <td><span class="status status-success">Activo</span></td>
+                    </tr>
+                    <tr>
+                        <td>Diseño Gráfico</td>
+                        <td>Jorge Almeida</td>
+                        <td>Ma-Ju 17:30</td>
+                        <td><span class="status status-success">Activo</span></td>
+                    </tr>
+                    <tr>
+                        <td>Robótica</td>
+                        <td>Federico Ruiz</td>
+                        <td>Vi 16:00</td>
+                        <td><span class="status status-info">Abierto</span></td>
+                    </tr>
+                    <tr>
+                        <td>Inglés Nivel 2</td>
+                        <td>Laura Gómez</td>
+                        <td>Tu-Ju 19:00</td>
+                        <td><span class="status status-warning">Poco cupo</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Academia Integral XXI - Educación, Compromiso y Futuro.</p>
+    </footer>
+
+    <script src="menu.js"></script>
+</body>
+</html>

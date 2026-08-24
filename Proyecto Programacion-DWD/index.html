@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Principal - Academia Integral XXI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Academia Integral XXI</h1>
+        <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="user-info">Rol: Administrador</div>
+    </header>
+
+    <nav id="mainNav">
+        <h3>Módulos</h3>
+        <a href="index.html" class="active">Inicio / Panel</a>
+        <a href="alumnos.html">Alumnos</a>
+        <a href="cursos.html">Cursos</a>
+        <a href="docentes.html">Docentes</a>
+        <a href="pagos.html">Pagos y Cuotas</a>
+        <a href="reportes.html">Reportes</a>
+    </nav>
+
+    <main>
+        <section class="welcome-card">
+            <div>
+                <p class="eyebrow">Sistema de administración</p>
+                <h2>Panel de control general</h2>
+            </div>
+            <p>Bienvenido al sistema centralizado de gestión académica y administrativa de la institución.</p>
+        </section>
+
+        <section class="dashboard-grid top-stats">
+            <article class="card stat-card">
+                <h4>Alumnos inscriptos</h4>
+                <div class="number">248</div>
+                <span class="trend positive">+12% vs. mes anterior</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Cursos activos</h4>
+                <div class="number">16</div>
+                <span class="trend positive">4 nuevos este trimestre</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Docentes registrados</h4>
+                <div class="number">22</div>
+                <span class="trend neutral">Cobertura completa</span>
+            </article>
+        </section>
+
+        <section class="two-column-layout">
+            <article class="card">
+                <div class="section-header">
+                    <h3>Resumen por nivel</h3>
+                    <button class="soft-btn">Ver detalle</button>
+                </div>
+                <ul class="list-simple">
+                    <li><span>Primario</span><strong>78 alumnos</strong></li>
+                    <li><span>Secundario</span><strong>94 alumnos</strong></li>
+                    <li><span>Preuniversitario</span><strong>52 alumnos</strong></li>
+                    <li><span>Capacitación</span><strong>24 alumnos</strong></li>
+                </ul>
+            </article>
+
+            <article class="card">
+                <div class="section-header">
+                    <h3>Acciones rápidas</h3>
+                </div>
+                <div class="actions-grid">
+                    <button class="action-btn">+ Nuevo alumno</button>
+                    <button class="action-btn">+ Nuevo curso</button>
+                    <button class="action-btn">Generar reporte</button>
+                    <button class="action-btn">Enviar recordatorio</button>
+                </div>
+            </article>
+        </section>
+
+        <section class="card schedule-card">
+            <div class="section-header">
+                <h3>Próximos eventos</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Evento</th>
+                        <th>Curso</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>25/08/2026</td>
+                        <td>Entrega de trabajos</td>
+                        <td>Desarrollo Web</td>
+                        <td><span class="status status-info">Programado</span></td>
+                    </tr>
+                    <tr>
+                        <td>27/08/2026</td>
+                        <td>Evaluación parcial</td>
+                        <td>Diseño Gráfico</td>
+                        <td><span class="status status-warning">Pendiente</span></td>
+                    </tr>
+                    <tr>
+                        <td>29/08/2026</td>
+                        <td>Reunión de coordinación</td>
+                        <td>Todos los cursos</td>
+                        <td><span class="status status-success">Confirmado</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Academia Integral XXI - Educación, Compromiso y Futuro.</p>
+    </footer>
+
+    <script src="menu.js"></script>
+</body>
+</html>

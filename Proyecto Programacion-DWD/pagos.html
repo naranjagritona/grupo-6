@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagos - Academia Integral XXI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Academia Integral XXI</h1>
+        <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="user-info">Rol: Administrador</div>
+    </header>
+
+    <nav id="mainNav">
+        <h3>Módulos</h3>
+        <a href="index.html">Inicio / Panel</a>
+        <a href="alumnos.html">Alumnos</a>
+        <a href="cursos.html">Cursos</a>
+        <a href="docentes.html">Docentes</a>
+        <a href="pagos.html" class="active">Pagos y Cuotas</a>
+        <a href="reportes.html">Reportes</a>
+    </nav>
+
+    <main>
+        <section class="welcome-card">
+            <div>
+                <p class="eyebrow">Finanzas</p>
+                <h2>Control de pagos y cuotas</h2>
+            </div>
+            <p>Estado financiero y control de vencimientos de las inscripciones actuales.</p>
+        </section>
+
+        <section class="dashboard-grid top-stats">
+            <article class="card stat-card">
+                <h4>Cuotas al día</h4>
+                <div class="number success-number">89%</div>
+                <span class="trend positive">Mayor regularidad</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Cuotas vencidas</h4>
+                <div class="number danger-number">11%</div>
+                <span class="trend warning">Requiere seguimiento</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Recaudación</h4>
+                <div class="number">$248.500</div>
+                <span class="trend positive">Este mes</span>
+            </article>
+        </section>
+
+        <section class="two-column-layout">
+            <article class="card">
+                <div class="section-header">
+                    <h3>Resumen financiero</h3>
+                </div>
+                <ul class="list-simple">
+                    <li><span>Cuotas pagas</span><strong>89</strong></li>
+                    <li><span>Cuotas pendientes</span><strong>11</strong></li>
+                    <li><span>Pagos del mes</span><strong>$248.500</strong></li>
+                    <li><span>Deuda acumulada</span><strong>$31.300</strong></li>
+                </ul>
+            </article>
+
+            <article class="card">
+                <div class="section-header">
+                    <h3>Vencimientos</h3>
+                </div>
+                <ul class="list-simple">
+                    <li><span>Brandon Quispe</span><strong>Hoy</strong></li>
+                    <li><span>Martina López</span><strong>En 2 días</strong></li>
+                    <li><span>Facundo Noriega</span><strong>En 4 días</strong></li>
+                    <li><span>Ethan García</span><strong>En 7 días</strong></li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="card schedule-card">
+            <div class="section-header">
+                <h3>Últimos movimientos</h3>
+                <button class="soft-btn">Ver historial</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Alumno</th>
+                        <th>Concepto</th>
+                        <th>Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>24/08/2026</td>
+                        <td>Ethan García</td>
+                        <td>Cuota Agosto</td>
+                        <td>$45.000</td>
+                    </tr>
+                    <tr>
+                        <td>23/08/2026</td>
+                        <td>Brandon Quispe</td>
+                        <td>Matrícula</td>
+                        <td>$60.000</td>
+                    </tr>
+                    <tr>
+                        <td>20/08/2026</td>
+                        <td>Luciano Fullana</td>
+                        <td>Cuota Agosto</td>
+                        <td>$45.000</td>
+                    </tr>
+                    <tr>
+                        <td>18/08/2026</td>
+                        <td>Martina López</td>
+                        <td>Cuota Julio</td>
+                        <td>$42.500</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Academia Integral XXI - Educación, Compromiso y Futuro.</p>
+    </footer>
+
+    <script src="menu.js"></script>
+</body>
+</html>

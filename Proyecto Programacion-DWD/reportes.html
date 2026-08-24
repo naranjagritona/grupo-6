@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - Academia Integral XXI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Academia Integral XXI</h1>
+        <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="user-info">Rol: Administrador</div>
+    </header>
+
+    <nav id="mainNav">
+        <h3>Módulos</h3>
+        <a href="index.html">Inicio / Panel</a>
+        <a href="alumnos.html">Alumnos</a>
+        <a href="cursos.html">Cursos</a>
+        <a href="docentes.html">Docentes</a>
+        <a href="pagos.html">Pagos y Cuotas</a>
+        <a href="reportes.html" class="active">Reportes</a>
+    </nav>
+
+    <main>
+        <section class="welcome-card">
+            <div>
+                <p class="eyebrow">Indicadores</p>
+                <h2>Reportes institucionales</h2>
+            </div>
+            <p>Consulta de estadísticas clave, avance académico, recaudación y cumplimiento institucional.</p>
+        </section>
+
+        <section class="dashboard-grid top-stats">
+            <article class="card stat-card">
+                <h4>Asistencia</h4>
+                <div class="number">91%</div>
+                <span class="trend positive">Promedio mensual</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Aprobación</h4>
+                <div class="number">86%</div>
+                <span class="trend positive">Nivel general</span>
+            </article>
+            <article class="card stat-card">
+                <h4>Morosidad</h4>
+                <div class="number">11%</div>
+                <span class="trend warning">Control</span>
+            </article>
+        </section>
+
+        <section class="two-column-layout">
+            <article class="card">
+                <div class="section-header">
+                    <h3>Reporte rápido</h3>
+                </div>
+                <ul class="list-simple">
+                    <li><span>Ingreso de alumnos</span><strong>+12%</strong></li>
+                    <li><span>Retención</span><strong>89%</strong></li>
+                    <li><span>Cursos con mejor rendimiento</span><strong>5</strong></li>
+                    <li><span>Pagos fuera de término</span><strong>11</strong></li>
+                </ul>
+            </article>
+
+            <article class="card">
+                <div class="section-header">
+                    <h3>Acciones</h3>
+                </div>
+                <div class="actions-grid">
+                    <button class="action-btn">Exportar PDF</button>
+                    <button class="action-btn">Descargar XLSX</button>
+                    <button class="action-btn">Enviar mail</button>
+                    <button class="action-btn">Actualizar</button>
+                </div>
+            </article>
+        </section>
+
+        <section class="card schedule-card">
+            <div class="section-header">
+                <h3>Detalle de indicadores</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Área</th>
+                        <th>Valor</th>
+                        <th>Meta</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Asistencia</td>
+                        <td>91%</td>
+                        <td>95%</td>
+                        <td><span class="status status-info">Cerca</span></td>
+                    </tr>
+                    <tr>
+                        <td>Aprobación</td>
+                        <td>86%</td>
+                        <td>90%</td>
+                        <td><span class="status status-warning">En proceso</span></td>
+                    </tr>
+                    <tr>
+                        <td>Recaudación</td>
+                        <td>$248.500</td>
+                        <td>$260.000</td>
+                        <td><span class="status status-success">Buen avance</span></td>
+                    </tr>
+                    <tr>
+                        <td>Morosidad</td>
+                        <td>11%</td>
+                        <td>8%</td>
+                        <td><span class="status status-warning">Controlar</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Academia Integral XXI - Educación, Compromiso y Futuro.</p>
+    </footer>
+
+    <script src="menu.js"></script>
+</body>
+</html>
