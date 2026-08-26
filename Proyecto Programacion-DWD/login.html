@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión | Academia Integral XXI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="public-page login-page">
+    <main class="login-shell">
+        <aside class="login-aside">
+            <a class="brand-mark" href="landing.html">Academia Integral XXI</a>
+            <h1>Volvé a tu espacio de gestión.</h1>
+            <p>Accedé al panel y mantené tu academia en movimiento.</p>
+        </aside>
+
+        <section class="login-content" aria-labelledby="login-title">
+            <p class="eyebrow">Acceso privado</p>
+            <h2 id="login-title">Iniciar sesión</h2>
+            <p class="login-intro">Ingresá tus datos para continuar al panel principal.</p>
+
+            <form id="loginForm" class="login-form" action="index.html" method="post">
+                <label for="usuario">
+                    Usuario o correo electrónico
+                    <input id="usuario" name="usuario" type="text" autocomplete="username" placeholder="admin@academia.com" required>
+                </label>
+                <label for="contrasena">
+                    Contraseña
+                    <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" placeholder="Ingresá tu contraseña" required>
+                </label>
+                <div class="login-options">
+                    <label for="recordarme">
+                        <input id="recordarme" name="recordarme" type="checkbox">
+                        Recordarme
+                    </label>
+                    <a href="mailto:soporte@academiaxxi.com">¿Olvidaste tu contraseña?</a>
+                </div>
+                <button class="primary-link login-submit" type="submit">Ingresar al panel</button>
+            </form>
+            <a class="back-link" href="landing.html">Volver a la página principal</a>
+        </section>
+    </main>
+    <script src="login.js"></script>
+</body>
+</html>
