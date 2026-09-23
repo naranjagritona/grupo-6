@@ -1,188 +1,55 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Academia Integral XXI | Sistema de gestión</title>
-<style>
-  :root{
-    --azul-oscuro:#0B2A6F;
-    --azul:#2563EB;
-    --azul-claro:#E8F0FE;
-    --gris-fondo:#F3F6FB;
-    --gris-medio:#64748B;
-    --texto:#1E293B;
-    --blanco:#fff;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
-  body{font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--texto);background:var(--blanco);line-height:1.6}
-  a{text-decoration:none;color:inherit}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-
-  /* Barra superior */
-  header{background:var(--blanco);border-bottom:1px solid #E2E8F0;position:sticky;top:0;z-index:10}
-  /* Aumenté el alto de la barra de navegación de 64px a 80px para darle espacio al logo más grande */
-  .nav{display:flex;align-items:center;justify-content:space-between;height:80px}
-  
-  /* ESTILOS DEL LOGO ACTUALIZADOS */
-  /* Aumenté un poco el tamaño de la letra (font-size) para que acompañe al logo */
-  .logo{display:flex;align-items:center;gap:12px;font-weight:700;color:var(--azul-oscuro);font-size:1.2rem;}
-  /* Aquí agrandé el logo, pasando el height a 55px */
-  .logo img {height: 55px; width: auto; object-fit: contain;} 
-  
-  .logo span.marca{width:34px;height:34px;border-radius:8px;background:var(--azul-oscuro);color:#fff;display:grid;place-items:center;font-size:14px;letter-spacing:.5px}
-  .nav ul{display:flex;gap:28px;list-style:none;font-size:15px;color:var(--gris-medio)}
-  .nav ul a:hover{color:var(--azul)}
-  .btn{display:inline-block;background:var(--azul);color:#fff;padding:11px 22px;border-radius:8px;font-weight:600;font-size:15px;transition:background .2s}
-  .btn:hover{background:var(--azul-oscuro)}
-  .btn.sec{background:var(--blanco);color:var(--azul-oscuro);border:1px solid #CBD5E1}
-  .btn.sec:hover{background:var(--azul-claro)}
-  .hero .btn{background:#fff;color:var(--azul-oscuro)}
-  .hero .btn:hover{background:var(--azul-claro)}
-
-  /* Hero */
-  .hero{background:linear-gradient(135deg,var(--azul-oscuro) 0%,#1A44A8 100%);padding:88px 0}
-  .hero .wrap{text-align:center;padding-top:24px;padding-bottom:24px}
-  .hero h1{font-size:2.6rem;line-height:1.15;color:#fff;margin:0 auto 16px;max-width:680px}
-  .hero p{color:#DBE5FF;font-size:1.1rem;margin:0 auto 28px;max-width:560px}
-  .hero .acciones{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-
-  /* Secciones */
-  section{padding:72px 0}
-  h2{font-size:1.7rem;color:var(--azul-oscuro);margin-bottom:8px}
-  .sub{color:var(--gris-medio);margin-bottom:36px;max-width:520px}
-  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-  .card{background:var(--gris-fondo);border-radius:12px;padding:24px}
-  .card .ico{width:40px;height:40px;border-radius:10px;background:var(--azul-claro);color:var(--azul);display:grid;place-items:center;margin-bottom:14px}
-  .card .ico svg{width:22px;height:22px}
-  .card h3{font-size:1.05rem;color:var(--azul-oscuro);margin-bottom:6px}
-  .card p{font-size:.95rem;color:var(--gris-medio)}
-
-  .roles{background:var(--gris-fondo)}
-  .roles .rol{background:var(--blanco)}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-  .paso{background:var(--blanco);border-radius:12px;padding:24px}
-  .paso b{width:32px;height:32px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;margin-bottom:12px}
-  .paso h3{color:var(--azul-oscuro);margin-bottom:6px;font-size:1.05rem}
-  .paso p{color:var(--gris-medio);font-size:.95rem}
-  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
-  .rol{background:var(--gris-fondo);border-radius:12px;padding:28px;border-left:4px solid var(--azul)}
-  .rol h3{color:var(--azul-oscuro);margin-bottom:6px}
-  .rol p{color:var(--gris-medio)}
-
-  .cta{text-align:center}
-  .cta p{color:var(--gris-medio);margin:0 auto 24px}
-
-  footer{background:var(--azul-oscuro);color:#C7D2FE;padding:28px 0;font-size:14px;text-align:center}
-
-  @media(max-width:860px){
-    .grid4{grid-template-columns:repeat(2,1fr)}
-    .grid3{grid-template-columns:1fr}
-    .nav ul{display:none}
-  }
-  @media(max-width:520px){
-    .grid4,.grid2{grid-template-columns:1fr}
-    .hero h1{font-size:2rem}
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Academia Integral XXI: sistema de gestión educativa para organizar cursos, estudiantes y calificaciones.">
+  <title>Academia Integral XXI | Gestión educativa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<header>
-  <div class="wrap nav">
-    <!-- IMAGEN Y TEXTO DENTRO DEL ENLACE -->
-    <a href="#inicio" class="logo">
-      <img src="../img/logo.png" alt="Logo Academia Integral XXI">
-      Academia Integral XXI
-    </a>
-    
-    <ul>
-      <li><a href="#modulos">Módulos</a></li>
-      <li><a href="#beneficios">Beneficios</a></li>
-      <li><a href="#pasos">Cómo funciona</a></li>
-      <li><a href="#roles">Usuarios</a></li>
-    </ul>
-    <a href="#" class="btn">Iniciar sesión</a>
-  </div>
-</header>
-
-<div class="hero" id="inicio">
-  <div class="wrap">
-    <div>
-      <h1>Toda la gestión de la academia en un solo lugar</h1>
-      <p>Un sistema web para administrar cursos, inscripciones, materias y calificaciones, sin planillas ni carpetas sueltas.</p>
-      <div class="acciones">
-        <a href="#modulos" class="btn">Conocer el sistema</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<section id="modulos">
-  <div class="wrap">
-    <h2>¿Qué se puede hacer?</h2>
-    <p class="sub">Cuatro módulos principales que trabajan conectados entre sí.</p>
-    <div class="grid4">
-      <div class="card">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg></div>
-        <h3>Cursos</h3><p>Registrar y consultar la información de cada curso.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
-        <h3>Inscripciones</h3><p>Anotar alumnos en los cursos y ver cada inscripción.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 14l2 2 4-4"/></svg></div>
-        <h3>Calificaciones</h3><p>Cargar y consultar las notas de los alumnos.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5V21h16"/></svg></div>
-        <h3>Materias</h3><p>Organizar las materias que forman parte de cada curso.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="roles" id="roles">
-  <div class="wrap">
-    <h2>Cada usuario ve lo que necesita</h2>
-    <p class="sub">El sistema muestra solo las funciones que corresponden a cada rol.</p>
-    <div class="grid2">
-      <div class="rol"><h3>Personal administrativo</h3><p>Gestiona cursos, inscripciones y materias.</p></div>
-      <div class="rol"><h3>Docentes</h3><p>Registran y consultan las calificaciones de sus alumnos.</p></div>
-    </div>
-  </div>
-</section>
-
-<section id="beneficios">
-  <div class="wrap">
-    <h2>¿Por qué usarlo?</h2>
-    <p class="sub">Menos planillas y carpetas sueltas, más orden en el día a día de la institución.</p>
-    <div class="grid2">
-      <div class="rol"><h3>Información centralizada</h3><p>Alumnos, docentes, cursos y notas se guardan en una única base de datos.</p></div>
-      <div class="rol"><h3>Acceso según el rol</h3><p>Cada usuario entra con su cuenta y solo ve lo que corresponde a su función.</p></div>
-      <div class="rol"><h3>Búsqueda rápida</h3><p>Barras de búsqueda y filtros para encontrar datos sin perder tiempo.</p></div>
-      <div class="rol"><h3>Fácil de usar</h3><p>Una interfaz simple y ordenada, pensada para quienes hoy trabajan con planillas.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="roles" id="pasos">
-  <div class="wrap">
-    <h2>¿Cómo funciona?</h2>
-    <p class="sub">Tres pasos para empezar a trabajar.</p>
-    <div class="grid3">
-      <div class="paso"><b>1</b><h3>Iniciá sesión</h3><p>Ingresás con tu usuario y contraseña individual.</p></div>
-      <div class="paso"><b>2</b><h3>Accedé a tu panel</h3><p>El sistema muestra solo los módulos de tu rol.</p></div>
-      <div class="paso"><b>3</b><h3>Gestioná la información</h3><p>Registrás y consultás datos de forma rápida y ordenada.</p></div>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap">Academia Integral XXI · Educación, compromiso, futuro</div>
-</footer>
-
+  <header class="site-header">
+    <nav class="navbar container" aria-label="Navegación principal">
+      <a class="brand" href="#inicio"><img src="img/logo.png" alt="Logo Academia Integral XXI">Academia Integral XXI</a>
+      <button class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu-principal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <ul class="nav-links" id="menu-principal">
+        <li><a href="#modulos">Módulos</a></li><li><a href="#beneficios">Beneficios</a></li><li><a href="#seguridad">Seguridad</a></li><li><a href="#como-funciona">Cómo funciona</a></li>
+      </ul>
+      <a class="nav-action" href="#acceso">Iniciar sesión <span aria-hidden="true">&#8594;</span></a>
+    </nav>
+  </header>
+  <main>
+    <section class="hero" id="inicio"><div class="hero-grid container"><div><p class="eyebrow">Sistema de gestión educativa</p><h1>La gestión académica, <span>más clara.</span></h1><p class="hero-copy">Centralizá cursos, inscripciones, materias y calificaciones en un solo espacio para que tu institución avance con información ordenada.</p><div class="hero-actions"><a class="button button-primary" href="#modulos">Conocer el sistema <span aria-hidden="true">&#8594;</span></a><a class="button button-ghost" href="#como-funciona">Ver cómo funciona</a></div><p class="hero-note"><strong>&#10003; Simple de usar.</strong> Diseñado para el trabajo diario de tu equipo.</p></div>
+      <div class="dashboard-wrap" aria-label="Vista previa del panel de gestión"><div class="dashboard"><div class="dashboard-top"><div class="dashboard-brand"><i></i> Academia Integral XXI</div><span class="status">Sistema activo</span></div><div class="dashboard-body"><aside class="dashboard-side"><small>Panel</small><a href="#inicio">Resumen</a><a href="#modulos">Cursos</a><a href="#modulos">Alumnos</a><a href="#modulos">Calificaciones</a><a href="#seguridad">Reportes</a></aside><div class="dashboard-main"><h3>Resumen general</h3><p>Seguimiento de tu institución</p><div class="stats"><div class="stat"><small>Alumnos</small><strong class="blue">248</strong></div><div class="stat"><small>Cursos activos</small><strong>12</strong></div><div class="stat"><small>Asistencia</small><strong class="green">94%</strong></div></div><div class="chart"><div class="chart-header"><strong>Actividad académica</strong><span>Últimos 6 meses</span></div><div class="bars"><i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i></div></div></div></div></div><div class="floating-stat"><small>Registros organizados</small><strong>+18,4%</strong></div></div>
+    </div></section>
+    <section class="section" id="modulos"><div class="container"><div class="section-heading"><p class="eyebrow">Todo conectado</p><h2>Las herramientas que tu institución necesita.</h2><p>Una visión completa de la actividad académica, desde la inscripción hasta el seguimiento de cada estudiante.</p></div><div class="module-grid">
+      <article class="module"><span class="module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5V21h16"/></svg></span><h3>Cursos y materias</h3><p>Creá cursos, asigná materias y mantené cada ciclo lectivo bajo control.</p></article>
+      <article class="module"><span class="module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><h3>Inscripciones</h3><p>Registrá alumnos y consultá sus vinculaciones sin duplicar información.</p></article>
+      <article class="module"><span class="module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 15l2 2 5-5"/></svg></span><h3>Calificaciones</h3><p>Cargá notas y consultá el historial académico de forma rápida y confiable.</p></article>
+      <article class="module"><span class="module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>Seguimiento</h3><p>Accedé a la información de cada estudiante desde un perfil centralizado.</p></article>
+      <article class="module"><span class="module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16M8 16v-5M12 16V7M16 16v-3M20 16V4"/></svg></span><h3>Reportes</h3><p>Encontrá los datos que necesitás y tomá decisiones con información actualizada.</p></article>
+      <article class="module"><span class="module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4 7v5c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V7z"/><path d="m9 12 2 2 4-4"/></svg></span><h3>Roles y permisos</h3><p>Cada integrante ve las funciones que corresponden a su responsabilidad.</p></article>
+    </div></div></section>
+    <section class="section section-soft" id="beneficios"><div class="container split"><div><p class="eyebrow">Una mejor forma de trabajar</p><h2>Menos tiempo buscando. Más tiempo gestionando.</h2><p class="hero-copy">La información de tu academia merece estar disponible, conectada y lista para ayudarte a tomar decisiones.</p><ul class="check-list"><li><i class="check">&#10003;</i><div><strong>Información centralizada</strong><span>Alumnos, docentes, cursos y notas en un mismo lugar.</span></div></li><li><i class="check">&#10003;</i><div><strong>Acceso por roles</strong><span>Un espacio claro para cada perfil de usuario.</span></div></li><li><i class="check">&#10003;</i><div><strong>Búsqueda rápida</strong><span>Encontrá lo importante sin depender de planillas sueltas.</span></div></li></ul></div><div class="feature-panel"><h3>Una institución que se entiende de un vistazo.</h3><p>Conectá la operación diaria con una vista simple y consistente.</p><div class="feature-list"><div>Datos ordenados</div><div>Procesos claros</div><div>Acceso simple</div><div>Seguimiento real</div></div></div></div></section>
+    <section class="section" id="seguridad"><div class="container"><div class="section-heading center"><p class="eyebrow">Confianza desde el inicio</p><h2>Tus datos, bajo control.</h2><p>Una gestión responsable necesita información protegida y permisos definidos.</p></div><div class="module-grid"><article class="module"><h3>Acceso seguro</h3><p>Cada usuario ingresa con su propia cuenta y encuentra solo lo que necesita.</p></article><article class="module"><h3>Datos centralizados</h3><p>La información permanece organizada en una única fuente para toda la institución.</p></article><article class="module"><h3>Historial confiable</h3><p>Las calificaciones y registros se conservan para consultar la evolución académica.</p></article></div></div></section>
+    <section class="section section-soft" id="como-funciona"><div class="container"><div class="section-heading"><p class="eyebrow">Empezá en minutos</p><h2>Una experiencia simple para todos.</h2></div><div class="steps"><article class="step"><span class="step-number">01 / ACCESO</span><h3>Iniciá sesión</h3><p>Ingresá con tu usuario y contraseña individual.</p></article><article class="step"><span class="step-number">02 / PANEL</span><h3>Encontrá tu espacio</h3><p>El sistema presenta los módulos de acuerdo con tu rol.</p></article><article class="step"><span class="step-number">03 / GESTIÓN</span><h3>Trabajá con claridad</h3><p>Registrá y consultá la información que necesitás cada día.</p></article></div></div></section>
+    <section class="cta" id="acceso"><div class="container"><h2>Todo lo que necesitás<br>para avanzar.</h2><p>Organizá la gestión de tu academia con una herramienta pensada para tu equipo.</p><a class="button button-primary" href="#inicio">Ingresar al sistema <span aria-hidden="true">&#8594;</span></a></div></section>
+  </main>
+  <footer class="site-footer"><div class="footer-content container"><span class="footer-brand">Academia Integral XXI</span><p>Educación, compromiso, futuro · 2026</p></div></footer>
+  <script>
+    const menuButton = document.querySelector('.menu-toggle');
+    const menu = document.querySelector('#menu-principal');
+    menuButton.addEventListener('click', () => {
+      const isOpen = menu.classList.toggle('is-open');
+      menuButton.setAttribute('aria-expanded', String(isOpen));
+    });
+    menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => {
+      menu.classList.remove('is-open');
+      menuButton.setAttribute('aria-expanded', 'false');
+    }));
+  </script>
 </body>
 </html>
