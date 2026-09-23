@@ -22,10 +22,6 @@ class LogUsuarioDAO implements dao {
         ]);
     }
 
-    public function actualizar($log): void {
-        $this->modificar($log);
-    }
-
     public function modificar($log) {
         $sql = "UPDATE log_usuario SET id_usuario = ?, accion = ?, campo_modificado = ?, valor_anterior = ?, valor_nuevo = ?, fecha_hora = ? WHERE id_log_usuario = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -44,33 +40,6 @@ class LogUsuarioDAO implements dao {
         $sql = "DELETE FROM log_usuario WHERE id_log_usuario = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM log_usuario WHERE id_log_usuario = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new LogUsuario(
-                $fila['id_log_usuario'],
-                $fila['id_usuario'],
-                $fila['accion'],
-                $fila['campo_modificado'],
-                $fila['valor_anterior'],
-                $fila['valor_nuevo'],
-                $fila['fecha_hora']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

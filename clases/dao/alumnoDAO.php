@@ -23,10 +23,6 @@ class AlumnoDAO implements dao {
         ]);
     }
 
-    public function actualizar($alumno): void {
-        $this->modificar($alumno);
-    }
-
     public function modificar($alumno) {
         $sql = "UPDATE alumno SET id_usuario = ?, id_responsable = ?, nombre = ?, apellido = ?, dni = ?, matricula = ?, estado = ? WHERE id_alumno = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -46,34 +42,6 @@ class AlumnoDAO implements dao {
         $sql = "DELETE FROM alumno WHERE id_alumno = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM alumno WHERE id_alumno = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Alumno(
-                $fila['id_alumno'],
-                $fila['id_usuario'],
-                $fila['id_responsable'],
-                $fila['nombre'],
-                $fila['apellido'],
-                $fila['dni'],
-                $fila['matricula'],
-                EstadoAlumno::from($fila['estado'])
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

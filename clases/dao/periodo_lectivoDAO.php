@@ -20,11 +20,7 @@ class PeriodoLectivoDAO implements dao {
             $periodo->getEstado()->value
         ]);
     }
-
-    public function actualizar($periodo): void {
-        $this->modificar($periodo);
-    }
-
+ 
     public function modificar($periodo) {
         $sql = "UPDATE periodo_lectivo SET nombre = ?, tipo = ?, fecha_inicio = ?, fecha_fin = ?, estado = ? WHERE id_periodo = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -42,32 +38,6 @@ class PeriodoLectivoDAO implements dao {
         $sql = "DELETE FROM periodo_lectivo WHERE id_periodo = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM periodo_lectivo WHERE id_periodo = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new PeriodoLectivo(
-                $fila['id_periodo'],
-                $fila['nombre'],
-                TipoPeriodoLectivo::from($fila['tipo']),
-                $fila['fecha_inicio'],
-                $fila['fecha_fin'],
-                EstadoPeriodoLectivo::from($fila['estado'])
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

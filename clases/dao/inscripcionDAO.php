@@ -24,10 +24,6 @@ class InscripcionDAO implements dao {
         ]);
     }
 
-    public function actualizar($inscripcion): void {
-        $this->modificar($inscripcion);
-    }
-
     public function modificar($inscripcion) {
         $sql = "UPDATE inscripcion SET id_alumno = ?, id_curso = ?, fecha_inscripcion = ?, estado = ?, motivo_baja = ?, importe_cuota = ?, fecha_creacion = ?, fecha_modificacion = ? WHERE id_inscripcion = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -48,35 +44,6 @@ class InscripcionDAO implements dao {
         $sql = "DELETE FROM inscripcion WHERE id_inscripcion = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM inscripcion WHERE id_inscripcion = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Inscripcion(
-                $fila['id_inscripcion'],
-                $fila['id_alumno'],
-                $fila['id_curso'],
-                $fila['fecha_inscripcion'],
-                EstadoInscripcion::from($fila['estado']),
-                $fila['motivo_baja'],
-                $fila['importe_cuota'],
-                $fila['fecha_creacion'],
-                $fila['fecha_modificacion']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

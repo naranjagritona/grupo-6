@@ -27,10 +27,6 @@ class CursoDAO implements dao {
         ]);
     }
 
-    public function actualizar($curso): void {
-        $this->modificar($curso);
-    }
-
     public function modificar($curso) {
         $sql = "UPDATE curso SET id_periodo = ?, id_materia = ?, id_docente = ?, año = ?, division = ?, modalidad = ?, turno = ?, cupo_maximo = ?, fecha_inicio = ?, fecha_fin = ?, estado = ? WHERE id_curso = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -54,38 +50,6 @@ class CursoDAO implements dao {
         $sql = "DELETE FROM curso WHERE id_curso = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM curso WHERE id_curso = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Curso(
-                $fila['id_curso'],
-                $fila['id_periodo'],
-                $fila['id_materia'],
-                $fila['id_docente'],
-                $fila['año'],
-                $fila['division'],
-                ModalidadCurso::from($fila['modalidad']),
-                TurnoCurso::from($fila['turno']),
-                $fila['cupo_maximo'],
-                $fila['fecha_inicio'],
-                $fila['fecha_fin'],
-                EstadoCurso::from($fila['estado'])
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

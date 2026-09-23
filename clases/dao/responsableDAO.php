@@ -20,10 +20,6 @@ class ResponsableDAO implements dao {
         ]);
     }
 
-    public function actualizar($responsable): void {
-        $this->modificar($responsable);
-    }
-
     public function modificar($responsable) {
         $sql = "UPDATE responsable SET nombre = ?, apellido = ?, dni = ?, tipo_relacion = ? WHERE id_responsable = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -40,31 +36,6 @@ class ResponsableDAO implements dao {
         $sql = "DELETE FROM responsable WHERE id_responsable = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM responsable WHERE id_responsable = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Responsable(
-                $fila['id_responsable'],
-                $fila['nombre'],
-                $fila['apellido'],
-                $fila['dni'],
-                $fila['tipo_relacion']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

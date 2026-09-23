@@ -21,10 +21,6 @@ class CalificacionDAO implements dao {
         ]);
     }
 
-    public function actualizar($calificacion): void {
-        $this->modificar($calificacion);
-    }
-
     public function modificar($calificacion) {
         $sql = "UPDATE calificacion SET id_inscripcion = ?, id_columna_notas = ?, nota = ?, fecha_carga = ?, observaciones = ? WHERE id_calificacion = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -42,32 +38,6 @@ class CalificacionDAO implements dao {
         $sql = "DELETE FROM calificacion WHERE id_calificacion = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM calificacion WHERE id_calificacion = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Calificacion(
-                $fila['id_calificacion'],
-                $fila['id_inscripcion'],
-                $fila['id_columna_notas'],
-                $fila['nota'],
-                $fila['fecha_carga'],
-                $fila['observaciones']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

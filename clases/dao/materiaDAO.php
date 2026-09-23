@@ -17,10 +17,6 @@ class MateriaDAO implements dao {
         ]);
     }
 
-    public function actualizar($materia): void {
-        $this->modificar($materia);
-    }
-
     public function modificar($materia) {
         $sql = "UPDATE materia SET nombre_materia = ? WHERE id_materia = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -34,28 +30,6 @@ class MateriaDAO implements dao {
         $sql = "DELETE FROM materia WHERE id_materia = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM materia WHERE id_materia = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Materia(
-                $fila['id_materia'],
-                $fila['nombre_materia']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

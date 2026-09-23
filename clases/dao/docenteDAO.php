@@ -22,10 +22,6 @@ class DocenteDAO implements dao {
         ]);
     }
 
-    public function actualizar($docente): void {
-        $this->modificar($docente);
-    }
-
     public function modificar($docente) {
         $sql = "UPDATE docente SET id_usuario = ?, nombre = ?, apellido = ?, dni = ?, legajo = ?, estado = ? WHERE id_docente = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -44,33 +40,6 @@ class DocenteDAO implements dao {
         $sql = "DELETE FROM docente WHERE id_docente = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM docente WHERE id_docente = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Docente(
-                $fila['id_docente'],
-                $fila['id_usuario'],
-                $fila['nombre'],
-                $fila['apellido'],
-                $fila['dni'],
-                $fila['legajo'],
-                EstadoDocente::from($fila['estado'])
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

@@ -20,10 +20,6 @@ class ResultadoMateriaDAO implements dao {
         ]);
     }
 
-    public function actualizar($resultado): void {
-        $this->modificar($resultado);
-    }
-
     public function modificar($resultado) {
         $sql = "UPDATE resultado_materia SET id_inscripcion = ?, promedio = ?, resultado = ?, fecha_calculo = ? WHERE id_resultado = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -40,31 +36,6 @@ class ResultadoMateriaDAO implements dao {
         $sql = "DELETE FROM resultado_materia WHERE id_resultado = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM resultado_materia WHERE id_resultado = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new ResultadoMateria(
-                $fila['id_resultado'],
-                $fila['id_inscripcion'],
-                $fila['promedio'],
-                EstadoResultadoMateria::from($fila['resultado']),
-                $fila['fecha_calculo']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

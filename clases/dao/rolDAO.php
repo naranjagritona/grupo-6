@@ -18,10 +18,6 @@ class RolDAO implements dao {
         ]);
     }
 
-    public function actualizar($rol): void {
-        $this->modificar($rol);
-    }
-
     public function modificar($rol) {
         $sql = "UPDATE rol SET nombre = ?, descripcion_rol = ? WHERE id_rol = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -36,29 +32,6 @@ class RolDAO implements dao {
         $sql = "DELETE FROM rol WHERE id_rol = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM rol WHERE id_rol = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Rol(
-                $fila['id_rol'],
-                $fila['nombre'],
-                $fila['descripcion_rol']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

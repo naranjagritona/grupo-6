@@ -21,10 +21,6 @@ class CalificacionHistorialDAO implements dao {
         ]);
     }
 
-    public function actualizar($historial): void {
-        $this->modificar($historial);
-    }
-
     public function modificar($historial) {
         $sql = "UPDATE calificacion_historial SET id_calificacion = ?, nota_anterior = ?, nota_nueva = ?, fecha_modificacion = ?, motivo = ? WHERE id_historial = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -42,32 +38,6 @@ class CalificacionHistorialDAO implements dao {
         $sql = "DELETE FROM calificacion_historial WHERE id_historial = ?";
         $consulta = $this->conexion->prepare($sql);
         $consulta->execute([$id]);
-    }
-
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM calificacion_historial WHERE id_historial = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new CalificacionHistorial(
-                $fila['id_historial'],
-                $fila['id_calificacion'],
-                $fila['nota_anterior'],
-                $fila['nota_nueva'],
-                $fila['fecha_modificacion'],
-                $fila['motivo']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
     }
 
     public function listarTodos() {

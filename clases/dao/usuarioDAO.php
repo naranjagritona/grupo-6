@@ -18,11 +18,7 @@ class UsuarioDAO implements dao {
             $usuario->getContraseña()
         ]);
     }
-
-    public function actualizar($usuario): void {
-        $this->modificar($usuario);
-    }
-
+    
     public function modificar($usuario) {
         $sql = "UPDATE usuario SET id_rol = ?, nombre_usuario = ?, contraseña = ? WHERE id_usuario = ?";
         $consulta = $this->conexion->prepare($sql);
@@ -40,29 +36,6 @@ class UsuarioDAO implements dao {
         $consulta->execute([$id]);
     }
 
-    public function buscarPorId($id) {
-        return $this->obtenerPorId($id);
-    }
-
-    public function obtenerPorId($id) {
-        $sql = "SELECT * FROM usuario WHERE id_usuario = ?";
-        $consulta = $this->conexion->prepare($sql);
-        $consulta->execute([$id]);
-        $fila = $consulta->fetch(PDO::FETCH_ASSOC);
-        if ($fila) {
-            return new Usuario(
-                $fila['id_usuario'],
-                $fila['id_rol'],
-                $fila['nombre_usuario'],
-                $fila['contraseña']
-            );
-        }
-        return null;
-    }
-
-    public function listar() {
-        return $this->listarTodos();
-    }
 
     public function listarTodos() {
         $sql = "SELECT * FROM usuario";
