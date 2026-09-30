@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 28-09-2026 a las 23:27:12
+-- Tiempo de generación: 30-09-2026 a las 05:03:45
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -278,6 +278,12 @@ ALTER TABLE `calificacion`
   ADD KEY `id_columna_notas` (`id_columna_notas`);
 
 --
+-- Indices de la tabla `calificacion_historial`
+--
+ALTER TABLE `calificacion_historial`
+  ADD KEY `calificacion_historial_ibfk_1` (`id_calificacion`);
+
+--
 -- Indices de la tabla `columna_notas`
 --
 ALTER TABLE `columna_notas`
@@ -443,21 +449,60 @@ ALTER TABLE `usuario`
 -- Filtros para la tabla `alumno`
 --
 ALTER TABLE `alumno`
-  ADD CONSTRAINT `alumno_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`),
-  ADD CONSTRAINT `alumno_ibfk_2` FOREIGN KEY (`id_responsable`) REFERENCES `responsable` (`id_responsable`);
+  ADD CONSTRAINT `alumno_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `alumno_ibfk_2` FOREIGN KEY (`id_responsable`) REFERENCES `responsable` (`id_responsable`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `calificacion`
 --
 ALTER TABLE `calificacion`
-  ADD CONSTRAINT `calificacion_ibfk_1` FOREIGN KEY (`id_inscripcion`) REFERENCES `inscripcion` (`id_inscripcion`),
-  ADD CONSTRAINT `calificacion_ibfk_2` FOREIGN KEY (`id_columna_notas`) REFERENCES `columna_notas` (`id_columna_notas`);
+  ADD CONSTRAINT `calificacion_ibfk_1` FOREIGN KEY (`id_inscripcion`) REFERENCES `inscripcion` (`id_inscripcion`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `calificacion_ibfk_2` FOREIGN KEY (`id_columna_notas`) REFERENCES `columna_notas` (`id_columna_notas`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `calificacion_historial`
+--
+ALTER TABLE `calificacion_historial`
+  ADD CONSTRAINT `calificacion_historial_ibfk_1` FOREIGN KEY (`id_calificacion`) REFERENCES `calificacion` (`id_calificacion`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `columna_notas`
+--
+ALTER TABLE `columna_notas`
+  ADD CONSTRAINT `columna_notas_ibfk_1` FOREIGN KEY (`id_curso`) REFERENCES `curso` (`id_curso`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `curso`
+--
+ALTER TABLE `curso`
+  ADD CONSTRAINT `curso_ibfk_1` FOREIGN KEY (`id_periodo`) REFERENCES `periodo_lectivo` (`id_periodo`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `curso_ibfk_2` FOREIGN KEY (`id_materia`) REFERENCES `materia` (`id_materia`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `curso_ibfk_3` FOREIGN KEY (`id_docente`) REFERENCES `docente` (`id_docente`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `docente`
+--
+ALTER TABLE `docente`
+  ADD CONSTRAINT `docente_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `inscripcion`
+--
+ALTER TABLE `inscripcion`
+  ADD CONSTRAINT `inscripcion_ibfk_1` FOREIGN KEY (`id_alumno`) REFERENCES `alumno` (`id_alumno`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `inscripcion_ibfk_2` FOREIGN KEY (`id_curso`) REFERENCES `curso` (`id_curso`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `log_usuario`
+--
+ALTER TABLE `log_usuario`
+  ADD CONSTRAINT `log_usuario_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `resultado_materia`
 --
 ALTER TABLE `resultado_materia`
-  ADD CONSTRAINT `resultado_materia_ibfk_1` FOREIGN KEY (`id_resultado`) REFERENCES `inscripcion` (`id_inscripcion`);
+  ADD CONSTRAINT `resultado_materia_ibfk_1` FOREIGN KEY (`id_resultado`) REFERENCES `inscripcion` (`id_inscripcion`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
