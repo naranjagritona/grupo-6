@@ -5,7 +5,7 @@ import java.time.LocalDate;
 public class Columna_Notas {
     private Integer id_columna_notas;
     private Integer id_curso;
-    private String titulo;
+    private String titulo;  
     private String tipo;
     private Double nota_maxima;
     private Double nota_aprobacion;

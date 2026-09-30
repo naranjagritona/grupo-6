@@ -10,13 +10,13 @@ public class Conexion {
     private static final String PASSWORD = "";
 
     public static Connection getConnection() {
-        Connection con = null;
+        Connection conexion = null;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            con = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (ClassNotFoundException | SQLException e) {
-        	e.printStackTrace();
+            conexion = DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (ClassNotFoundException | SQLException error) {
+            error.printStackTrace();
         }
-        return con;
+        return conexion;
     }
 }

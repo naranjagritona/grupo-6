@@ -8,15 +8,15 @@ public class main {
     public static void main(String[] args) {
         System.out.println("Comprobando conexión con la base de datos...");
 
-        try (Connection con = Conexion.getConnection()) {
-            if (con != null && !con.isClosed()) {
+        try (Connection conexion = Conexion.getConnection()) {
+            if (conexion != null && !conexion.isClosed()) {
                 System.out.println("¡Conexión establecida correctamente!");
             } else {
                 System.out.println("La conexión devolvió un valor nulo.");
             }
-        } catch (SQLException e) {
+        } catch (SQLException error) {
             System.out.println("Error al intentar conectar:");
-            e.printStackTrace();
+            error.printStackTrace();
         }
     }
 }
