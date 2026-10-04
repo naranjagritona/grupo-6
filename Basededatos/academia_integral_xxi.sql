@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 30-09-2026 a las 05:03:45
+-- Tiempo de generación: 04-10-2026 a las 15:48:49
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -33,7 +33,7 @@ CREATE TABLE `alumno` (
   `id_responsable` int(11) DEFAULT NULL,
   `nombre` varchar(255) NOT NULL,
   `apellido` varchar(255) NOT NULL,
-  `dni` varchar(20) NOT NULL,
+  `dni` int(20) NOT NULL,
   `matricula` varchar(50) NOT NULL,
   `estado` enum('Activo','Egresado','Inactivo') DEFAULT 'Activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -43,7 +43,7 @@ CREATE TABLE `alumno` (
 --
 
 INSERT INTO `alumno` (`id_alumno`, `id_usuario`, `id_responsable`, `nombre`, `apellido`, `dni`, `matricula`, `estado`) VALUES
-(3, 1, 2, 'Juan', 'Pérez', '45123456', 'MAT-2026-001', 'Activo');
+(3, 1, 2, 'Juan', 'Pérez', 45123456, 'MAT-2026-001', 'Activo');
 
 -- --------------------------------------------------------
 
@@ -67,7 +67,7 @@ CREATE TABLE `calificacion` (
 --
 
 CREATE TABLE `calificacion_historial` (
-  `id_historial` int(11) NOT NULL,
+  `id_calificacion_historial` int(11) NOT NULL,
   `id_calificacion` int(11) NOT NULL,
   `nota_anterior` decimal(4,2) DEFAULT NULL,
   `nota_nueva` decimal(4,2) NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE `columna_notas` (
 
 CREATE TABLE `curso` (
   `id_curso` int(11) NOT NULL,
-  `id_periodo` int(11) NOT NULL,
+  `id_periodo_lectivo` int(11) NOT NULL,
   `id_materia` int(11) NOT NULL,
   `id_docente` int(11) NOT NULL,
   `año` varchar(200) DEFAULT NULL,
@@ -125,7 +125,7 @@ CREATE TABLE `docente` (
   `id_usuario` int(11) DEFAULT NULL,
   `nombre` varchar(200) NOT NULL,
   `apellido` varchar(200) NOT NULL,
-  `dni` varchar(20) NOT NULL,
+  `dni` int(20) NOT NULL,
   `legajo` varchar(50) DEFAULT NULL,
   `estado` enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -182,7 +182,7 @@ CREATE TABLE `materia` (
 --
 
 CREATE TABLE `periodo_lectivo` (
-  `id_periodo` int(11) NOT NULL,
+  `id_periodo_lectivo` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
   `tipo` enum('Anual','Cuatrimestral','Otro') NOT NULL DEFAULT 'Anual',
   `fecha_inicio` date NOT NULL,
@@ -218,7 +218,7 @@ INSERT INTO `responsable` (`id_responsable`, `nombre`, `apellido`, `dni`, `tipo_
 --
 
 CREATE TABLE `resultado_materia` (
-  `id_resultado` int(11) NOT NULL,
+  `id_resultado_materia` int(11) NOT NULL,
   `id_inscripcion` int(11) NOT NULL,
   `promedio` decimal(4,2) DEFAULT NULL,
   `resultado` enum('En curso','Aprobada','Desaprobada','Pendiente') NOT NULL DEFAULT 'En curso',
@@ -236,6 +236,13 @@ CREATE TABLE `rol` (
   `nombre` varchar(200) DEFAULT NULL,
   `descripcion_rol` varchar(200) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `rol`
+--
+
+INSERT INTO `rol` (`id_rol`, `nombre`, `descripcion_rol`) VALUES
+(1, 'admin', 'Tiene todo el potencial');
 
 -- --------------------------------------------------------
 
@@ -296,7 +303,7 @@ ALTER TABLE `columna_notas`
 ALTER TABLE `curso`
   ADD PRIMARY KEY (`id_curso`),
   ADD KEY `id_materia` (`id_materia`),
-  ADD KEY `id_periodo` (`id_periodo`),
+  ADD KEY `id_periodo` (`id_periodo_lectivo`),
   ADD KEY `id_docente` (`id_docente`);
 
 --
@@ -331,7 +338,7 @@ ALTER TABLE `materia`
 -- Indices de la tabla `periodo_lectivo`
 --
 ALTER TABLE `periodo_lectivo`
-  ADD PRIMARY KEY (`id_periodo`);
+  ADD PRIMARY KEY (`id_periodo_lectivo`);
 
 --
 -- Indices de la tabla `responsable`
@@ -343,7 +350,7 @@ ALTER TABLE `responsable`
 -- Indices de la tabla `resultado_materia`
 --
 ALTER TABLE `resultado_materia`
-  ADD PRIMARY KEY (`id_resultado`),
+  ADD PRIMARY KEY (`id_resultado_materia`),
   ADD UNIQUE KEY `id_inscripcion` (`id_inscripcion`);
 
 --
@@ -415,7 +422,7 @@ ALTER TABLE `materia`
 -- AUTO_INCREMENT de la tabla `periodo_lectivo`
 --
 ALTER TABLE `periodo_lectivo`
-  MODIFY `id_periodo` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_periodo_lectivo` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `responsable`
@@ -427,13 +434,13 @@ ALTER TABLE `responsable`
 -- AUTO_INCREMENT de la tabla `resultado_materia`
 --
 ALTER TABLE `resultado_materia`
-  MODIFY `id_resultado` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_resultado_materia` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
 --
 ALTER TABLE `rol`
-  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `usuario`
@@ -475,7 +482,7 @@ ALTER TABLE `columna_notas`
 -- Filtros para la tabla `curso`
 --
 ALTER TABLE `curso`
-  ADD CONSTRAINT `curso_ibfk_1` FOREIGN KEY (`id_periodo`) REFERENCES `periodo_lectivo` (`id_periodo`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `curso_ibfk_1` FOREIGN KEY (`id_periodo_lectivo`) REFERENCES `periodo_lectivo` (`id_periodo_lectivo`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `curso_ibfk_2` FOREIGN KEY (`id_materia`) REFERENCES `materia` (`id_materia`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `curso_ibfk_3` FOREIGN KEY (`id_docente`) REFERENCES `docente` (`id_docente`) ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -502,7 +509,13 @@ ALTER TABLE `log_usuario`
 -- Filtros para la tabla `resultado_materia`
 --
 ALTER TABLE `resultado_materia`
-  ADD CONSTRAINT `resultado_materia_ibfk_1` FOREIGN KEY (`id_resultado`) REFERENCES `inscripcion` (`id_inscripcion`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `resultado_materia_ibfk_1` FOREIGN KEY (`id_resultado_materia`) REFERENCES `inscripcion` (`id_inscripcion`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `usuario`
+--
+ALTER TABLE `usuario`
+  ADD CONSTRAINT `usuario_ibfk_1` FOREIGN KEY (`id_rol`) REFERENCES `rol` (`id_rol`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
