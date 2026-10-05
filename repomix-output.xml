@@ -1,0 +1,4101 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.settings/
+  org.eclipse.core.resources.prefs
+  org.eclipse.jdt.core.prefs
+bin/
+  clases/
+    Alumno.class
+    Calificacion_Historial.class
+    Calificacion.class
+    Columna_Notas.class
+    Curso.class
+    Docente.class
+    Inscripcion.class
+    Log_Usuario.class
+    Materia.class
+    Periodo_Lectivo.class
+    Responsable.class
+    Resultado_Materia.class
+    Rol.class
+    Usuario.class
+  conexion/
+    Conexion.class
+  dao/
+    Alumno_dao.class
+    Calificacion_dao.class
+    Calificacion_Historial_dao.class
+    Columna_Notas_dao.class
+    Curso_dao.class
+    Dao.class
+    Docente_dao.class
+    Inscripcion_dao.class
+    Log_Usuario_dao.class
+    Materia_dao.class
+    Periodo_Lectivo_dao.class
+    Responsable_dao.class
+    Resultado_Materia_dao.class
+    Rol_dao.class
+    Usuario_dao.class
+  main/
+    main.class
+  paneles/
+    AdminFrame.class
+    AdminFrame$1.class
+    AdminFrame$2.class
+    AdminFrame$3.class
+    AdminFrame$4.class
+    AdminFrame$5.class
+    LoginFrame.class
+src/
+  clases/
+    Alumno.java
+    Calificacion_Historial.java
+    Calificacion.java
+    Columna_Notas.java
+    Curso.java
+    Docente.java
+    Inscripcion.java
+    Log_Usuario.java
+    Materia.java
+    Periodo_Lectivo.java
+    Responsable.java
+    Resultado_Materia.java
+    Rol.java
+    Usuario.java
+  conexion/
+    Conexion.java
+  dao/
+    Alumno_dao.java
+    Calificacion_dao.java
+    Calificacion_Historial_dao.java
+    Columna_Notas_dao.java
+    Curso_dao.java
+    Dao.java
+    Docente_dao.java
+    Inscripcion_dao.java
+    Log_Usuario_dao.java
+    Materia_dao.java
+    Periodo_Lectivo_dao.java
+    Responsable_dao.java
+    Resultado_Materia_dao.java
+    Rol_dao.java
+    Usuario_dao.java
+  main/
+    main.java
+  paneles/
+    AdminFrame.java
+    LoginFrame.java
+.classpath
+.project
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/paneles/AdminFrame.java">
+package paneles;
+
+import clases.*;
+import dao.*;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.List;
+
+public class AdminFrame extends JFrame {
+    
+    //guarda los datos del usuario que inicio sesion para saber quien esta usando el sistema
+    private Usuario usuarioActual;
+    
+    //el cardlayout funciona como un mazo de cartas, permite apilar varias pantallas y mostrar solo una a la vez sin abrir ventanas nuevas
+    private JPanel panelContenidoCentral;
+    private CardLayout cardLayout;
+
+    //estas son las clases que se conectan con la base de datos para traer o guardar informacion
+    private Alumno_dao alumnoDao = new Alumno_dao();
+    private Docente_dao docenteDao = new Docente_dao();
+    private Curso_dao cursoDao = new Curso_dao();
+    private Materia_dao materiaDao = new Materia_dao();
+    private Inscripcion_dao inscripcionDao = new Inscripcion_dao();
+    private Usuario_dao usuarioDao = new Usuario_dao();
+    private Responsable_dao responsableDao = new Responsable_dao();
+
+    public AdminFrame(Usuario usuario) {
+        this.usuarioActual = usuario;
+
+        //configuracion basica de la ventana principal
+        setTitle("Academia Integral XXI - Panel de Administración");
+        setSize(1100, 700);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //setLocationRelativeTo null hace que la ventana aparezca bien en el centro de la pantalla
+        setLocationRelativeTo(null); 
+
+        initComponentes();
+    }
+
+    private void initComponentes() {
+        //el borderlayout divide la ventana en 5 zonas (norte, sur, este, oeste y centro)
+        setLayout(new BorderLayout());
+
+        //panel de la izquierda que va a funcionar como menu
+        JPanel panelMenuLateral = new JPanel();
+        panelMenuLateral.setPreferredSize(new Dimension(240, getHeight()));
+        //se usa rgb para darle un color azul oscuro de fondo
+        panelMenuLateral.setBackground(new Color(30, 41, 59));
+        //el gridbaglayout es una cuadricula invisible muy flexible que permite ubicar cosas en filas y columnas
+        panelMenuLateral.setLayout(new GridBagLayout());
+
+        JLabel lblTituloMenu = new JLabel("MENÚ ADMINISTRADOR", SwingConstants.CENTER);
+        lblTituloMenu.setForeground(Color.WHITE);
+        lblTituloMenu.setFont(new Font("Arial", Font.BOLD, 14));
+        
+        //cada componente necesita su propia regla de posicionamiento (gridbagconstraints) para que el windowbuilder no tire error
+        GridBagConstraints gbc_lblTituloMenu = new GridBagConstraints();
+        //lo pone en la columna 0 y fila 0
+        gbc_lblTituloMenu.gridx = 0;
+        gbc_lblTituloMenu.gridy = 0;
+        //insets sirve para darle un margen invisible al texto para que no quede pegado a los bordes
+        gbc_lblTituloMenu.insets = new Insets(5, 10, 5, 10);
+        //fill horizontal hace que el componente se estire para ocupar todo el ancho disponible
+        gbc_lblTituloMenu.fill = GridBagConstraints.HORIZONTAL;
+        panelMenuLateral.add(lblTituloMenu, gbc_lblTituloMenu);
+
+        JButton btnPanelAdmin = crearBotonMenu("Gestión de Tablas (Todo en 1)");
+        GridBagConstraints gbc_btnPanelAdmin = new GridBagConstraints();
+        gbc_btnPanelAdmin.gridx = 0;
+        gbc_btnPanelAdmin.gridy = 1;
+        gbc_btnPanelAdmin.insets = new Insets(5, 10, 5, 10);
+        gbc_btnPanelAdmin.fill = GridBagConstraints.HORIZONTAL;
+        panelMenuLateral.add(btnPanelAdmin, gbc_btnPanelAdmin);
+
+        JButton btnGestionUsuarios = crearBotonMenu("Crear Nuevo Registro");
+        GridBagConstraints gbc_btnGestionUsuarios = new GridBagConstraints();
+        gbc_btnGestionUsuarios.gridx = 0;
+        gbc_btnGestionUsuarios.gridy = 2;
+        gbc_btnGestionUsuarios.insets = new Insets(5, 10, 5, 10);
+        gbc_btnGestionUsuarios.fill = GridBagConstraints.HORIZONTAL;
+        panelMenuLateral.add(btnGestionUsuarios, gbc_btnGestionUsuarios);
+
+        //esto es un componente invisible que se usa para empujar el boton de cerrar sesion bien abajo
+        JLabel lblFiller = new JLabel("");
+        GridBagConstraints gbc_filler = new GridBagConstraints();
+        gbc_filler.gridx = 0;
+        gbc_filler.gridy = 3;
+        //weighty le dice al layout que este componente invisible tiene que absorber todo el espacio vertical sobrante
+        gbc_filler.weighty = 1.0; 
+        panelMenuLateral.add(lblFiller, gbc_filler);
+
+        JButton btnCerrarSesion = crearBotonMenu("Cerrar Sesión");
+        btnCerrarSesion.setBackground(new Color(220, 38, 38)); 
+        GridBagConstraints gbc_btnCerrarSesion = new GridBagConstraints();
+        gbc_btnCerrarSesion.gridx = 0;
+        gbc_btnCerrarSesion.gridy = 4;
+        gbc_btnCerrarSesion.insets = new Insets(5, 10, 5, 10);
+        gbc_btnCerrarSesion.fill = GridBagConstraints.HORIZONTAL;
+        panelMenuLateral.add(btnCerrarSesion, gbc_btnCerrarSesion);
+
+        //se agrega el menu a la zona oeste de la ventana principal
+        add(panelMenuLateral, BorderLayout.WEST);
+
+        //se prepara el panel central donde van a ir cambiando las vistas de las tablas
+        cardLayout = new CardLayout();
+        panelContenidoCentral = new JPanel(cardLayout);
+
+        //se agregan las pantallas al mazo de cartas y se les pone un nombre para poder llamarlas despues
+        panelContenidoCentral.add(crearPanelBienvenida(), "bienvenida");
+        panelContenidoCentral.add(crearPanelUnificadoTablas(), "panelAdmin");
+
+        //se pone el panel cambiante en el centro de la pantalla
+        add(panelContenidoCentral, BorderLayout.CENTER);
+
+        //la flecha -> es una expresion lambda, sirve para escribir menos codigo a la hora de decirle al boton que tiene que hacer cuando lo clickean
+        btnPanelAdmin.addActionListener(e -> cardLayout.show(panelContenidoCentral, "panelAdmin"));
+        btnGestionUsuarios.addActionListener(e -> abrirFormularioCrearUsuario());
+        btnCerrarSesion.addActionListener(e -> cerrarSesion());
+    }
+
+    private JButton crearBotonMenu(String texto) {
+        JButton boton = new JButton(texto);
+        boton.setForeground(Color.WHITE);
+        boton.setBackground(new Color(51, 65, 85));
+        //setfocuspainted en false saca un cuadradito molesto que aparece adentro del boton cuando se le hace click
+        boton.setFocusPainted(false);
+        boton.setFont(new Font("Arial", Font.PLAIN, 12));
+        boton.setPreferredSize(new Dimension(200, 35));
+        return boton;
+    }
+
+    private JPanel crearPanelBienvenida() {
+        JPanel panel = new JPanel(new BorderLayout());
+        JLabel lblBienvenida = new JLabel("Panel de Control - Sesión iniciada como: " + usuarioActual.getNombre_usuario(), SwingConstants.CENTER);
+        lblBienvenida.setFont(new Font("Arial", Font.BOLD, 16));
+        panel.add(lblBienvenida, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel crearPanelUnificadoTablas() {
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        //el jtabbedpane es el componente que crea las pestañas de navegacion en la parte de arriba
+        JTabbedPane pestañasTablas = new JTabbedPane();
+        
+        pestañasTablas.addTab("Gestión de Alumnos", crearPanelTablaAlumnos());
+        pestañasTablas.addTab("Gestión de Docentes", crearPanelTablaDocentes());
+        pestañasTablas.addTab("Gestión de Cursos", crearPanelTablaCursos());
+        pestañasTablas.addTab("Gestión de Materias", crearPanelTablaMaterias());
+        pestañasTablas.addTab("Gestión de Inscripciones", crearPanelTablaInscripciones());
+        
+        panel.add(pestañasTablas, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel crearPanelTablaAlumnos() {
+        JPanel panel = new JPanel(new BorderLayout());
+        String[] columnas = {"ID", "ID Usuario", "ID Responsable", "Nombre", "Apellido", "DNI", "Matrícula", "Estado"};
+        
+        //el defaulttablemodel es como el esqueleto de la tabla donde se guardan los datos antes de mostrarlos
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+            @Override
+            //este metodo bloquea las celdas para que el usuario no pueda escribir directamente arriba de la tabla y romper la base de datos
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable tabla = new JTable(modelo);
+
+        //runnable es un bloque de codigo que se puede guardar en una variable para ejecutarlo varias veces, en este caso sirve para recargar la tabla
+        Runnable cargarDatos = () -> {
+            //primero borra todas las filas para que no se dupliquen al recargar
+            modelo.setRowCount(0); 
+            for (Alumno a : alumnoDao.obtenerTodos()) {
+                modelo.addRow(new Object[]{a.getId_alumno(), a.getId_usuario(), a.getId_responsable(), a.getNombre(), a.getApellido(), a.getDni(), a.getMatricula(), a.getEstado()});
+            }
+        };
+        cargarDatos.run(); 
+
+        JPanel panelBotones = new JPanel();
+        JButton btnModificar = new JButton("Modificar Nombre");
+        JButton btnEliminar = new JButton("Eliminar Alumno");
+        panelBotones.add(btnModificar);
+        panelBotones.add(btnEliminar);
+
+        btnModificar.addActionListener(e -> {
+            //getselectedrow se fija que fila toco el usuario con el mouse, si no toco ninguna devuelve un numero negativo
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                //busca el id que esta escondido en la primera columna (la columna 0) de la fila que tocaron
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                //el stream filter es una forma de buscar adentro de una lista sin hacer un for entero
+                Alumno alumnoMod = alumnoDao.obtenerTodos().stream().filter(a -> a.getId_alumno() == id).findFirst().orElse(null);
+                
+                if(alumnoMod != null) {
+                    //showinputdialog abre una ventanita chiquita para que la persona escriba el nuevo nombre
+                    String nuevoNombre = JOptionPane.showInputDialog(this, "Modificar Nombre de Alumno:", alumnoMod.getNombre());
+                    //trim borra los espacios vacios al principio y al final para evitar que manden solo espacios
+                    if(nuevoNombre != null && !nuevoNombre.trim().isEmpty()) {
+                        alumnoMod.setNombre(nuevoNombre);
+                        alumnoDao.modificar(alumnoMod);
+                        JOptionPane.showMessageDialog(this, "Alumno modificado con éxito.");
+                        cargarDatos.run(); 
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Por favor seleccione un alumno de la tabla.");
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                //yes_no_option muestra botones de si y no para que no borren algo por accidente
+                int confirm = JOptionPane.showConfirmDialog(this, "¿Desea eliminar el alumno seleccionado definitivamente?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
+                if(confirm == JOptionPane.YES_OPTION) {
+                    alumnoDao.eliminar(id);
+                    JOptionPane.showMessageDialog(this, "Alumno eliminado correctamente.");
+                    cargarDatos.run();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Por favor seleccione un alumno de la tabla.");
+            }
+        });
+
+        //jscrollpane le agrega la barrita gris al costado a la tabla por si hay muchos datos y hay que bajar
+        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        panel.add(panelBotones, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel crearPanelTablaDocentes() {
+        JPanel panel = new JPanel(new BorderLayout());
+        String[] columnas = {"ID", "ID Usuario", "Nombre", "Apellido", "DNI", "Legajo", "Estado"};
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable tabla = new JTable(modelo);
+
+        Runnable cargarDatos = () -> {
+            modelo.setRowCount(0);
+            for (Docente d : docenteDao.obtenerTodos()) {
+                modelo.addRow(new Object[]{d.getId_docente(), d.getId_usuario(), d.getNombre(), d.getApellido(), d.getDni(), d.getLegajo(), d.getEstado()});
+            }
+        };
+        cargarDatos.run();
+
+        JPanel panelBotones = new JPanel();
+        JButton btnModificar = new JButton("Modificar Nombre");
+        JButton btnEliminar = new JButton("Eliminar Docente");
+        panelBotones.add(btnModificar);
+        panelBotones.add(btnEliminar);
+
+        btnModificar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                Docente docenteMod = docenteDao.obtenerTodos().stream().filter(d -> d.getId_docente() == id).findFirst().orElse(null);
+                
+                if(docenteMod != null) {
+                    String nuevoNombre = JOptionPane.showInputDialog(this, "Modificar Nombre del Docente:", docenteMod.getNombre());
+                    if(nuevoNombre != null && !nuevoNombre.trim().isEmpty()) {
+                        docenteMod.setNombre(nuevoNombre);
+                        docenteDao.modificar(docenteMod);
+                        JOptionPane.showMessageDialog(this, "Docente modificado con éxito.");
+                        cargarDatos.run();
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Por favor seleccione un docente de la tabla.");
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                if(JOptionPane.showConfirmDialog(this, "¿Eliminar docente definitivamente?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                    docenteDao.eliminar(id);
+                    JOptionPane.showMessageDialog(this, "Docente eliminado correctamente.");
+                    cargarDatos.run();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Por favor seleccione un docente de la tabla.");
+            }
+        });
+
+        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        panel.add(panelBotones, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel crearPanelTablaCursos() {
+        JPanel panel = new JPanel(new BorderLayout());
+        String[] columnas = {"ID Curso", "Periodo", "Materia", "Docente", "Año", "División", "Turno", "Estado"};
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable tabla = new JTable(modelo);
+
+        Runnable cargarDatos = () -> {
+            modelo.setRowCount(0);
+            for (Curso c : cursoDao.obtenerTodos()) {
+                modelo.addRow(new Object[]{c.getId_curso(), c.getId_periodo(), c.getId_materia(), c.getId_docente(), c.getAño(), c.getDivision(), c.getTurno(), c.getEstado()});
+            }
+        };
+        cargarDatos.run();
+
+        JPanel panelBotones = new JPanel();
+        JButton btnModificar = new JButton("Modificar Estado");
+        JButton btnEliminar = new JButton("Eliminar Curso");
+        panelBotones.add(btnModificar);
+        panelBotones.add(btnEliminar);
+
+        btnModificar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                Curso cursoMod = cursoDao.obtenerTodos().stream().filter(c -> c.getId_curso() == id).findFirst().orElse(null);
+                if(cursoMod != null) {
+                    String nuevoEstado = JOptionPane.showInputDialog(this, "Actualizar Estado del Curso (Ej: Activo, Cerrado):", cursoMod.getEstado());
+                    if(nuevoEstado != null && !nuevoEstado.trim().isEmpty()) {
+                        cursoMod.setEstado(nuevoEstado);
+                        cursoDao.modificar(cursoMod);
+                        JOptionPane.showMessageDialog(this, "Curso modificado con éxito.");
+                        cargarDatos.run();
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Seleccione un curso.");
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                if(JOptionPane.showConfirmDialog(this, "¿Desea eliminar el Curso?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                    cursoDao.eliminar(id);
+                    JOptionPane.showMessageDialog(this, "Curso eliminado.");
+                    cargarDatos.run();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Seleccione un curso.");
+            }
+        });
+
+        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        panel.add(panelBotones, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel crearPanelTablaMaterias() {
+        JPanel panel = new JPanel(new BorderLayout());
+        String[] columnas = {"ID Materia", "Nombre Materia"};
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable tabla = new JTable(modelo);
+
+        Runnable cargarDatos = () -> {
+            modelo.setRowCount(0);
+            for (Materia m : materiaDao.obtenerTodos()) {
+                modelo.addRow(new Object[]{m.getId_materia(), m.getNombre_materia()});
+            }
+        };
+        cargarDatos.run();
+
+        JPanel panelBotones = new JPanel();
+        JButton btnModificar = new JButton("Modificar Nombre Materia");
+        JButton btnEliminar = new JButton("Eliminar Materia");
+        panelBotones.add(btnModificar);
+        panelBotones.add(btnEliminar);
+
+        btnModificar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                Materia materiaMod = materiaDao.obtenerTodos().stream().filter(m -> m.getId_materia() == id).findFirst().orElse(null);
+                if(materiaMod != null) {
+                    String nuevoNombre = JOptionPane.showInputDialog(this, "Nuevo nombre de materia:", materiaMod.getNombre_materia());
+                    if(nuevoNombre != null && !nuevoNombre.trim().isEmpty()) {
+                        materiaMod.setNombre_materia(nuevoNombre);
+                        materiaDao.modificar(materiaMod);
+                        JOptionPane.showMessageDialog(this, "Materia modificada.");
+                        cargarDatos.run();
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Seleccione una materia.");
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                if(JOptionPane.showConfirmDialog(this, "¿Eliminar materia?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                    materiaDao.eliminar(id);
+                    JOptionPane.showMessageDialog(this, "Materia eliminada.");
+                    cargarDatos.run();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Seleccione una materia.");
+            }
+        });
+
+        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        panel.add(panelBotones, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel crearPanelTablaInscripciones() {
+        JPanel panel = new JPanel(new BorderLayout());
+        String[] columnas = {"ID Inscripción", "ID Alumno", "ID Curso", "Fecha", "Estado", "Importe"};
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable tabla = new JTable(modelo);
+
+        Runnable cargarDatos = () -> {
+            modelo.setRowCount(0);
+            for (Inscripcion i : inscripcionDao.obtenerTodos()) {
+                modelo.addRow(new Object[]{i.getId_inscripcion(), i.getId_alumno(), i.getId_curso(), i.getFecha_inscripcion(), i.getEstado(), i.getImporte_cuota()});
+            }
+        };
+        cargarDatos.run();
+
+        JPanel panelBotones = new JPanel();
+        JButton btnModificar = new JButton("Modificar Estado Inscripción");
+        JButton btnEliminar = new JButton("Dar de Baja (Eliminar)");
+        panelBotones.add(btnModificar);
+        panelBotones.add(btnEliminar);
+
+        btnModificar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                Inscripcion inscripcionMod = inscripcionDao.obtenerTodos().stream().filter(i -> i.getId_inscripcion() == id).findFirst().orElse(null);
+                if(inscripcionMod != null) {
+                    String nuevoEstado = JOptionPane.showInputDialog(this, "Actualizar Estado (Ej: Regular, Libre):", inscripcionMod.getEstado());
+                    if(nuevoEstado != null && !nuevoEstado.trim().isEmpty()) {
+                        inscripcionMod.setEstado(nuevoEstado);
+                        inscripcionDao.modificar(inscripcionMod);
+                        JOptionPane.showMessageDialog(this, "Inscripción modificada.");
+                        cargarDatos.run();
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Seleccione una inscripción.");
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            int filaSel = tabla.getSelectedRow();
+            if (filaSel >= 0) {
+                int id = (int) modelo.getValueAt(filaSel, 0);
+                if(JOptionPane.showConfirmDialog(this, "¿Dar de baja inscripción de la base de datos?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                    inscripcionDao.eliminar(id);
+                    JOptionPane.showMessageDialog(this, "Inscripción eliminada.");
+                    cargarDatos.run();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Seleccione una inscripción.");
+            }
+        });
+
+        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        panel.add(panelBotones, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private void abrirFormularioCrearUsuario() {
+        //jdialog es como un jframe pero bloquea la pantalla de atras hasta que lo cierres (por eso el parametro true)
+        JDialog dialogo = new JDialog(this, "Crear Nuevo Usuario y Registro", true);
+        dialogo.setSize(500, 500);
+        dialogo.setLocationRelativeTo(this);
+
+        JTabbedPane pestañas = new JTabbedPane();
+
+        JPanel panelAlumno = new JPanel(new GridBagLayout());
+        
+        JTextField txtUserAlumno = new JTextField(15);
+        //jpasswordfield esconde lo que escribis con puntitos negros
+        JPasswordField txtPassAlumno = new JPasswordField(15);
+        JTextField txtNombreAlumno = new JTextField(15);
+        JTextField txtApellidoAlumno = new JTextField(15);
+        JTextField txtDniAlumno = new JTextField(15);
+        JTextField txtMatriculaAlumno = new JTextField(15);
+        
+        JTextField txtNombreTutor = new JTextField(15);
+        JTextField txtApellidoTutor = new JTextField(15);
+        JTextField txtDniTutor = new JTextField(15);
+        JTextField txtRelacionTutor = new JTextField(15);
+
+        //aca empieza la parte densa, windowbuilder obliga a crear un objeto de configuracion nuevo por cada cosa que se agrega al formulario
+        
+        JLabel lblUserAlumno = new JLabel("Usuario Alumno:");
+        GridBagConstraints gbc_lblUserAlumno = new GridBagConstraints();
+        gbc_lblUserAlumno.gridx = 0; gbc_lblUserAlumno.gridy = 0;
+        gbc_lblUserAlumno.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblUserAlumno, gbc_lblUserAlumno);
+
+        GridBagConstraints gbc_txtUserAlumno = new GridBagConstraints();
+        gbc_txtUserAlumno.gridx = 1; gbc_txtUserAlumno.gridy = 0;
+        gbc_txtUserAlumno.insets = new Insets(4, 4, 4, 4);
+        gbc_txtUserAlumno.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtUserAlumno, gbc_txtUserAlumno);
+
+        JLabel lblPassAlumno = new JLabel("Contraseña Alumno:");
+        GridBagConstraints gbc_lblPassAlumno = new GridBagConstraints();
+        gbc_lblPassAlumno.gridx = 0; gbc_lblPassAlumno.gridy = 1;
+        gbc_lblPassAlumno.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblPassAlumno, gbc_lblPassAlumno);
+
+        GridBagConstraints gbc_txtPassAlumno = new GridBagConstraints();
+        gbc_txtPassAlumno.gridx = 1; gbc_txtPassAlumno.gridy = 1;
+        gbc_txtPassAlumno.insets = new Insets(4, 4, 4, 4);
+        gbc_txtPassAlumno.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtPassAlumno, gbc_txtPassAlumno);
+
+        JLabel lblNomAlumno = new JLabel("Nombre Alumno:");
+        GridBagConstraints gbc_lblNomAlumno = new GridBagConstraints();
+        gbc_lblNomAlumno.gridx = 0; gbc_lblNomAlumno.gridy = 2;
+        gbc_lblNomAlumno.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblNomAlumno, gbc_lblNomAlumno);
+
+        GridBagConstraints gbc_txtNomAlumno = new GridBagConstraints();
+        gbc_txtNomAlumno.gridx = 1; gbc_txtNomAlumno.gridy = 2;
+        gbc_txtNomAlumno.insets = new Insets(4, 4, 4, 4);
+        gbc_txtNomAlumno.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtNombreAlumno, gbc_txtNomAlumno);
+
+        JLabel lblApeAlumno = new JLabel("Apellido Alumno:");
+        GridBagConstraints gbc_lblApeAlumno = new GridBagConstraints();
+        gbc_lblApeAlumno.gridx = 0; gbc_lblApeAlumno.gridy = 3;
+        gbc_lblApeAlumno.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblApeAlumno, gbc_lblApeAlumno);
+
+        GridBagConstraints gbc_txtApeAlumno = new GridBagConstraints();
+        gbc_txtApeAlumno.gridx = 1; gbc_txtApeAlumno.gridy = 3;
+        gbc_txtApeAlumno.insets = new Insets(4, 4, 4, 4);
+        gbc_txtApeAlumno.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtApellidoAlumno, gbc_txtApeAlumno);
+
+        JLabel lblDniAlumno = new JLabel("DNI Alumno:");
+        GridBagConstraints gbc_lblDniAlumno = new GridBagConstraints();
+        gbc_lblDniAlumno.gridx = 0; gbc_lblDniAlumno.gridy = 4;
+        gbc_lblDniAlumno.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblDniAlumno, gbc_lblDniAlumno);
+
+        GridBagConstraints gbc_txtDniAlumno = new GridBagConstraints();
+        gbc_txtDniAlumno.gridx = 1; gbc_txtDniAlumno.gridy = 4;
+        gbc_txtDniAlumno.insets = new Insets(4, 4, 4, 4);
+        gbc_txtDniAlumno.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtDniAlumno, gbc_txtDniAlumno);
+
+        JLabel lblMatricula = new JLabel("Matrícula:");
+        GridBagConstraints gbc_lblMatricula = new GridBagConstraints();
+        gbc_lblMatricula.gridx = 0; gbc_lblMatricula.gridy = 5;
+        gbc_lblMatricula.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblMatricula, gbc_lblMatricula);
+
+        GridBagConstraints gbc_txtMatricula = new GridBagConstraints();
+        gbc_txtMatricula.gridx = 1; gbc_txtMatricula.gridy = 5;
+        gbc_txtMatricula.insets = new Insets(4, 4, 4, 4);
+        gbc_txtMatricula.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtMatriculaAlumno, gbc_txtMatricula);
+
+        JLabel lblTituloTutor = new JLabel("--- Datos Tutor / Responsable ---");
+        GridBagConstraints gbc_lblTituloTutor = new GridBagConstraints();
+        gbc_lblTituloTutor.gridx = 0; gbc_lblTituloTutor.gridy = 6;
+        //gridwidth sirve para que este texto ocupe dos columnas de ancho asi queda centrado
+        gbc_lblTituloTutor.gridwidth = 2; 
+        gbc_lblTituloTutor.insets = new Insets(10, 4, 4, 4);
+        panelAlumno.add(lblTituloTutor, gbc_lblTituloTutor);
+
+        JLabel lblNomTutor = new JLabel("Nombre Tutor:");
+        GridBagConstraints gbc_lblNomTutor = new GridBagConstraints();
+        gbc_lblNomTutor.gridx = 0; gbc_lblNomTutor.gridy = 7;
+        gbc_lblNomTutor.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblNomTutor, gbc_lblNomTutor);
+
+        GridBagConstraints gbc_txtNomTutor = new GridBagConstraints();
+        gbc_txtNomTutor.gridx = 1; gbc_txtNomTutor.gridy = 7;
+        gbc_txtNomTutor.insets = new Insets(4, 4, 4, 4);
+        gbc_txtNomTutor.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtNombreTutor, gbc_txtNomTutor);
+
+        JLabel lblApeTutor = new JLabel("Apellido Tutor:");
+        GridBagConstraints gbc_lblApeTutor = new GridBagConstraints();
+        gbc_lblApeTutor.gridx = 0; gbc_lblApeTutor.gridy = 8;
+        gbc_lblApeTutor.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblApeTutor, gbc_lblApeTutor);
+
+        GridBagConstraints gbc_txtApeTutor = new GridBagConstraints();
+        gbc_txtApeTutor.gridx = 1; gbc_txtApeTutor.gridy = 8;
+        gbc_txtApeTutor.insets = new Insets(4, 4, 4, 4);
+        gbc_txtApeTutor.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtApellidoTutor, gbc_txtApeTutor);
+
+        JLabel lblDniTutor = new JLabel("DNI Tutor:");
+        GridBagConstraints gbc_lblDniTutor = new GridBagConstraints();
+        gbc_lblDniTutor.gridx = 0; gbc_lblDniTutor.gridy = 9;
+        gbc_lblDniTutor.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblDniTutor, gbc_lblDniTutor);
+
+        GridBagConstraints gbc_txtDniTutor = new GridBagConstraints();
+        gbc_txtDniTutor.gridx = 1; gbc_txtDniTutor.gridy = 9;
+        gbc_txtDniTutor.insets = new Insets(4, 4, 4, 4);
+        gbc_txtDniTutor.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtDniTutor, gbc_txtDniTutor);
+
+        JLabel lblRelacion = new JLabel("Relación (Ej. Padre):");
+        GridBagConstraints gbc_lblRelacion = new GridBagConstraints();
+        gbc_lblRelacion.gridx = 0; gbc_lblRelacion.gridy = 10;
+        gbc_lblRelacion.insets = new Insets(4, 4, 4, 4);
+        panelAlumno.add(lblRelacion, gbc_lblRelacion);
+
+        GridBagConstraints gbc_txtRelacion = new GridBagConstraints();
+        gbc_txtRelacion.gridx = 1; gbc_txtRelacion.gridy = 10;
+        gbc_txtRelacion.insets = new Insets(4, 4, 4, 4);
+        gbc_txtRelacion.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(txtRelacionTutor, gbc_txtRelacion);
+
+        JButton btnGuardarAlumno = new JButton("Guardar Alumno");
+        GridBagConstraints gbc_btnGuardarAlumno = new GridBagConstraints();
+        gbc_btnGuardarAlumno.gridx = 0; gbc_btnGuardarAlumno.gridy = 11;
+        gbc_btnGuardarAlumno.gridwidth = 2;
+        gbc_btnGuardarAlumno.insets = new Insets(10, 4, 4, 4);
+        gbc_btnGuardarAlumno.fill = GridBagConstraints.HORIZONTAL;
+        panelAlumno.add(btnGuardarAlumno, gbc_btnGuardarAlumno);
+
+        btnGuardarAlumno.addActionListener(e -> {
+            try {
+                //el bloque try catch agarra los errores de la base de datos para que el programa no se rompa de golpe si algo sale mal
+                Usuario u = new Usuario(null, 3, txtUserAlumno.getText().trim(), new String(txtPassAlumno.getPassword()));
+                usuarioDao.insertar(u);
+                
+                //esto busca el numero de id mas grande que haya en los usuarios, si no hay ninguno usa el 1
+                int idUsuarioNuevo = usuarioDao.obtenerTodos().stream().mapToInt(Usuario::getId_usuario).max().orElse(1);
+
+                Responsable r = new Responsable(null, txtNombreTutor.getText().trim(), txtApellidoTutor.getText().trim(), txtDniTutor.getText().trim(), txtRelacionTutor.getText().trim());
+                responsableDao.insertar(r);
+                int idResponsableNuevo = responsableDao.obtenerTodos().stream().mapToInt(Responsable::getId_responsable).max().orElse(1);
+
+                Alumno a = new Alumno(null, idUsuarioNuevo, idResponsableNuevo, txtNombreAlumno.getText().trim(), txtApellidoAlumno.getText().trim(), txtDniAlumno.getText().trim(), txtMatriculaAlumno.getText().trim(), "Activo");
+                alumnoDao.insertar(a);
+
+                JOptionPane.showMessageDialog(dialogo, "Alumno y tutor registrados exitosamente.");
+                //el dispose rompe la ventana emergente y la cierra para liberar la memoria
+                dialogo.dispose(); 
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialogo, "Error al registrar: " + ex.getMessage());
+            }
+        });
+
+        JPanel panelDocente = new JPanel(new GridBagLayout());
+        JTextField txtUserDocente = new JTextField(15);
+        JPasswordField txtPassDocente = new JPasswordField(15);
+        JTextField txtNombreDocente = new JTextField(15);
+        JTextField txtApellidoDocente = new JTextField(15);
+        JTextField txtDniDocente = new JTextField(15);
+        JTextField txtLegajoDocente = new JTextField(15);
+
+        JLabel lblUserDocente = new JLabel("Usuario Docente:");
+        GridBagConstraints gbc_lblUserDocente = new GridBagConstraints();
+        gbc_lblUserDocente.gridx = 0; gbc_lblUserDocente.gridy = 0;
+        gbc_lblUserDocente.insets = new Insets(4, 4, 4, 4);
+        panelDocente.add(lblUserDocente, gbc_lblUserDocente);
+
+        GridBagConstraints gbc_txtUserDocente = new GridBagConstraints();
+        gbc_txtUserDocente.gridx = 1; gbc_txtUserDocente.gridy = 0;
+        gbc_txtUserDocente.insets = new Insets(4, 4, 4, 4);
+        gbc_txtUserDocente.fill = GridBagConstraints.HORIZONTAL;
+        panelDocente.add(txtUserDocente, gbc_txtUserDocente);
+
+        JLabel lblPassDocente = new JLabel("Contraseña Docente:");
+        GridBagConstraints gbc_lblPassDocente = new GridBagConstraints();
+        gbc_lblPassDocente.gridx = 0; gbc_lblPassDocente.gridy = 1;
+        gbc_lblPassDocente.insets = new Insets(4, 4, 4, 4);
+        panelDocente.add(lblPassDocente, gbc_lblPassDocente);
+
+        GridBagConstraints gbc_txtPassDocente = new GridBagConstraints();
+        gbc_txtPassDocente.gridx = 1; gbc_txtPassDocente.gridy = 1;
+        gbc_txtPassDocente.insets = new Insets(4, 4, 4, 4);
+        gbc_txtPassDocente.fill = GridBagConstraints.HORIZONTAL;
+        panelDocente.add(txtPassDocente, gbc_txtPassDocente);
+
+        JLabel lblNomDocente = new JLabel("Nombre Docente:");
+        GridBagConstraints gbc_lblNomDocente = new GridBagConstraints();
+        gbc_lblNomDocente.gridx = 0; gbc_lblNomDocente.gridy = 2;
+        gbc_lblNomDocente.insets = new Insets(4, 4, 4, 4);
+        panelDocente.add(lblNomDocente, gbc_lblNomDocente);
+
+        GridBagConstraints gbc_txtNomDocente = new GridBagConstraints();
+        gbc_txtNomDocente.gridx = 1; gbc_txtNomDocente.gridy = 2;
+        gbc_txtNomDocente.insets = new Insets(4, 4, 4, 4);
+        gbc_txtNomDocente.fill = GridBagConstraints.HORIZONTAL;
+        panelDocente.add(txtNombreDocente, gbc_txtNomDocente);
+
+        JLabel lblApeDocente = new JLabel("Apellido Docente:");
+        GridBagConstraints gbc_lblApeDocente = new GridBagConstraints();
+        gbc_lblApeDocente.gridx = 0; gbc_lblApeDocente.gridy = 3;
+        gbc_lblApeDocente.insets = new Insets(4, 4, 4, 4);
+        panelDocente.add(lblApeDocente, gbc_lblApeDocente);
+
+        GridBagConstraints gbc_txtApeDocente = new GridBagConstraints();
+        gbc_txtApeDocente.gridx = 1; gbc_txtApeDocente.gridy = 3;
+        gbc_txtApeDocente.insets = new Insets(4, 4, 4, 4);
+        gbc_txtApeDocente.fill = GridBagConstraints.HORIZONTAL;
+        panelDocente.add(txtApellidoDocente, gbc_txtApeDocente);
+
+        JLabel lblDniDocente = new JLabel("DNI Docente:");
+        GridBagConstraints gbc_lblDniDocente = new GridBagConstraints();
+        gbc_lblDniDocente.gridx = 0; gbc_lblDniDocente.gridy = 4;
+        gbc_lblDniDocente.insets = new Insets(4, 4, 4, 4);
+        panelDocente.add(lblDniDocente, gbc_lblDniDocente);
+
+        GridBagConstraints gbc_txtDniDocente = new GridBagConstraints();
+        gbc_txtDniDocente.gridx = 1; gbc_txtDniDocente.gridy = 4;
+        gbc_txtDniDocente.insets = new Insets(4, 4, 4, 4);
+        gbc_txtDniDocente.fill = GridBagConstraints.HORIZONTAL;
+        panelDocente.add(txtDniDocente, gbc_txtDniDocente);
+
+        JLabel lblLegajo = new JLabel("Legajo:");
+        GridBagConstraints gbc_lblLegajo = new GridBagConstraints();
+        gbc_lblLegajo.gridx = 0; gbc_lblLegajo.gridy = 5;
+        gbc_lblLegajo.insets = new Insets(4, 4, 4, 4);
+        panelDocente.add(lblLegajo, gbc_lblLegajo);
+
+        GridBagConstraints gbc_txtLegajo = new GridBagConstraints();
+        gbc_txtLegajo.gridx = 1; gbc_txtLegajo.gridy = 5;
+        gbc_txtLegajo.insets = new Insets(4, 4, 4, 4);
+        gbc_txtLegajo.fill = GridBagConstraints.HORIZONTAL;
+        panelDocente.add(txtLegajoDocente, gbc_txtLegajo);
+
+        JButton btnGuardarDocente = new JButton("Guardar Docente");
+        GridBagConstraints gbc_btnGuardarDocente = new GridBagConstraints();
+        gbc_btnGuardarDocente.gridx = 0; gbc_btnGuardarDocente.gridy = 6;
+        gbc_btnGuardarDocente.gridwidth = 2;
+        gbc_btnGuardarDocente.insets = new Insets(10, 4, 4, 4);
+        gbc_btnGuardarDocente.fill = GridBagConstraints.HORIZONTAL;
+        panelDocente.add(btnGuardarDocente, gbc_btnGuardarDocente);
+
+        btnGuardarDocente.addActionListener(e -> {
+            try {
+                Usuario u = new Usuario(null, 2, txtUserDocente.getText().trim(), new String(txtPassDocente.getPassword()));
+                usuarioDao.insertar(u);
+                int idUsuarioNuevo = usuarioDao.obtenerTodos().stream().mapToInt(Usuario::getId_usuario).max().orElse(1);
+
+                Docente d = new Docente(null, idUsuarioNuevo, txtNombreDocente.getText().trim(), txtApellidoDocente.getText().trim(), txtDniDocente.getText().trim(), txtLegajoDocente.getText().trim(), "Activo");
+                docenteDao.insertar(d);
+
+                JOptionPane.showMessageDialog(dialogo, "Docente registrado exitosamente.");
+                dialogo.dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialogo, "Error al registrar docente: " + ex.getMessage());
+            }
+        });
+
+        pestañas.addTab("Alumnos", panelAlumno);
+        pestañas.addTab("Docentes", panelDocente);
+
+        dialogo.add(pestañas);
+        dialogo.setVisible(true);
+    }
+
+    private void cerrarSesion() {
+        int confirmacion = JOptionPane.showConfirmDialog(this, "¿Desea cerrar la sesión?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            new LoginFrame().setVisible(true); 
+            this.dispose(); 
+        }
+    }
+}
+</file>
+
+<file path="src/paneles/LoginFrame.java">
+package paneles;
+
+import clases.Usuario;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class LoginFrame extends JFrame {
+    private JTextField txtUsuario;
+    private JPasswordField txtContraseña;
+    private JButton btnIngresar;
+
+    public LoginFrame() {
+        setTitle("Academia Integral XXI - Iniciar Sesión");
+        setSize(400, 280);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
+
+        initComponentes();
+    }
+
+    private void initComponentes() {
+
+    	JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(new Color(240, 244, 248));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel lblTitulo = new JLabel("ACCESO AL SISTEMA", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 16));
+        lblTitulo.setForeground(new Color(30, 58, 138));
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        panel.add(lblTitulo, gbc);
+
+        gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 1;
+        JLabel lblUser = new JLabel("Usuario:");
+        lblUser.setForeground(new Color(51, 65, 85));
+        panel.add(lblUser, gbc);
+
+        txtUsuario = new JTextField(15);
+        gbc.gridx = 1; gbc.gridy = 1;
+        panel.add(txtUsuario, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2;
+        JLabel lblPass = new JLabel("Contraseña:");
+        lblPass.setForeground(new Color(51, 65, 85));
+        panel.add(lblPass, gbc);
+
+        txtContraseña = new JPasswordField(15);
+        gbc.gridx = 1; gbc.gridy = 2;
+        panel.add(txtContraseña, gbc);
+
+        btnIngresar = new JButton("Ingresar");
+      
+        btnIngresar.setBackground(new Color(37, 99, 235));
+        btnIngresar.setForeground(Color.WHITE);
+        btnIngresar.setFocusPainted(false);
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        panel.add(btnIngresar, gbc);
+
+        add(panel);
+
+        //aca configuramos el evento de autenticacion al hacer clic
+        btnIngresar.addActionListener(e -> realizarLogin());
+    }
+
+    private void realizarLogin() {
+        String user = txtUsuario.getText().trim();
+        String pass = new String(txtContraseña.getPassword());
+
+        if (user.isEmpty() || pass.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor complete todos los campos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Usuario usuarioLogueado = Usuario.autenticar(user, pass);
+
+        if (usuarioLogueado != null) {
+            JOptionPane.showMessageDialog(this, "¡Bienvenido, " + usuarioLogueado.getNombre_usuario() + "!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            
+            AdminFrame adminFrame = new AdminFrame(usuarioLogueado);
+            adminFrame.setVisible(true);
+
+            this.dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.", "Error de autenticación", JOptionPane.ERROR_MESSAGE);
+            txtContraseña.setText("");
+        }
+    }
+}
+</file>
+
+<file path=".settings/org.eclipse.core.resources.prefs">
+eclipse.preferences.version=1
+encoding/<project>=UTF-8
+</file>
+
+<file path=".settings/org.eclipse.jdt.core.prefs">
+eclipse.preferences.version=1
+org.eclipse.jdt.core.compiler.codegen.targetPlatform=25
+org.eclipse.jdt.core.compiler.codegen.unusedLocal=preserve
+org.eclipse.jdt.core.compiler.compliance=25
+org.eclipse.jdt.core.compiler.debug.lineNumber=generate
+org.eclipse.jdt.core.compiler.debug.localVariable=generate
+org.eclipse.jdt.core.compiler.debug.sourceFile=generate
+org.eclipse.jdt.core.compiler.problem.enablePreviewFeatures=disabled
+org.eclipse.jdt.core.compiler.problem.reportPreviewFeatures=warning
+org.eclipse.jdt.core.compiler.release=enabled
+org.eclipse.jdt.core.compiler.source=25
+</file>
+
+<file path="src/clases/Alumno.java">
+package clases;
+
+public class Alumno {
+    private Integer id_alumno;
+    private Integer id_usuario;
+    private Integer id_responsable;
+    private String nombre;
+    private String apellido;
+    private String dni;
+    private String matricula;
+    private String estado;
+
+    public Alumno() {
+    }
+
+    public Alumno(Integer id_alumno, Integer id_usuario, Integer id_responsable, String nombre, String apellido, String dni, String matricula, String estado) {
+        this.id_alumno = id_alumno;
+        this.id_usuario = id_usuario;
+        this.id_responsable = id_responsable;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.dni = dni;
+        this.matricula = matricula;
+        this.estado = estado;
+    }
+
+    public Integer getId_alumno() {
+        return id_alumno;
+    }
+
+    public void setId_alumno(Integer id_alumno) {
+        this.id_alumno = id_alumno;
+    }
+
+    public Integer getId_usuario() {
+        return id_usuario;
+    }
+
+    public void setId_usuario(Integer id_usuario) {
+        this.id_usuario = id_usuario;
+    }
+
+    public Integer getId_responsable() {
+        return id_responsable;
+    }
+
+    public void setId_responsable(Integer id_responsable) {
+        this.id_responsable = id_responsable;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getApellido() {
+        return apellido;
+    }
+
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
+    }
+
+    public String getDni() {
+        return dni;
+    }
+
+    public void setDni(String dni) {
+        this.dni = dni;
+    }
+
+    public String getMatricula() {
+        return matricula;
+    }
+
+    public void setMatricula(String matricula) {
+        this.matricula = matricula;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+}
+</file>
+
+<file path="src/clases/Calificacion_Historial.java">
+package clases;
+import java.time.LocalDateTime;
+
+public class Calificacion_Historial {
+    private Integer id_historial;
+    private Integer id_calificacion;
+    private Double nota_anterior;
+    private Double nota_nueva;
+    private LocalDateTime fecha_modificacion;
+    private String motivo;
+
+    public Calificacion_Historial() {
+    }
+
+    public Calificacion_Historial(Integer id_historial, Integer id_calificacion, Double nota_anterior, Double nota_nueva, LocalDateTime fecha_modificacion, String motivo) {
+        this.id_historial = id_historial;
+        this.id_calificacion = id_calificacion;
+        this.nota_anterior = nota_anterior;
+        this.nota_nueva = nota_nueva;
+        this.fecha_modificacion = fecha_modificacion;
+        this.motivo = motivo;
+    }
+
+    public Integer getId_historial() {
+        return id_historial;
+    }
+
+    public void setId_historial(Integer id_historial) {
+        this.id_historial = id_historial;
+    }
+
+    public Integer getId_calificacion() {
+        return id_calificacion;
+    }
+
+    public void setId_calificacion(Integer id_calificacion) {
+        this.id_calificacion = id_calificacion;
+    }
+
+    public Double getNota_anterior() {
+        return nota_anterior;
+    }
+
+    public void setNota_anterior(Double nota_anterior) {
+        this.nota_anterior = nota_anterior;
+    }
+
+    public Double getNota_nueva() {
+        return nota_nueva;
+    }
+
+    public void setNota_nueva(Double nota_nueva) {
+        this.nota_nueva = nota_nueva;
+    }
+
+    public LocalDateTime getFecha_modificacion() {
+        return fecha_modificacion;
+    }
+
+    public void setFecha_modificacion(LocalDateTime fecha_modificacion) {
+        this.fecha_modificacion = fecha_modificacion;
+    }
+
+    public String getMotivo() {
+        return motivo;
+    }
+
+    public void setMotivo(String motivo) {
+        this.motivo = motivo;
+    }
+}
+</file>
+
+<file path="src/clases/Calificacion.java">
+package clases;
+import java.time.LocalDate;
+
+public class Calificacion {
+    private Integer id_calificacion;
+    private Integer id_inscripcion;
+    private Integer id_columna_notas;
+    private Double nota;
+    private LocalDate fecha_carga;
+    private String observaciones;
+
+    public Calificacion() {
+    }
+
+    public Calificacion(Integer id_calificacion, Integer id_inscripcion, Integer id_columna_notas, Double nota, LocalDate fecha_carga, String observaciones) {
+        this.id_calificacion = id_calificacion;
+        this.id_inscripcion = id_inscripcion;
+        this.id_columna_notas = id_columna_notas;
+        this.nota = nota;
+        this.fecha_carga = fecha_carga;
+        this.observaciones = observaciones;
+    }
+
+    public Integer getId_calificacion() {
+        return id_calificacion;
+    }
+
+    public void setId_calificacion(Integer id_calificacion) {
+        this.id_calificacion = id_calificacion;
+    }
+
+    public Integer getId_inscripcion() {
+        return id_inscripcion;
+    }
+
+    public void setId_inscripcion(Integer id_inscripcion) {
+        this.id_inscripcion = id_inscripcion;
+    }
+
+    public Integer getId_columna_notas() {
+        return id_columna_notas;
+    }
+
+    public void setId_columna_notas(Integer id_columna_notas) {
+        this.id_columna_notas = id_columna_notas;
+    }
+
+    public Double getNota() {
+        return nota;
+    }
+
+    public void setNota(Double nota) {
+        this.nota = nota;
+    }
+
+    public LocalDate getFecha_carga() {
+        return fecha_carga;
+    }
+
+    public void setFecha_carga(LocalDate fecha_carga) {
+        this.fecha_carga = fecha_carga;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+}
+</file>
+
+<file path="src/clases/Curso.java">
+package clases;
+
+import java.time.LocalDate;
+
+public class Curso {
+    private Integer id_curso;
+    private Integer id_periodo;
+    private Integer id_materia;
+    private Integer id_docente;
+    private Integer año;
+    private String division;
+    private String modalidad;
+    private String turno;
+    private Integer cupo_maximo;
+    private LocalDate fecha_inicio;
+    private LocalDate fecha_fin;
+    private String estado;
+
+    public Curso() {
+    }
+
+    public Curso(Integer id_curso, Integer id_periodo, Integer id_materia, Integer id_docente, Integer año, String division, String modalidad, String turno, Integer cupo_maximo, LocalDate fecha_inicio, LocalDate fecha_fin, String estado) {
+        this.id_curso = id_curso;
+        this.id_periodo = id_periodo;
+        this.id_materia = id_materia;
+        this.id_docente = id_docente;
+        this.año = año;
+        this.division = division;
+        this.modalidad = modalidad;
+        this.turno = turno;
+        this.cupo_maximo = cupo_maximo;
+        this.fecha_inicio = fecha_inicio;
+        this.fecha_fin = fecha_fin;
+        this.estado = estado;
+    }
+
+    public Integer getId_curso() {
+        return id_curso;
+    }
+
+    public void setId_curso(Integer id_curso) {
+        this.id_curso = id_curso;
+    }
+
+    public Integer getId_periodo() {
+        return id_periodo;
+    }
+
+    public void setId_periodo(Integer id_periodo) {
+        this.id_periodo = id_periodo;
+    }
+
+    public Integer getId_materia() {
+        return id_materia;
+    }
+
+    public void setId_materia(Integer id_materia) {
+        this.id_materia = id_materia;
+    }
+
+    public Integer getId_docente() {
+        return id_docente;
+    }
+
+    public void setId_docente(Integer id_docente) {
+        this.id_docente = id_docente;
+    }
+
+    public Integer getAño() {
+        return año;
+    }
+
+    public void setAño(Integer año) {
+        this.año = año;
+    }
+
+    public String getDivision() {
+        return division;
+    }
+
+    public void setDivision(String division) {
+        this.division = division;
+    }
+
+    public String getModalidad() {
+        return modalidad;
+    }
+
+    public void setModalidad(String modalidad) {
+        this.modalidad = modalidad;
+    }
+
+    public String getTurno() {
+        return turno;
+    }
+
+    public void setTurno(String turno) {
+        this.turno = turno;
+    }
+
+    public Integer getCupo_maximo() {
+        return cupo_maximo;
+    }
+
+    public void setCupo_maximo(Integer cupo_maximo) {
+        this.cupo_maximo = cupo_maximo;
+    }
+
+    public LocalDate getFecha_inicio() {
+        return fecha_inicio;
+    }
+
+    public void setFecha_inicio(LocalDate fecha_inicio) {
+        this.fecha_inicio = fecha_inicio;
+    }
+
+    public LocalDate getFecha_fin() {
+        return fecha_fin;
+    }
+
+    public void setFecha_fin(LocalDate fecha_fin) {
+        this.fecha_fin = fecha_fin;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+}
+</file>
+
+<file path="src/clases/Docente.java">
+package clases;
+
+public class Docente {
+    private Integer id_docente;
+    private Integer id_usuario;
+    private String nombre;
+    private String apellido;
+    private String dni;
+    private String legajo;
+    private String estado;
+
+    public Docente() {
+    }
+
+    public Docente(Integer id_docente, Integer id_usuario, String nombre, String apellido, String dni, String legajo, String estado) {
+        this.id_docente = id_docente;
+        this.id_usuario = id_usuario;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.dni = dni;
+        this.legajo = legajo;
+        this.estado = estado;
+    }
+
+    public Integer getId_docente() {
+        return id_docente;
+    }
+
+    public void setId_docente(Integer id_docente) {
+        this.id_docente = id_docente;
+    }
+
+    public Integer getId_usuario() {
+        return id_usuario;
+    }
+
+    public void setId_usuario(Integer id_usuario) {
+        this.id_usuario = id_usuario;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getApellido() {
+        return apellido;
+    }
+
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
+    }
+
+    public String getDni() {
+        return dni;
+    }
+
+    public void setDni(String dni) {
+        this.dni = dni;
+    }
+
+    public String getLegajo() {
+        return legajo;
+    }
+
+    public void setLegajo(String legajo) {
+        this.legajo = legajo;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+}
+</file>
+
+<file path="src/clases/Inscripcion.java">
+package clases;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public class Inscripcion {
+    private Integer id_inscripcion;
+    private Integer id_alumno;
+    private Integer id_curso;
+    private LocalDate fecha_inscripcion;
+    private String estado;
+    private String motivo_baja;
+    private Double importe_cuota;
+    private LocalDateTime fecha_creacion;
+    private LocalDateTime fecha_modificacion;
+
+    public Inscripcion() {
+    }
+
+    public Inscripcion(Integer id_inscripcion, Integer id_alumno, Integer id_curso, LocalDate fecha_inscripcion, String estado, String motivo_baja, Double importe_cuota, LocalDateTime fecha_creacion, LocalDateTime fecha_modificacion) {
+        this.id_inscripcion = id_inscripcion;
+        this.id_alumno = id_alumno;
+        this.id_curso = id_curso;
+        this.fecha_inscripcion = fecha_inscripcion;
+        this.estado = estado;
+        this.motivo_baja = motivo_baja;
+        this.importe_cuota = importe_cuota;
+        this.fecha_creacion = fecha_creacion;
+        this.fecha_modificacion = fecha_modificacion;
+    }
+
+    public Integer getId_inscripcion() {
+        return id_inscripcion;
+    }
+
+    public void setId_inscripcion(Integer id_inscripcion) {
+        this.id_inscripcion = id_inscripcion;
+    }
+
+    public Integer getId_alumno() {
+        return id_alumno;
+    }
+
+    public void setId_alumno(Integer id_alumno) {
+        this.id_alumno = id_alumno;
+    }
+
+    public Integer getId_curso() {
+        return id_curso;
+    }
+
+    public void setId_curso(Integer id_curso) {
+        this.id_curso = id_curso;
+    }
+
+    public LocalDate getFecha_inscripcion() {
+        return fecha_inscripcion;
+    }
+
+    public void setFecha_inscripcion(LocalDate fecha_inscripcion) {
+        this.fecha_inscripcion = fecha_inscripcion;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public String getMotivo_baja() {
+        return motivo_baja;
+    }
+
+    public void setMotivo_baja(String motivo_baja) {
+        this.motivo_baja = motivo_baja;
+    }
+
+    public Double getImporte_cuota() {
+        return importe_cuota;
+    }
+
+    public void setImporte_cuota(Double importe_cuota) {
+        this.importe_cuota = importe_cuota;
+    }
+
+    public LocalDateTime getFecha_creacion() {
+        return fecha_creacion;
+    }
+
+    public void setFecha_creacion(LocalDateTime fecha_creacion) {
+        this.fecha_creacion = fecha_creacion;
+    }
+
+    public LocalDateTime getFecha_modificacion() {
+        return fecha_modificacion;
+    }
+
+    public void setFecha_modificacion(LocalDateTime fecha_modificacion) {
+        this.fecha_modificacion = fecha_modificacion;
+    }
+}
+</file>
+
+<file path="src/clases/Log_Usuario.java">
+package clases;
+import java.time.LocalDateTime;
+
+public class Log_Usuario {
+    private Integer id_log_usuario;
+    private Integer id_usuario;
+    private String accion;
+    private String campo_modificado;
+    private String valor_anterior;
+    private String valor_nuevo;
+    private LocalDateTime fecha_hora;
+
+    public Log_Usuario() {
+    }
+
+    public Log_Usuario(Integer id_log_usuario, Integer id_usuario, String accion, String campo_modificado, String valor_anterior, String valor_nuevo, LocalDateTime fecha_hora) {
+        this.id_log_usuario = id_log_usuario;
+        this.id_usuario = id_usuario;
+        this.accion = accion;
+        this.campo_modificado = campo_modificado;
+        this.valor_anterior = valor_anterior;
+        this.valor_nuevo = valor_nuevo;
+        this.fecha_hora = fecha_hora;
+    }
+
+    public Integer getId_log_usuario() {
+        return id_log_usuario;
+    }
+
+    public void setId_log_usuario(Integer id_log_usuario) {
+        this.id_log_usuario = id_log_usuario;
+    }
+
+    public Integer getId_usuario() {
+        return id_usuario;
+    }
+
+    public void setId_usuario(Integer id_usuario) {
+        this.id_usuario = id_usuario;
+    }
+
+    public String getAccion() {
+        return accion;
+    }
+
+    public void setAccion(String accion) {
+        this.accion = accion;
+    }
+
+    public String getCampo_modificado() {
+        return campo_modificado;
+    }
+
+    public void setCampo_modificado(String campo_modificado) {
+        this.campo_modificado = campo_modificado;
+    }
+
+    public String getValor_anterior() {
+        return valor_anterior;
+    }
+
+    public void setValor_anterior(String valor_anterior) {
+        this.valor_anterior = valor_anterior;
+    }
+
+    public String getValor_nuevo() {
+        return valor_nuevo;
+    }
+
+    public void setValor_nuevo(String valor_nuevo) {
+        this.valor_nuevo = valor_nuevo;
+    }
+
+    public LocalDateTime getFecha_hora() {
+        return fecha_hora;
+    }
+
+    public void setFecha_hora(LocalDateTime fecha_hora) {
+        this.fecha_hora = fecha_hora;
+    }
+}
+</file>
+
+<file path="src/clases/Materia.java">
+package clases;
+
+public class Materia {
+    private Integer id_materia;
+    private String nombre_materia;
+
+    public Materia() {
+    }
+
+    public Materia(Integer id_materia, String nombre_materia) {
+        this.id_materia = id_materia;
+        this.nombre_materia = nombre_materia;
+    }
+
+    public Integer getId_materia() {
+        return id_materia;
+    }
+
+    public void setId_materia(Integer id_materia) {
+        this.id_materia = id_materia;
+    }
+
+    public String getNombre_materia() {
+        return nombre_materia;
+    }
+
+    public void setNombre_materia(String nombre_materia) {
+        this.nombre_materia = nombre_materia;
+    }
+}
+</file>
+
+<file path="src/clases/Periodo_Lectivo.java">
+package clases;
+import java.time.LocalDate;
+
+public class Periodo_Lectivo {
+    private Integer id_periodo;
+    private String nombre;
+    private String tipo;
+    private LocalDate fecha_inicio;
+    private LocalDate fecha_fin;
+    private String estado;
+
+    public Periodo_Lectivo() {
+    }
+
+    public Periodo_Lectivo(Integer id_periodo, String nombre, String tipo, LocalDate fecha_inicio, LocalDate fecha_fin, String estado) {
+        this.id_periodo = id_periodo;
+        this.nombre = nombre;
+        this.tipo = tipo;
+        this.fecha_inicio = fecha_inicio;
+        this.fecha_fin = fecha_fin;
+        this.estado = estado;
+    }
+
+    public Integer getId_periodo() {
+        return id_periodo;
+    }
+
+    public void setId_periodo(Integer id_periodo) {
+        this.id_periodo = id_periodo;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+
+    public LocalDate getFecha_inicio() {
+        return fecha_inicio;
+    }
+
+    public void setFecha_inicio(LocalDate fecha_inicio) {
+        this.fecha_inicio = fecha_inicio;
+    }
+
+    public LocalDate getFecha_fin() {
+        return fecha_fin;
+    }
+
+    public void setFecha_fin(LocalDate fecha_fin) {
+        this.fecha_fin = fecha_fin;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+}
+</file>
+
+<file path="src/clases/Responsable.java">
+package clases;
+
+public class Responsable {
+    private Integer id_responsable;
+    private String nombre;
+    private String apellido;
+    private String dni;
+    private String tipo_relacion;
+
+    public Responsable() {
+    }
+
+    public Responsable(Integer id_responsable, String nombre, String apellido, String dni, String tipo_relacion) {
+        this.id_responsable = id_responsable;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.dni = dni;
+        this.tipo_relacion = tipo_relacion;
+    }
+
+    public Integer getId_responsable() {
+        return id_responsable;
+    }
+
+    public void setId_responsable(Integer id_responsable) {
+        this.id_responsable = id_responsable;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getApellido() {
+        return apellido;
+    }
+
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
+    }
+
+    public String getDni() {
+        return dni;
+    }
+
+    public void setDni(String dni) {
+        this.dni = dni;
+    }
+
+    public String getTipo_relacion() {
+        return tipo_relacion;
+    }
+
+    public void setTipo_relacion(String tipo_relacion) {
+        this.tipo_relacion = tipo_relacion;
+    }
+}
+</file>
+
+<file path="src/clases/Resultado_Materia.java">
+package clases;
+import java.time.LocalDate;
+
+public class Resultado_Materia {
+    private Integer id_resultado;
+    private Integer id_inscripcion;
+    private Double promedio;
+    private String resultado;
+    private LocalDate fecha_calculo;
+
+    public Resultado_Materia() {
+    }
+
+    public Resultado_Materia(Integer id_resultado, Integer id_inscripcion, Double promedio, String resultado, LocalDate fecha_calculo) {
+        this.id_resultado = id_resultado;
+        this.id_inscripcion = id_inscripcion;
+        this.promedio = promedio;
+        this.resultado = resultado;
+        this.fecha_calculo = fecha_calculo;
+    }
+
+    public Integer getId_resultado() {
+        return id_resultado;
+    }
+
+    public void setId_resultado(Integer id_resultado) {
+        this.id_resultado = id_resultado;
+    }
+
+    public Integer getId_inscripcion() {
+        return id_inscripcion;
+    }
+
+    public void setId_inscripcion(Integer id_inscripcion) {
+        this.id_inscripcion = id_inscripcion;
+    }
+
+    public Double getPromedio() {
+        return promedio;
+    }
+
+    public void setPromedio(Double promedio) {
+        this.promedio = promedio;
+    }
+
+    public String getResultado() {
+        return resultado;
+    }
+
+    public void setResultado(String resultado) {
+        this.resultado = resultado;
+    }
+
+    public LocalDate getFecha_calculo() {
+        return fecha_calculo;
+    }
+
+    public void setFecha_calculo(LocalDate fecha_calculo) {
+        this.fecha_calculo = fecha_calculo;
+    }
+}
+</file>
+
+<file path="src/clases/Rol.java">
+package clases;
+
+public class Rol {
+    private Integer id_rol;
+    private String nombre;
+    private String descripcion_rol;
+
+    public Rol() {
+    }
+
+    public Rol(Integer id_rol, String nombre, String descripcion_rol) {
+        this.id_rol = id_rol;
+        this.nombre = nombre;
+        this.descripcion_rol = descripcion_rol;
+    }
+
+    public Integer getId_rol() {
+        return id_rol;
+    }
+
+    public void setId_rol(Integer id_rol) {
+        this.id_rol = id_rol;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getDescripcion_rol() {
+        return descripcion_rol;
+    }
+
+    public void setDescripcion_rol(String descripcion_rol) {
+        this.descripcion_rol = descripcion_rol;
+    }
+}
+</file>
+
+<file path="src/clases/Usuario.java">
+package clases;
+import dao.Usuario_dao;
+
+public class Usuario {
+    private Integer id_usuario;
+    private Integer id_rol;
+    private String nombre_usuario;
+    private String contraseña;
+
+    public Usuario() {
+    }
+
+    public Usuario(Integer id_usuario, Integer id_rol, String nombre_usuario, String contraseña) {
+        this.id_usuario = id_usuario;
+        this.id_rol = id_rol;
+        this.nombre_usuario = nombre_usuario;
+        this.contraseña = contraseña;
+    }
+    
+    public static Usuario autenticar(String nombre_usuario, String contraseña) {
+        Usuario_dao usuarioDao = new Usuario_dao();
+        return usuarioDao.autenticar(nombre_usuario, contraseña);
+    }
+
+    public Integer getId_usuario() {
+        return id_usuario;
+    }
+
+    public void setId_usuario(Integer id_usuario) {
+        this.id_usuario = id_usuario;
+    }
+
+    public Integer getId_rol() {
+        return id_rol;
+    }
+
+    public void setId_rol(Integer id_rol) {
+        this.id_rol = id_rol;
+    }
+
+    public String getNombre_usuario() {
+        return nombre_usuario;
+    }
+
+    public void setNombre_usuario(String nombre_usuario) {
+        this.nombre_usuario = nombre_usuario;
+    }
+
+    public String getContraseña() {
+        return contraseña;
+    }
+
+    public void setContraseña(String contraseña) {
+        this.contraseña = contraseña;
+    }
+}
+</file>
+
+<file path="src/dao/Dao.java">
+package dao;
+import java.util.List;
+
+public interface Dao<T, ID> {
+    
+    // Crear
+    void insertar(T entidad);
+    
+    // Leer (todos los registros)
+    List<T> obtenerTodos();
+    
+    // Actualizar
+    void modificar(T entidad);
+    
+    // Eliminar
+    void eliminar(ID id);
+}
+</file>
+
+<file path=".project">
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Academia_integral_xxi</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+</projectDescription>
+</file>
+
+<file path="src/clases/Columna_Notas.java">
+package clases;
+
+import java.time.LocalDate;
+
+public class Columna_Notas {
+    private Integer id_columna_notas;
+    private Integer id_curso;
+    private String titulo;  
+    private String tipo;
+    private Double nota_maxima;
+    private Double nota_aprobacion;
+    private LocalDate fecha_evaluacion;
+    private LocalDate fecha_cierre;
+    private String estado;
+
+    public Columna_Notas() {
+    }
+
+    public Columna_Notas(Integer id_columna_notas, Integer id_curso, String titulo, String tipo, Double nota_maxima, Double nota_aprobacion, LocalDate fecha_evaluacion, LocalDate fecha_cierre, String estado) {
+        this.id_columna_notas = id_columna_notas;
+        this.id_curso = id_curso;
+        this.titulo = titulo;
+        this.tipo = tipo;
+        this.nota_maxima = nota_maxima;
+        this.nota_aprobacion = nota_aprobacion;
+        this.fecha_evaluacion = fecha_evaluacion;
+        this.fecha_cierre = fecha_cierre;
+        this.estado = estado;
+    }
+
+    public Integer getId_columna_notas() {
+        return id_columna_notas;
+    }
+
+    public void setId_columna_notas(Integer id_columna_notas) {
+        this.id_columna_notas = id_columna_notas;
+    }
+
+    public Integer getId_curso() {
+        return id_curso;
+    }
+
+    public void setId_curso(Integer id_curso) {
+        this.id_curso = id_curso;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+
+    public Double getNota_maxima() {
+        return nota_maxima;
+    }
+
+    public void setNota_maxima(Double nota_maxima) {
+        this.nota_maxima = nota_maxima;
+    }
+
+    public Double getNota_aprobacion() {
+        return nota_aprobacion;
+    }
+
+    public void setNota_aprobacion(Double nota_aprobacion) {
+        this.nota_aprobacion = nota_aprobacion;
+    }
+
+    public LocalDate getFecha_evaluacion() {
+        return fecha_evaluacion;
+    }
+
+    public void setFecha_evaluacion(LocalDate fecha_evaluacion) {
+        this.fecha_evaluacion = fecha_evaluacion;
+    }
+
+    public LocalDate getFecha_cierre() {
+        return fecha_cierre;
+    }
+
+    public void setFecha_cierre(LocalDate fecha_cierre) {
+        this.fecha_cierre = fecha_cierre;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+}
+</file>
+
+<file path="src/conexion/Conexion.java">
+package conexion;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class Conexion {
+    private static final String URL = "jdbc:mysql://localhost:3306/academia_integral_xxi";
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
+
+    public static Connection getConnection() {
+        Connection conexion = null;
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            conexion = DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (ClassNotFoundException | SQLException error) {
+            error.printStackTrace();
+        }
+        return conexion;
+    }
+}
+</file>
+
+<file path="src/dao/Alumno_dao.java">
+package dao;
+
+import clases.Alumno;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+//reemplazamos la T por la clase Alumno y el id por Integer
+public class Alumno_dao implements Dao<Alumno, Integer> {
+
+    @Override
+    public void insertar(Alumno objeto) { 
+        String consulta = "INSERT INTO alumno (id_usuario, id_responsable, nombre, apellido, dni, matricula, estado) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            
+            //reemplazamos los signos ? por los atributos del objeto recibido
+            ps.setObject(1, objeto.getId_usuario());
+            ps.setObject(2, objeto.getId_responsable());
+            ps.setString(3, objeto.getNombre());
+            ps.setString(4, objeto.getApellido());
+            ps.setString(5, objeto.getDni());
+            ps.setString(6, objeto.getMatricula());
+            ps.setString(7, objeto.getEstado());
+            
+            //ejecutamos la consulta en la BD
+            ps.executeUpdate();
+            
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el alumno: " + error.getMessage());
+            error.printStackTrace(); //imprime el error
+        }
+    }
+
+    @Override
+    public List<Alumno> obtenerTodos() {
+        List<Alumno> listaAlumnos = new ArrayList<>();
+        String consulta = "SELECT * FROM alumno";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            //recorremos todos los registros devueltos por la consulta
+            while (rs.next()) {
+                Alumno alumno = new Alumno();
+                
+                //ponemos las columnas del ResultSet y las asignamos al objeto Alumno
+                alumno.setId_alumno(rs.getInt("id_alumno"));
+                alumno.setId_usuario((Integer) rs.getObject("id_usuario"));
+                alumno.setId_responsable((Integer) rs.getObject("id_responsable"));
+                alumno.setNombre(rs.getString("nombre"));
+                alumno.setApellido(rs.getString("apellido"));
+                alumno.setDni(rs.getString("dni"));
+                alumno.setMatricula(rs.getString("matricula"));
+                alumno.setEstado(rs.getString("estado"));
+                
+                //se agrega la instancia cargada a la lista
+                listaAlumnos.add(alumno);
+            }
+            
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de alumnos: " + error.getMessage());
+            error.printStackTrace();
+        }
+        
+        return listaAlumnos;
+    }
+
+    @Override
+    public void modificar(Alumno objeto) {
+        String consulta = "UPDATE alumno SET id_usuario = ?, id_responsable = ?, nombre = ?, apellido = ?, dni = ?, matricula = ?, estado = ? WHERE id_alumno = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            
+            ps.setObject(1, objeto.getId_usuario());
+            ps.setObject(2, objeto.getId_responsable());
+            ps.setString(3, objeto.getNombre());
+            ps.setString(4, objeto.getApellido());
+            ps.setString(5, objeto.getDni());
+            ps.setString(6, objeto.getMatricula());
+            ps.setString(7, objeto.getEstado());
+            
+            //seteamos la clave primaria para modificar los datos del id del alumno deseado (dnd esta el WHERE)
+            ps.setInt(8, objeto.getId_alumno());
+            
+            ps.executeUpdate();
+            
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el alumno: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        //consultas en orden jerárquico para borrar dependencias en cascada manualmente por seguridad
+        String consultaHijos1 = "DELETE FROM calificacion WHERE id_inscripcion IN (SELECT id_inscripcion FROM inscripcion WHERE id_alumno = ?)";
+        String consultaHijos2 = "DELETE FROM resultado_materia WHERE id_resultado IN (SELECT id_inscripcion FROM inscripcion WHERE id_alumno = ?)";
+        String consultaInscripciones = "DELETE FROM inscripcion WHERE id_alumno = ?";
+        String consultaAlumno = "DELETE FROM alumno WHERE id_alumno = ?";
+
+        Connection conexion = null;
+
+        try {
+            conexion = Conexion.getConnection();
+            //desactivamos autocommit para manejar la transacción de borrado en cascada
+            conexion.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conexion.prepareStatement(consultaHijos1);
+                 PreparedStatement ps2 = conexion.prepareStatement(consultaHijos2);
+                 PreparedStatement ps3 = conexion.prepareStatement(consultaInscripciones);
+                 PreparedStatement ps4 = conexion.prepareStatement(consultaAlumno)) {
+
+                //asignamos el id del alumno a eliminar en todas las subconsultas
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+
+                ps3.setInt(1, id);
+                ps3.executeUpdate();
+
+                ps4.setInt(1, id);
+                ps4.executeUpdate();
+
+                //confirmamos los cambios en la BD si todo salió bien
+                conexion.commit();
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el alumno en cascada: " + error.getMessage());
+            error.printStackTrace();
+            if (conexion != null) {
+                try {
+                    //revertimos los cambios si falla algún paso
+                    conexion.rollback();
+                } catch (SQLException error2) {
+                    error2.printStackTrace();
+                }
+            }
+        } finally {
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                    conexion.close();
+                } catch (SQLException error3) {
+                    error3.printStackTrace();
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Calificacion_dao.java">
+package dao;
+
+import clases.Calificacion;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Calificacion_dao implements Dao<Calificacion, Integer> {
+
+    @Override
+    public void insertar(Calificacion objeto) {
+        String consulta = "INSERT INTO calificacion (id_inscripcion, id_columna_notas, nota, observaciones) VALUES (?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_inscripcion());
+            ps.setInt(2, objeto.getId_columna_notas());
+            ps.setObject(3, objeto.getNota());
+            ps.setString(4, objeto.getObservaciones());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar la calificación: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Calificacion> obtenerTodos() {
+        List<Calificacion> listaCalificaciones = new ArrayList<>();
+        String consulta = "SELECT * FROM calificacion";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Calificacion calificacion = new Calificacion();
+
+                calificacion.setId_calificacion(rs.getInt("id_calificacion"));
+                calificacion.setId_inscripcion(rs.getInt("id_inscripcion"));
+                calificacion.setId_columna_notas(rs.getInt("id_columna_notas"));
+                calificacion.setNota(rs.getDouble("nota"));
+                Date fecha = rs.getDate("fecha_carga");
+                calificacion.setFecha_carga(fecha != null ? fecha.toLocalDate() : null);
+                calificacion.setObservaciones(rs.getString("observaciones"));
+
+                listaCalificaciones.add(calificacion);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de calificaciones: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaCalificaciones;
+    }
+
+    @Override
+    public void modificar(Calificacion objeto) {
+        String consulta = "UPDATE calificacion SET id_inscripcion = ?, id_columna_notas = ?, nota = ?, observaciones = ? WHERE id_calificacion = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_inscripcion());
+            ps.setInt(2, objeto.getId_columna_notas());
+            ps.setObject(3, objeto.getNota());
+            ps.setString(4, objeto.getObservaciones());
+
+            ps.setInt(5, objeto.getId_calificacion());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar la calificación: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        String consultaHistorial = "DELETE FROM calificacion_historial WHERE id_calificacion = ?";
+        String consultaCalificacion = "DELETE FROM calificacion WHERE id_calificacion = ?";
+
+        Connection conexion = null;
+
+        try {
+            conexion = Conexion.getConnection();
+            conexion.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conexion.prepareStatement(consultaHistorial);
+                 PreparedStatement ps2 = conexion.prepareStatement(consultaCalificacion)) {
+
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+
+                conexion.commit();
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar la calificación: " + error.getMessage());
+            error.printStackTrace();
+            if (conexion != null) {
+                try {
+                    conexion.rollback();
+                } catch (SQLException error2) {
+                    error2.printStackTrace();
+                }
+            }
+        } finally {
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                    conexion.close();
+                } catch (SQLException error3) {
+                    error3.printStackTrace();
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Calificacion_Historial_dao.java">
+package dao;
+
+import clases.Calificacion_Historial;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Calificacion_Historial_dao implements Dao<Calificacion_Historial, Integer> {
+
+    @Override
+    public void insertar(Calificacion_Historial objeto) {
+        String consulta = "INSERT INTO calificacion_historial (id_calificacion, nota_anterior, nota_nueva, motivo) VALUES (?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_calificacion());
+            ps.setObject(2, objeto.getNota_anterior());
+            ps.setObject(3, objeto.getNota_nueva());
+            ps.setString(4, objeto.getMotivo());
+
+            //ejecutamos la consulta en la BD
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el historial de calificación: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Calificacion_Historial> obtenerTodos() {
+        List<Calificacion_Historial> listaHistorial = new ArrayList<>();
+        String consulta = "SELECT * FROM calificacion_historial";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            //recorremos todos los registros devueltos por la consulta
+            while (rs.next()) {
+                Calificacion_Historial historial = new Calificacion_Historial();
+
+                historial.setId_historial(rs.getInt("id_historial"));
+                historial.setId_calificacion(rs.getInt("id_calificacion"));
+                historial.setNota_anterior(rs.getObject("nota_anterior") != null ? rs.getDouble("nota_anterior") : null);
+                historial.setNota_nueva(rs.getDouble("nota_nueva"));
+                Timestamp ts = rs.getTimestamp("fecha_modificacion");
+                historial.setFecha_modificacion(ts != null ? ts.toLocalDateTime() : null);
+                historial.setMotivo(rs.getString("motivo"));
+
+                //se agrega la instancia cargada a la lista
+                listaHistorial.add(historial);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de historiales: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaHistorial;
+    }
+
+    @Override
+    public void modificar(Calificacion_Historial objeto) {
+        String consulta = "UPDATE calificacion_historial SET id_calificacion = ?, nota_anterior = ?, nota_nueva = ?, motivo = ? WHERE id_historial = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_calificacion());
+            ps.setObject(2, objeto.getNota_anterior());
+            ps.setObject(3, objeto.getNota_nueva());
+            ps.setString(4, objeto.getMotivo());
+
+            //seteamos la clave primaria para el WHERE
+            ps.setInt(5, objeto.getId_historial());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el historial de calificación: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        String consulta = "DELETE FROM calificacion_historial WHERE id_historial = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            //asignamos el id del registro a eliminar
+            ps.setInt(1, id);
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el historial de calificación: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Columna_Notas_dao.java">
+package dao;
+
+import clases.Columna_Notas;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
+
+    @Override
+    public void insertar(Columna_Notas objeto) {
+        String consulta = "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion, fecha_evaluacion, fecha_cierre, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_curso());
+            ps.setString(2, objeto.getTitulo());
+            ps.setString(3, objeto.getTipo());
+            ps.setObject(4, objeto.getNota_maxima());
+            ps.setObject(5, objeto.getNota_aprobacion());
+            ps.setObject(6, objeto.getFecha_evaluacion());
+            ps.setObject(7, objeto.getFecha_cierre());
+            ps.setString(8, objeto.getEstado());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar la columna de notas: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Columna_Notas> obtenerTodos() {
+        List<Columna_Notas> lista = new ArrayList<>();
+        String consulta = "SELECT * FROM columna_notas";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Columna_Notas columna = new Columna_Notas();
+
+                columna.setId_columna_notas(rs.getInt("id_columna_notas"));
+                columna.setId_curso(rs.getInt("id_curso"));
+                columna.setTitulo(rs.getString("titulo"));
+                columna.setTipo(rs.getString("tipo"));
+                columna.setNota_maxima(rs.getDouble("nota_maxima"));
+                columna.setNota_aprobacion(rs.getDouble("nota_aprobacion"));
+                
+                Date fEval = rs.getDate("fecha_evaluacion");
+                columna.setFecha_evaluacion(fEval != null ? fEval.toLocalDate() : null);
+                
+                Date fCierre = rs.getDate("fecha_cierre");
+                columna.setFecha_cierre(fCierre != null ? fCierre.toLocalDate() : null);
+                
+                columna.setEstado(rs.getString("estado"));
+
+                lista.add(columna);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de columnas de notas: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return lista;
+    }
+
+    @Override
+    public void modificar(Columna_Notas objeto) {
+        String consulta = "UPDATE columna_notas SET id_curso = ?, titulo = ?, tipo = ?, nota_maxima = ?, nota_aprobacion = ?, fecha_evaluacion = ?, fecha_cierre = ?, estado = ? WHERE id_columna_notas = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_curso());
+            ps.setString(2, objeto.getTitulo());
+            ps.setString(3, objeto.getTipo());
+            ps.setObject(4, objeto.getNota_maxima());
+            ps.setObject(5, objeto.getNota_aprobacion());
+            ps.setObject(6, objeto.getFecha_evaluacion());
+            ps.setObject(7, objeto.getFecha_cierre());
+            ps.setString(8, objeto.getEstado());
+
+            ps.setInt(9, objeto.getId_columna_notas());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar la columna de notas: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        String consultaCalificaciones = "DELETE FROM calificacion WHERE id_columna_notas = ?";
+        String consultaColumna = "DELETE FROM columna_notas WHERE id_columna_notas = ?";
+
+        Connection conexion = null;
+
+        try {
+            conexion = Conexion.getConnection();
+            conexion.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conexion.prepareStatement(consultaCalificaciones);
+                 PreparedStatement ps2 = conexion.prepareStatement(consultaColumna)) {
+
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+
+                conexion.commit();
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar la columna de notas: " + error.getMessage());
+            error.printStackTrace();
+            if (conexion != null) {
+                try {
+                    conexion.rollback();
+                } catch (SQLException error2) {
+                    error2.printStackTrace();
+                }
+            }
+        } finally {
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                    conexion.close();
+                } catch (SQLException error3) {
+                    error3.printStackTrace();
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Curso_dao.java">
+package dao;
+
+import clases.Curso;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Curso_dao implements Dao<Curso, Integer> {
+
+    @Override
+    public void insertar(Curso objeto) {
+        String consulta = "INSERT INTO curso (id_periodo, id_materia, id_docente, año, division, modalidad, turno, cupo_maximo, fecha_inicio, fecha_fin, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_periodo());
+            ps.setInt(2, objeto.getId_materia());
+            ps.setInt(3, objeto.getId_docente());
+            ps.setObject(4, objeto.getAño());
+            ps.setString(5, objeto.getDivision());
+            ps.setString(6, objeto.getModalidad());
+            ps.setString(7, objeto.getTurno());
+            ps.setInt(8, objeto.getCupo_maximo());
+            ps.setObject(9, objeto.getFecha_inicio());
+            ps.setObject(10, objeto.getFecha_fin());
+            ps.setString(11, objeto.getEstado());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el curso: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Curso> obtenerTodos() {
+        List<Curso> listaCursos = new ArrayList<>();
+        String consulta = "SELECT * FROM curso";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Curso curso = new Curso();
+
+                curso.setId_curso(rs.getInt("id_curso"));
+                curso.setId_periodo(rs.getInt("id_periodo"));
+                curso.setId_materia(rs.getInt("id_materia"));
+                curso.setId_docente(rs.getInt("id_docente"));
+                curso.setAño(rs.getInt("año"));
+                curso.setDivision(rs.getString("division"));
+                curso.setModalidad(rs.getString("modalidad"));
+                curso.setTurno(rs.getString("turno"));
+                curso.setCupo_maximo(rs.getInt("cupo_maximo"));
+                
+                Date fInicio = rs.getDate("fecha_inicio");
+                curso.setFecha_inicio(fInicio != null ? fInicio.toLocalDate() : null);
+                
+                Date fFin = rs.getDate("fecha_fin");
+                curso.setFecha_fin(fFin != null ? fFin.toLocalDate() : null);
+                
+                curso.setEstado(rs.getString("estado"));
+
+                listaCursos.add(curso);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de cursos: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaCursos;
+    }
+
+    @Override
+    public void modificar(Curso objeto) {
+        String consulta = "UPDATE curso SET id_periodo = ?, id_materia = ?, id_docente = ?, año = ?, division = ?, modalidad = ?, turno = ?, cupo_maximo = ?, fecha_inicio = ?, fecha_fin = ?, estado = ? WHERE id_curso = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_periodo());
+            ps.setInt(2, objeto.getId_materia());
+            ps.setInt(3, objeto.getId_docente());
+            ps.setObject(4, objeto.getAño());
+            ps.setString(5, objeto.getDivision());
+            ps.setString(6, objeto.getModalidad());
+            ps.setString(7, objeto.getTurno());
+            ps.setInt(8, objeto.getCupo_maximo());
+            ps.setObject(9, objeto.getFecha_inicio());
+            ps.setObject(10, objeto.getFecha_fin());
+            ps.setString(11, objeto.getEstado());
+
+            ps.setInt(12, objeto.getId_curso());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el curso: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        //al borrar un curso debemos limpiar calificaciones, inscripciones y columnas de notas asociadas
+        String consultaCalificaciones = "DELETE FROM calificacion WHERE id_columna_notas IN (SELECT id_columna_notas FROM columna_notas WHERE id_curso = ?) OR id_inscripcion IN (SELECT id_inscripcion FROM inscripcion WHERE id_curso = ?)";
+        String consultaInscripciones = "DELETE FROM inscripcion WHERE id_curso = ?";
+        String consultaColumnas = "DELETE FROM columna_notas WHERE id_curso = ?";
+        String consultaCurso = "DELETE FROM curso WHERE id_curso = ?";
+
+        Connection conexion = null;
+
+        try {
+            conexion = Conexion.getConnection();
+            conexion.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conexion.prepareStatement(consultaCalificaciones);
+                 PreparedStatement ps2 = conexion.prepareStatement(consultaInscripciones);
+                 PreparedStatement ps3 = conexion.prepareStatement(consultaColumnas);
+                 PreparedStatement ps4 = conexion.prepareStatement(consultaCurso)) {
+
+                ps1.setInt(1, id);
+                ps1.setInt(2, id);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+
+                ps3.setInt(1, id);
+                ps3.executeUpdate();
+
+                ps4.setInt(1, id);
+                ps4.executeUpdate();
+
+                conexion.commit();
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el curso en cascada: " + error.getMessage());
+            error.printStackTrace();
+            if (conexion != null) {
+                try {
+                    conexion.rollback();
+                } catch (SQLException error2) {
+                    error2.printStackTrace();
+                }
+            }
+        } finally {
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                    conexion.close();
+                } catch (SQLException error3) {
+                    error3.printStackTrace();
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Docente_dao.java">
+package dao;
+
+import clases.Docente;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Docente_dao implements Dao<Docente, Integer> {
+
+    @Override
+    public void insertar(Docente objeto) {
+        String consulta = "INSERT INTO docente (id_usuario, nombre, apellido, dni, legajo, estado) VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setObject(1, objeto.getId_usuario());
+            ps.setString(2, objeto.getNombre());
+            ps.setString(3, objeto.getApellido());
+            ps.setString(4, objeto.getDni());
+            ps.setString(5, objeto.getLegajo());
+            ps.setString(6, objeto.getEstado());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el docente: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Docente> obtenerTodos() {
+        List<Docente> listaDocentes = new ArrayList<>();
+        String consulta = "SELECT * FROM docente";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Docente docente = new Docente();
+
+                docente.setId_docente(rs.getInt("id_docente"));
+                docente.setId_usuario((Integer) rs.getObject("id_usuario"));
+                docente.setNombre(rs.getString("nombre"));
+                docente.setApellido(rs.getString("apellido"));
+                docente.setDni(rs.getString("dni"));
+                docente.setLegajo(rs.getString("legajo"));
+                docente.setEstado(rs.getString("estado"));
+
+                listaDocentes.add(docente);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de docentes: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaDocentes;
+    }
+
+    @Override
+    public void modificar(Docente objeto) {
+        String consulta = "UPDATE docente SET id_usuario = ?, nombre = ?, apellido = ?, dni = ?, legajo = ?, estado = ? WHERE id_docente = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setObject(1, objeto.getId_usuario());
+            ps.setString(2, objeto.getNombre());
+            ps.setString(3, objeto.getApellido());
+            ps.setString(4, objeto.getDni());
+            ps.setString(5, objeto.getLegajo());
+            ps.setString(6, objeto.getEstado());
+
+            ps.setInt(7, objeto.getId_docente());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el docente: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        String consultaDocente = "DELETE FROM docente WHERE id_docente = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consultaDocente)) {
+
+            ps.setInt(1, id);
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el docente: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Inscripcion_dao.java">
+package dao;
+
+import clases.Inscripcion;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
+
+    @Override
+    public void insertar(Inscripcion objeto) {
+        String consulta = "INSERT INTO inscripcion (id_alumno, id_curso, fecha_inscripcion, estado, motivo_baja, importe_cuota) VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_alumno());
+            ps.setInt(2, objeto.getId_curso());
+            ps.setObject(3, objeto.getFecha_inscripcion());
+            ps.setString(4, objeto.getEstado());
+            ps.setString(5, objeto.getMotivo_baja());
+            ps.setObject(6, objeto.getImporte_cuota());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar la inscripción: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Inscripcion> obtenerTodos() {
+        List<Inscripcion> listaInscripciones = new ArrayList<>();
+        String consulta = "SELECT * FROM inscripcion";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Inscripcion inscripcion = new Inscripcion();
+
+                inscripcion.setId_inscripcion(rs.getInt("id_inscripcion"));
+                inscripcion.setId_alumno(rs.getInt("id_alumno"));
+                inscripcion.setId_curso(rs.getInt("id_curso"));
+                
+                Date fecha = rs.getDate("fecha_inscripcion");
+                inscripcion.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
+                
+                inscripcion.setEstado(rs.getString("estado"));
+                inscripcion.setMotivo_baja(rs.getString("motivo_baja"));
+                inscripcion.setImporte_cuota(rs.getDouble("importe_cuota"));
+
+                listaInscripciones.add(inscripcion);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de inscripciones: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaInscripciones;
+    }
+
+    @Override
+    public void modificar(Inscripcion objeto) {
+        String consulta = "UPDATE inscripcion SET id_alumno = ?, id_curso = ?, fecha_inscripcion = ?, estado = ?, motivo_baja = ?, importe_cuota = ? WHERE id_inscripcion = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_alumno());
+            ps.setInt(2, objeto.getId_curso());
+            ps.setObject(3, objeto.getFecha_inscripcion());
+            ps.setString(4, objeto.getEstado());
+            ps.setString(5, objeto.getMotivo_baja());
+            ps.setObject(6, objeto.getImporte_cuota());
+
+            ps.setInt(7, objeto.getId_inscripcion());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar la inscripción: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        //al eliminar una inscripción borramos sus calificaciones y resultados asociados
+        String consultaCalificaciones = "DELETE FROM calificacion WHERE id_inscripcion = ?";
+        String consultaResultados = "DELETE FROM resultado_materia WHERE id_resultado = ?";
+        String consultaInscripcion = "DELETE FROM inscripcion WHERE id_inscripcion = ?";
+
+        Connection conexion = null;
+
+        try {
+            conexion = Conexion.getConnection();
+            conexion.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conexion.prepareStatement(consultaCalificaciones);
+                 PreparedStatement ps2 = conexion.prepareStatement(consultaResultados);
+                 PreparedStatement ps3 = conexion.prepareStatement(consultaInscripcion)) {
+
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+
+                ps3.setInt(1, id);
+                ps3.executeUpdate();
+
+                conexion.commit();
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar la inscripción en cascada: " + error.getMessage());
+            error.printStackTrace();
+            if (conexion != null) {
+                try {
+                    conexion.rollback();
+                } catch (SQLException error2) {
+                    error2.printStackTrace();
+                }
+            }
+        } finally {
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                    conexion.close();
+                } catch (SQLException error3) {
+                    error3.printStackTrace();
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Log_Usuario_dao.java">
+package dao;
+
+import clases.Log_Usuario;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
+
+    @Override
+    public void insertar(Log_Usuario objeto) {
+        String consulta = "INSERT INTO log_usuario (id_usuario, accion, campo_modificado, valor_anterior, valor_nuevo) VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_usuario());
+            ps.setString(2, objeto.getAccion());
+            ps.setString(3, objeto.getCampo_modificado());
+            ps.setString(4, objeto.getValor_anterior());
+            ps.setString(5, objeto.getValor_nuevo());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el log de usuario: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Log_Usuario> obtenerTodos() {
+        List<Log_Usuario> listaLogs = new ArrayList<>();
+        String consulta = "SELECT * FROM log_usuario";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Log_Usuario log = new Log_Usuario();
+
+                log.setId_log_usuario(rs.getInt("id_log_usuario"));
+                log.setId_usuario(rs.getInt("id_usuario"));
+                log.setAccion(rs.getString("accion"));
+                log.setCampo_modificado(rs.getString("campo_modificado"));
+                log.setValor_anterior(rs.getString("valor_anterior"));
+                log.setValor_nuevo(rs.getString("valor_nuevo"));
+                Timestamp ts = rs.getTimestamp("fecha_hora");
+                log.setFecha_hora(ts != null ? ts.toLocalDateTime() : null);
+
+                listaLogs.add(log);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de logs: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaLogs;
+    }
+
+    @Override
+    public void modificar(Log_Usuario objeto) {
+        String consulta = "UPDATE log_usuario SET id_usuario = ?, accion = ?, campo_modificado = ?, valor_anterior = ?, valor_nuevo = ? WHERE id_log_usuario = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_usuario());
+            ps.setString(2, objeto.getAccion());
+            ps.setString(3, objeto.getCampo_modificado());
+            ps.setString(4, objeto.getValor_anterior());
+            ps.setString(5, objeto.getValor_nuevo());
+
+            ps.setInt(6, objeto.getId_log_usuario());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el log de usuario: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        String consulta = "DELETE FROM log_usuario WHERE id_log_usuario = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el log de usuario: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Materia_dao.java">
+package dao;
+
+import clases.Materia;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Materia_dao implements Dao<Materia, Integer> {
+
+    @Override
+    public void insertar(Materia objeto) {
+        String consulta = "INSERT INTO materia (nombre_materia) VALUES (?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, objeto.getNombre_materia());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar la materia: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Materia> obtenerTodos() {
+        List<Materia> listaMaterias = new ArrayList<>();
+        String consulta = "SELECT * FROM materia";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Materia materia = new Materia();
+
+                materia.setId_materia(rs.getInt("id_materia"));
+                materia.setNombre_materia(rs.getString("nombre_materia"));
+
+                listaMaterias.add(materia);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de materias: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaMaterias;
+    }
+
+    @Override
+    public void modificar(Materia objeto) {
+        String consulta = "UPDATE materia SET nombre_materia = ? WHERE id_materia = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, objeto.getNombre_materia());
+            ps.setInt(2, objeto.getId_materia());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar la materia: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        String consultaMateria = "DELETE FROM materia WHERE id_materia = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consultaMateria)) {
+
+            ps.setInt(1, id);
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar la materia: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Periodo_Lectivo_dao.java">
+package dao;
+
+import clases.Periodo_Lectivo;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Periodo_Lectivo_dao implements Dao<Periodo_Lectivo, Integer> {
+
+    @Override
+    public void insertar(Periodo_Lectivo objeto) {
+        String consulta = "INSERT INTO periodo_lectivo (nombre, tipo, fecha_inicio, fecha_fin, estado) VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, objeto.getNombre());
+            ps.setString(2, objeto.getTipo());
+            ps.setObject(3, objeto.getFecha_inicio());
+            ps.setObject(4, objeto.getFecha_fin());
+            ps.setString(5, objeto.getEstado());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el período lectivo: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Periodo_Lectivo> obtenerTodos() {
+        List<Periodo_Lectivo> listaPeriodos = new ArrayList<>();
+        String consulta = "SELECT * FROM periodo_lectivo";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Periodo_Lectivo periodo = new Periodo_Lectivo();
+
+                periodo.setId_periodo(rs.getInt("id_periodo"));
+                periodo.setNombre(rs.getString("nombre"));
+                periodo.setTipo(rs.getString("tipo"));
+                
+                Date fInicio = rs.getDate("fecha_inicio");
+                periodo.setFecha_inicio(fInicio != null ? fInicio.toLocalDate() : null);
+                
+                Date fFin = rs.getDate("fecha_fin");
+                periodo.setFecha_fin(fFin != null ? fFin.toLocalDate() : null);
+                
+                periodo.setEstado(rs.getString("estado"));
+
+                listaPeriodos.add(periodo);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de períodos lectivos: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaPeriodos;
+    }
+
+    @Override
+    public void modificar(Periodo_Lectivo objeto) {
+        String consulta = "UPDATE periodo_lectivo SET nombre = ?, tipo = ?, fecha_inicio = ?, fecha_fin = ?, estado = ? WHERE id_periodo = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, objeto.getNombre());
+            ps.setString(2, objeto.getTipo());
+            ps.setObject(3, objeto.getFecha_inicio());
+            ps.setObject(4, objeto.getFecha_fin());
+            ps.setString(5, objeto.getEstado());
+
+            ps.setInt(6, objeto.getId_periodo());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el período lectivo: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        //consultas en orden jerárquico para borrar los cursos del periodo y todas sus dependencias
+        String consultaCalificaciones = "DELETE FROM calificacion WHERE id_inscripcion IN (SELECT id_inscripcion FROM inscripcion WHERE id_curso IN (SELECT id_curso FROM curso WHERE id_periodo = ?))";
+        String consultaInscripciones = "DELETE FROM inscripcion WHERE id_curso IN (SELECT id_curso FROM curso WHERE id_periodo = ?)";
+        String consultaColumnas = "DELETE FROM columna_notas WHERE id_curso IN (SELECT id_curso FROM curso WHERE id_periodo = ?)";
+        String consultaCursos = "DELETE FROM curso WHERE id_periodo = ?";
+        String consultaPeriodo = "DELETE FROM periodo_lectivo WHERE id_periodo = ?";
+
+        Connection conexion = null;
+
+        try {
+            conexion = Conexion.getConnection();
+            conexion.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conexion.prepareStatement(consultaCalificaciones);
+                 PreparedStatement ps2 = conexion.prepareStatement(consultaInscripciones);
+                 PreparedStatement ps3 = conexion.prepareStatement(consultaColumnas);
+                 PreparedStatement ps4 = conexion.prepareStatement(consultaCursos);
+                 PreparedStatement ps5 = conexion.prepareStatement(consultaPeriodo)) {
+
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+
+                ps3.setInt(1, id);
+                ps3.executeUpdate();
+
+                ps4.setInt(1, id);
+                ps4.executeUpdate();
+
+                ps5.setInt(1, id);
+                ps5.executeUpdate();
+
+                conexion.commit();
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el período lectivo en cascada: " + error.getMessage());
+            error.printStackTrace();
+            if (conexion != null) {
+                try {
+                    conexion.rollback();
+                } catch (SQLException error2) {
+                    error2.printStackTrace();
+                }
+            }
+        } finally {
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                    conexion.close();
+                } catch (SQLException error3) {
+                    error3.printStackTrace();
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Responsable_dao.java">
+package dao;
+
+import clases.Responsable;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Responsable_dao implements Dao<Responsable, Integer> {
+
+    @Override
+    public void insertar(Responsable objeto) {
+        String consulta = "INSERT INTO responsable (nombre, apellido, dni, tipo_relacion) VALUES (?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, objeto.getNombre());
+            ps.setString(2, objeto.getApellido());
+            ps.setString(3, objeto.getDni());
+            ps.setString(4, objeto.getTipo_relacion());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el responsable: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Responsable> obtenerTodos() {
+        List<Responsable> listaResponsables = new ArrayList<>();
+        String consulta = "SELECT * FROM responsable";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Responsable responsable = new Responsable();
+
+                responsable.setId_responsable(rs.getInt("id_responsable"));
+                responsable.setNombre(rs.getString("nombre"));
+                responsable.setApellido(rs.getString("apellido"));
+                responsable.setDni(rs.getString("dni"));
+                responsable.setTipo_relacion(rs.getString("tipo_relacion"));
+
+                listaResponsables.add(responsable);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de responsables: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaResponsables;
+    }
+
+    @Override
+    public void modificar(Responsable objeto) {
+        String consulta = "UPDATE responsable SET nombre = ?, apellido = ?, dni = ?, tipo_relacion = ? WHERE id_responsable = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, objeto.getNombre());
+            ps.setString(2, objeto.getApellido());
+            ps.setString(3, objeto.getDni());
+            ps.setString(4, objeto.getTipo_relacion());
+
+            ps.setInt(5, objeto.getId_responsable());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el responsable: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        //desvinculamos el responsable en la tabla alumno asignando NULL antes de eliminarlo
+        String desvincularAlumno = "UPDATE alumno SET id_responsable = NULL WHERE id_responsable = ?";
+        String consultaResponsable = "DELETE FROM responsable WHERE id_responsable = ?";
+
+        Connection conexion = null;
+
+        try {
+            conexion = Conexion.getConnection();
+            conexion.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conexion.prepareStatement(desvincularAlumno);
+                 PreparedStatement ps2 = conexion.prepareStatement(consultaResponsable)) {
+
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+
+                conexion.commit();
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el responsable: " + error.getMessage());
+            error.printStackTrace();
+            if (conexion != null) {
+                try {
+                    conexion.rollback();
+                } catch (SQLException error2) {
+                    error2.printStackTrace();
+                }
+            }
+        } finally {
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                    conexion.close();
+                } catch (SQLException error3) {
+                    error3.printStackTrace();
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Resultado_Materia_dao.java">
+package dao;
+
+import clases.Resultado_Materia;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Resultado_Materia_dao implements Dao<Resultado_Materia, Integer> {
+
+    @Override
+    public void insertar(Resultado_Materia objeto) {
+        String consulta = "INSERT INTO resultado_materia (id_inscripcion, promedio, resultado, fecha_calculo) VALUES (?, ?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_inscripcion());
+            ps.setObject(2, objeto.getPromedio());
+            ps.setString(3, objeto.getResultado());
+            ps.setObject(4, objeto.getFecha_calculo());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el resultado de materia: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Resultado_Materia> obtenerTodos() {
+        List<Resultado_Materia> listaResultados = new ArrayList<>();
+        String consulta = "SELECT * FROM resultado_materia";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Resultado_Materia resultado = new Resultado_Materia();
+
+                resultado.setId_resultado(rs.getInt("id_resultado"));
+                resultado.setId_inscripcion(rs.getInt("id_inscripcion"));
+                resultado.setPromedio(rs.getDouble("promedio"));
+                resultado.setResultado(rs.getString("resultado"));
+                
+                Date fCalc = rs.getDate("fecha_calculo");
+                resultado.setFecha_calculo(fCalc != null ? fCalc.toLocalDate() : null);
+
+                listaResultados.add(resultado);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de resultados de materias: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaResultados;
+    }
+
+    @Override
+    public void modificar(Resultado_Materia objeto) {
+        String consulta = "UPDATE resultado_materia SET id_inscripcion = ?, promedio = ?, resultado = ?, fecha_calculo = ? WHERE id_resultado = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_inscripcion());
+            ps.setObject(2, objeto.getPromedio());
+            ps.setString(3, objeto.getResultado());
+            ps.setObject(4, objeto.getFecha_calculo());
+
+            ps.setInt(5, objeto.getId_resultado());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el resultado de materia: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        String consulta = "DELETE FROM resultado_materia WHERE id_resultado = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el resultado de materia: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Rol_dao.java">
+package dao;
+
+import clases.Rol;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Rol_dao implements Dao<Rol, Integer> {
+
+    @Override
+    public void insertar(Rol objeto) {
+        String consulta = "INSERT INTO rol (nombre, descripcion_rol) VALUES (?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, objeto.getNombre());
+            ps.setString(2, objeto.getDescripcion_rol());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el rol: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Rol> obtenerTodos() {
+        List<Rol> listaRoles = new ArrayList<>();
+        String consulta = "SELECT * FROM rol";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Rol rol = new Rol();
+
+                rol.setId_rol(rs.getInt("id_rol"));
+                rol.setNombre(rs.getString("nombre"));
+                rol.setDescripcion_rol(rs.getString("descripcion_rol"));
+
+                listaRoles.add(rol);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de roles: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaRoles;
+    }
+
+    @Override
+    public void modificar(Rol objeto) {
+        String consulta = "UPDATE rol SET nombre = ?, descripcion_rol = ? WHERE id_rol = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, objeto.getNombre());
+            ps.setString(2, objeto.getDescripcion_rol());
+
+            ps.setInt(3, objeto.getId_rol());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el rol: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        //al eliminar un rol borramos en cascada los logs, alumnos, docentes y usuarios asociados
+        String consultaLogs = "DELETE FROM log_usuario WHERE id_usuario IN (SELECT id_usuario FROM usuario WHERE id_rol = ?)";
+        String consultaAlumnos = "DELETE FROM alumno WHERE id_usuario IN (SELECT id_usuario FROM usuario WHERE id_rol = ?)";
+        String consultaDocentes = "DELETE FROM docente WHERE id_usuario IN (SELECT id_usuario FROM usuario WHERE id_rol = ?)";
+        String consultaUsuarios = "DELETE FROM usuario WHERE id_rol = ?";
+        String consultaRol = "DELETE FROM rol WHERE id_rol = ?";
+
+        Connection conexion = null;
+
+        try {
+            conexion = Conexion.getConnection();
+            conexion.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conexion.prepareStatement(consultaLogs);
+                 PreparedStatement ps2 = conexion.prepareStatement(consultaAlumnos);
+                 PreparedStatement ps3 = conexion.prepareStatement(consultaDocentes);
+                 PreparedStatement ps4 = conexion.prepareStatement(consultaUsuarios);
+                 PreparedStatement ps5 = conexion.prepareStatement(consultaRol)) {
+
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+
+                ps3.setInt(1, id);
+                ps3.executeUpdate();
+
+                ps4.setInt(1, id);
+                ps4.executeUpdate();
+
+                ps5.setInt(1, id);
+                ps5.executeUpdate();
+
+                conexion.commit();
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el rol en cascada: " + error.getMessage());
+            error.printStackTrace();
+            if (conexion != null) {
+                try {
+                    conexion.rollback();
+                } catch (SQLException error2) {
+                    error2.printStackTrace();
+                }
+            }
+        } finally {
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                    conexion.close();
+                } catch (SQLException error3) {
+                    error3.printStackTrace();
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="src/dao/Usuario_dao.java">
+package dao;
+
+import clases.Usuario;
+import conexion.Conexion;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Usuario_dao implements Dao<Usuario, Integer> {
+
+    //aca autenticamos el usuario verificando credenciales en la base de datos
+    public Usuario autenticar(String nombreUsuario, String contraseña) {
+        Usuario usuario = null;
+        String consulta = "SELECT * FROM usuario WHERE nombre_usuario = ? AND contraseña = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setString(1, nombreUsuario);
+            ps.setString(2, contraseña);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    usuario = new Usuario();
+                    usuario.setId_usuario(rs.getInt("id_usuario"));
+                    usuario.setId_rol(rs.getInt("id_rol"));
+                    usuario.setNombre_usuario(rs.getString("nombre_usuario"));
+                    usuario.setContraseña(rs.getString("contraseña"));
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al autenticar el usuario: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return usuario;
+    }
+
+    //aca agregamos la funcion cerrar sesion solicitada dentro del usuario dao para gestionar el fin de la sesion actual
+    public void cerrarSesion(Usuario usuario) {
+        if (usuario != null) {
+            System.out.println("el usuario " + usuario.getNombre_usuario() + " ha cerrado sesión correctamente.");
+        }
+    }
+
+    @Override
+    public void insertar(Usuario objeto) {
+        String consulta = "INSERT INTO usuario (id_rol, nombre_usuario, contraseña) VALUES (?, ?, ?)";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_rol());
+            ps.setString(2, objeto.getNombre_usuario());
+            ps.setString(3, objeto.getContraseña());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al insertar el usuario: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<Usuario> obtenerTodos() {
+        List<Usuario> listaUsuarios = new ArrayList<>();
+        String consulta = "SELECT * FROM usuario";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Usuario usuario = new Usuario();
+                usuario.setId_usuario(rs.getInt("id_usuario"));
+                usuario.setId_rol(rs.getInt("id_rol"));
+                usuario.setNombre_usuario(rs.getString("nombre_usuario"));
+                usuario.setContraseña(rs.getString("contraseña"));
+                listaUsuarios.add(usuario);
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la lista de usuarios: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return listaUsuarios;
+    }
+
+    @Override
+    public void modificar(Usuario objeto) {
+        String consulta = "UPDATE usuario SET id_rol = ?, nombre_usuario = ?, contraseña = ? WHERE id_usuario = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, objeto.getId_rol());
+            ps.setString(2, objeto.getNombre_usuario());
+            ps.setString(3, objeto.getContraseña());
+            ps.setInt(4, objeto.getId_usuario());
+
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al modificar el usuario: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+
+    @Override
+    public void eliminar(Integer id) {
+        String consulta = "DELETE FROM usuario WHERE id_usuario = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            ps.executeUpdate();
+
+        } catch (SQLException error) {
+            System.err.println("Error al eliminar el usuario: " + error.getMessage());
+            error.printStackTrace();
+        }
+    }
+}
+</file>
+
+<file path="src/main/main.java">
+package main;
+
+import javax.swing.SwingUtilities;
+
+import paneles.LoginFrame;
+
+public class main {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            LoginFrame login = new LoginFrame();
+            login.setVisible(true);
+        });
+    }
+}
+</file>
+
+<file path=".classpath">
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="C:/Users/Nico/Desktop/mysql-connector-j-9.7.0/mysql-connector-j-9.7.0.jar">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
+</file>
+
+</files>

@@ -1,4 +1,5 @@
 package clases;
+import dao.Usuario_dao;
 
 public class Usuario {
     private Integer id_usuario;
@@ -14,6 +15,11 @@ public class Usuario {
         this.id_rol = id_rol;
         this.nombre_usuario = nombre_usuario;
         this.contraseña = contraseña;
+    }
+    
+    public static Usuario autenticar(String nombre_usuario, String contraseña) {
+        Usuario_dao usuarioDao = new Usuario_dao();
+        return usuarioDao.autenticar(nombre_usuario, contraseña);
     }
 
     public Integer getId_usuario() {
