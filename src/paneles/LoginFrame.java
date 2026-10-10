@@ -1,4 +1,4 @@
-package paneles;
+C:\Users\Nico\eclipse-workspace\academia_integral_xxipackage paneles;
 
 import clases.Usuario;
 
