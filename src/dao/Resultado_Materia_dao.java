@@ -34,6 +34,37 @@ public class Resultado_Materia_dao implements Dao<Resultado_Materia, Integer> {
     }
 
     @Override
+    public Resultado_Materia obtenerPorId(Integer id) {
+        Resultado_Materia resultado = null;
+        String consulta = "SELECT * FROM resultado_materia WHERE id_resultado = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    resultado = new Resultado_Materia();
+
+                    resultado.setId_resultado(rs.getInt("id_resultado"));
+                    resultado.setId_inscripcion(rs.getInt("id_inscripcion"));
+                    resultado.setPromedio(rs.getDouble("promedio"));
+                    resultado.setResultado(rs.getString("resultado"));
+                    
+                    Date fCalc = rs.getDate("fecha_calculo");
+                    resultado.setFecha_calculo(fCalc != null ? fCalc.toLocalDate() : null);
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener el resultado de materia por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return resultado;
+    }
+
+    @Override
     public List<Resultado_Materia> obtenerTodos() {
         List<Resultado_Materia> listaResultados = new ArrayList<>();
         String consulta = "SELECT * FROM resultado_materia";
@@ -75,7 +106,6 @@ public class Resultado_Materia_dao implements Dao<Resultado_Materia, Integer> {
             ps.setObject(2, objeto.getPromedio());
             ps.setString(3, objeto.getResultado());
             ps.setObject(4, objeto.getFecha_calculo());
-
             ps.setInt(5, objeto.getId_resultado());
 
             ps.executeUpdate();
@@ -94,7 +124,6 @@ public class Resultado_Materia_dao implements Dao<Resultado_Materia, Integer> {
              PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
-
             ps.executeUpdate();
 
         } catch (SQLException error) {

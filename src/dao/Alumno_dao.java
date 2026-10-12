@@ -39,6 +39,38 @@ public class Alumno_dao implements Dao<Alumno, Integer> {
     }
 
     @Override
+    public Alumno obtenerPorId(Integer id) {
+        Alumno alumno = null;
+        String consulta = "SELECT * FROM alumno WHERE id_alumno = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    alumno = new Alumno();
+                    
+                    alumno.setId_alumno(rs.getInt("id_alumno"));
+                    alumno.setId_usuario((Integer) rs.getObject("id_usuario"));
+                    alumno.setId_responsable((Integer) rs.getObject("id_responsable"));
+                    alumno.setNombre(rs.getString("nombre"));
+                    alumno.setApellido(rs.getString("apellido"));
+                    alumno.setDni(rs.getString("dni"));
+                    alumno.setMatricula(rs.getString("matricula"));
+                    alumno.setEstado(rs.getString("estado"));
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener el alumno por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return alumno;
+    }
+
+    @Override
     public List<Alumno> obtenerTodos() {
         List<Alumno> listaAlumnos = new ArrayList<>();
         String consulta = "SELECT * FROM alumno";
@@ -47,7 +79,7 @@ public class Alumno_dao implements Dao<Alumno, Integer> {
              PreparedStatement ps = conexion.prepareStatement(consulta);
              ResultSet rs = ps.executeQuery()) {
 
-            //recorremos todos los registros devueltos por la consulta
+            //recorremos todos los registros devueltos por la consulta con la variable rs
             while (rs.next()) {
                 Alumno alumno = new Alumno();
                 
@@ -101,61 +133,17 @@ public class Alumno_dao implements Dao<Alumno, Integer> {
 
     @Override
     public void eliminar(Integer id) {
-        //consultas en orden jerárquico para borrar dependencias en cascada manualmente por seguridad
-        String consultaHijos1 = "DELETE FROM calificacion WHERE id_inscripcion IN (SELECT id_inscripcion FROM inscripcion WHERE id_alumno = ?)";
-        String consultaHijos2 = "DELETE FROM resultado_materia WHERE id_resultado IN (SELECT id_inscripcion FROM inscripcion WHERE id_alumno = ?)";
-        String consultaInscripciones = "DELETE FROM inscripcion WHERE id_alumno = ?";
-        String consultaAlumno = "DELETE FROM alumno WHERE id_alumno = ?";
+        String consulta = "DELETE FROM alumno WHERE id_alumno = ?";
 
-        Connection conexion = null;
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
-        try {
-            conexion = Conexion.getConnection();
-            //desactivamos autocommit para manejar la transacción de borrado en cascada
-            conexion.setAutoCommit(false);
-
-            try (PreparedStatement ps1 = conexion.prepareStatement(consultaHijos1);
-                 PreparedStatement ps2 = conexion.prepareStatement(consultaHijos2);
-                 PreparedStatement ps3 = conexion.prepareStatement(consultaInscripciones);
-                 PreparedStatement ps4 = conexion.prepareStatement(consultaAlumno)) {
-
-                //asignamos el id del alumno a eliminar en todas las subconsultas
-                ps1.setInt(1, id);
-                ps1.executeUpdate();
-
-                ps2.setInt(1, id);
-                ps2.executeUpdate();
-
-                ps3.setInt(1, id);
-                ps3.executeUpdate();
-
-                ps4.setInt(1, id);
-                ps4.executeUpdate();
-
-                //confirmamos los cambios en la BD si todo salió bien
-                conexion.commit();
-            }
+            ps.setInt(1, id);
+            ps.executeUpdate();
 
         } catch (SQLException error) {
-            System.err.println("Error al eliminar el alumno en cascada: " + error.getMessage());
+            System.err.println("Error al eliminar el alumno: " + error.getMessage());
             error.printStackTrace();
-            if (conexion != null) {
-                try {
-                    //revertimos los cambios si falla algún paso
-                    conexion.rollback();
-                } catch (SQLException error2) {
-                    error2.printStackTrace();
-                }
-            }
-        } finally {
-            if (conexion != null) {
-                try {
-                    conexion.setAutoCommit(true);
-                    conexion.close();
-                } catch (SQLException error3) {
-                    error3.printStackTrace();
-                }
-            }
         }
     }
-}
+}s

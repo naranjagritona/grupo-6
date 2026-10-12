@@ -35,6 +35,38 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
     }
 
     @Override
+    public Log_Usuario obtenerPorId(Integer id) {
+        Log_Usuario log = null;
+        String consulta = "SELECT * FROM log_usuario WHERE id_log_usuario = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    log = new Log_Usuario();
+
+                    log.setId_log_usuario(rs.getInt("id_log_usuario"));
+                    log.setId_usuario(rs.getInt("id_usuario"));
+                    log.setAccion(rs.getString("accion"));
+                    log.setCampo_modificado(rs.getString("campo_modificado"));
+                    log.setValor_anterior(rs.getString("valor_anterior"));
+                    log.setValor_nuevo(rs.getString("valor_nuevo"));
+                    Timestamp ts = rs.getTimestamp("fecha_hora");
+                    log.setFecha_hora(ts != null ? ts.toLocalDateTime() : null);
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener el log de usuario por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return log;
+    }
+
+    @Override
     public List<Log_Usuario> obtenerTodos() {
         List<Log_Usuario> listaLogs = new ArrayList<>();
         String consulta = "SELECT * FROM log_usuario";
@@ -78,7 +110,6 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
             ps.setString(3, objeto.getCampo_modificado());
             ps.setString(4, objeto.getValor_anterior());
             ps.setString(5, objeto.getValor_nuevo());
-
             ps.setInt(6, objeto.getId_log_usuario());
 
             ps.executeUpdate();
@@ -97,7 +128,6 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
              PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
-
             ps.executeUpdate();
 
         } catch (SQLException error) {

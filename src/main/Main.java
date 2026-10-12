@@ -2,12 +2,12 @@ package main;
 
 import javax.swing.SwingUtilities;
 
-import paneles.LoginFrame;
+import paneles.Login_panel;
 
-public class main {
+public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            LoginFrame login = new LoginFrame();
+            Login_panel login = new Login_panel();
             login.setVisible(true);
         });
     }

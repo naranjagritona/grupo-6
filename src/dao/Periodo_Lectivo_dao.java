@@ -35,6 +35,41 @@ public class Periodo_Lectivo_dao implements Dao<Periodo_Lectivo, Integer> {
     }
 
     @Override
+    public Periodo_Lectivo obtenerPorId(Integer id) {
+        Periodo_Lectivo periodo = null;
+        String consulta = "SELECT * FROM periodo_lectivo WHERE id_periodo = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    periodo = new Periodo_Lectivo();
+
+                    periodo.setId_periodo(rs.getInt("id_periodo"));
+                    periodo.setNombre(rs.getString("nombre"));
+                    periodo.setTipo(rs.getString("tipo"));
+                    
+                    Date fInicio = rs.getDate("fecha_inicio");
+                    periodo.setFecha_inicio(fInicio != null ? fInicio.toLocalDate() : null);
+                    
+                    Date fFin = rs.getDate("fecha_fin");
+                    periodo.setFecha_fin(fFin != null ? fFin.toLocalDate() : null);
+                    
+                    periodo.setEstado(rs.getString("estado"));
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener el período lectivo por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return periodo;
+    }
+
+    @Override
     public List<Periodo_Lectivo> obtenerTodos() {
         List<Periodo_Lectivo> listaPeriodos = new ArrayList<>();
         String consulta = "SELECT * FROM periodo_lectivo";
@@ -81,7 +116,6 @@ public class Periodo_Lectivo_dao implements Dao<Periodo_Lectivo, Integer> {
             ps.setObject(3, objeto.getFecha_inicio());
             ps.setObject(4, objeto.getFecha_fin());
             ps.setString(5, objeto.getEstado());
-
             ps.setInt(6, objeto.getId_periodo());
 
             ps.executeUpdate();
@@ -94,62 +128,17 @@ public class Periodo_Lectivo_dao implements Dao<Periodo_Lectivo, Integer> {
 
     @Override
     public void eliminar(Integer id) {
-        //consultas en orden jerárquico para borrar los cursos del periodo y todas sus dependencias
-        String consultaCalificaciones = "DELETE FROM calificacion WHERE id_inscripcion IN (SELECT id_inscripcion FROM inscripcion WHERE id_curso IN (SELECT id_curso FROM curso WHERE id_periodo = ?))";
-        String consultaInscripciones = "DELETE FROM inscripcion WHERE id_curso IN (SELECT id_curso FROM curso WHERE id_periodo = ?)";
-        String consultaColumnas = "DELETE FROM columna_notas WHERE id_curso IN (SELECT id_curso FROM curso WHERE id_periodo = ?)";
-        String consultaCursos = "DELETE FROM curso WHERE id_periodo = ?";
-        String consultaPeriodo = "DELETE FROM periodo_lectivo WHERE id_periodo = ?";
+        String consulta = "DELETE FROM periodo_lectivo WHERE id_periodo = ?";
 
-        Connection conexion = null;
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
-        try {
-            conexion = Conexion.getConnection();
-            conexion.setAutoCommit(false);
-
-            try (PreparedStatement ps1 = conexion.prepareStatement(consultaCalificaciones);
-                 PreparedStatement ps2 = conexion.prepareStatement(consultaInscripciones);
-                 PreparedStatement ps3 = conexion.prepareStatement(consultaColumnas);
-                 PreparedStatement ps4 = conexion.prepareStatement(consultaCursos);
-                 PreparedStatement ps5 = conexion.prepareStatement(consultaPeriodo)) {
-
-                ps1.setInt(1, id);
-                ps1.executeUpdate();
-
-                ps2.setInt(1, id);
-                ps2.executeUpdate();
-
-                ps3.setInt(1, id);
-                ps3.executeUpdate();
-
-                ps4.setInt(1, id);
-                ps4.executeUpdate();
-
-                ps5.setInt(1, id);
-                ps5.executeUpdate();
-
-                conexion.commit();
-            }
+            ps.setInt(1, id);
+            ps.executeUpdate();
 
         } catch (SQLException error) {
-            System.err.println("Error al eliminar el período lectivo en cascada: " + error.getMessage());
+            System.err.println("Error al eliminar el período lectivo: " + error.getMessage());
             error.printStackTrace();
-            if (conexion != null) {
-                try {
-                    conexion.rollback();
-                } catch (SQLException error2) {
-                    error2.printStackTrace();
-                }
-            }
-        } finally {
-            if (conexion != null) {
-                try {
-                    conexion.setAutoCommit(true);
-                    conexion.close();
-                } catch (SQLException error3) {
-                    error3.printStackTrace();
-                }
-            }
         }
     }
 }

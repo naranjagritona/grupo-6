@@ -1,4 +1,4 @@
- package dao;
+package dao;
 
 import clases.Docente;
 import conexion.Conexion;
@@ -32,6 +32,37 @@ public class Docente_dao implements Dao<Docente, Integer> {
             System.err.println("Error al insertar el docente: " + error.getMessage());
             error.printStackTrace();
         }
+    }
+
+    @Override
+    public Docente obtenerPorId(Integer id) {
+        Docente docente = null;
+        String consulta = "SELECT * FROM docente WHERE id_docente = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    docente = new Docente();
+
+                    docente.setId_docente(rs.getInt("id_docente"));
+                    docente.setId_usuario((Integer) rs.getObject("id_usuario"));
+                    docente.setNombre(rs.getString("nombre"));
+                    docente.setApellido(rs.getString("apellido"));
+                    docente.setDni(rs.getString("dni"));
+                    docente.setLegajo(rs.getString("legajo"));
+                    docente.setEstado(rs.getString("estado"));
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener el docente por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return docente;
     }
 
     @Override
@@ -78,7 +109,6 @@ public class Docente_dao implements Dao<Docente, Integer> {
             ps.setString(4, objeto.getDni());
             ps.setString(5, objeto.getLegajo());
             ps.setString(6, objeto.getEstado());
-
             ps.setInt(7, objeto.getId_docente());
 
             ps.executeUpdate();
@@ -91,10 +121,10 @@ public class Docente_dao implements Dao<Docente, Integer> {
 
     @Override
     public void eliminar(Integer id) {
-        String consultaDocente = "DELETE FROM docente WHERE id_docente = ?";
+        String consulta = "DELETE FROM docente WHERE id_docente = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consultaDocente)) {
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             ps.executeUpdate();

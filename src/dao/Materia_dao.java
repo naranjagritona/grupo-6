@@ -20,13 +20,37 @@ public class Materia_dao implements Dao<Materia, Integer> {
              PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setString(1, objeto.getNombre_materia());
-
             ps.executeUpdate();
 
         } catch (SQLException error) {
             System.err.println("Error al insertar la materia: " + error.getMessage());
             error.printStackTrace();
         }
+    }
+
+    @Override
+    public Materia obtenerPorId(Integer id) {
+        Materia materia = null;
+        String consulta = "SELECT * FROM materia WHERE id_materia = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    materia = new Materia();
+                    materia.setId_materia(rs.getInt("id_materia"));
+                    materia.setNombre_materia(rs.getString("nombre_materia"));
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la materia por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return materia;
     }
 
     @Override
@@ -75,10 +99,10 @@ public class Materia_dao implements Dao<Materia, Integer> {
 
     @Override
     public void eliminar(Integer id) {
-        String consultaMateria = "DELETE FROM materia WHERE id_materia = ?";
+        String consulta = "DELETE FROM materia WHERE id_materia = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consultaMateria)) {
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             ps.executeUpdate();

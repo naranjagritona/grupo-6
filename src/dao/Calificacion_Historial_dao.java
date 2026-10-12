@@ -25,13 +25,43 @@ public class Calificacion_Historial_dao implements Dao<Calificacion_Historial, I
             ps.setObject(3, objeto.getNota_nueva());
             ps.setString(4, objeto.getMotivo());
 
-            //ejecutamos la consulta en la BD
             ps.executeUpdate();
 
         } catch (SQLException error) {
             System.err.println("Error al insertar el historial de calificación: " + error.getMessage());
             error.printStackTrace();
         }
+    }
+
+    @Override
+    public Calificacion_Historial obtenerPorId(Integer id) {
+        Calificacion_Historial historial = null;
+        String consulta = "SELECT * FROM calificacion_historial WHERE id_historial = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    historial = new Calificacion_Historial();
+
+                    historial.setId_historial(rs.getInt("id_historial"));
+                    historial.setId_calificacion(rs.getInt("id_calificacion"));
+                    historial.setNota_anterior(rs.getObject("nota_anterior") != null ? rs.getDouble("nota_anterior") : null);
+                    historial.setNota_nueva(rs.getDouble("nota_nueva"));
+                    Timestamp ts = rs.getTimestamp("fecha_modificacion");
+                    historial.setFecha_modificacion(ts != null ? ts.toLocalDateTime() : null);
+                    historial.setMotivo(rs.getString("motivo"));
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener el historial por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return historial;
     }
 
     @Override
@@ -43,7 +73,6 @@ public class Calificacion_Historial_dao implements Dao<Calificacion_Historial, I
              PreparedStatement ps = conexion.prepareStatement(consulta);
              ResultSet rs = ps.executeQuery()) {
 
-            //recorremos todos los registros devueltos por la consulta
             while (rs.next()) {
                 Calificacion_Historial historial = new Calificacion_Historial();
 
@@ -55,7 +84,6 @@ public class Calificacion_Historial_dao implements Dao<Calificacion_Historial, I
                 historial.setFecha_modificacion(ts != null ? ts.toLocalDateTime() : null);
                 historial.setMotivo(rs.getString("motivo"));
 
-                //se agrega la instancia cargada a la lista
                 listaHistorial.add(historial);
             }
 
@@ -78,8 +106,6 @@ public class Calificacion_Historial_dao implements Dao<Calificacion_Historial, I
             ps.setObject(2, objeto.getNota_anterior());
             ps.setObject(3, objeto.getNota_nueva());
             ps.setString(4, objeto.getMotivo());
-
-            //seteamos la clave primaria para el WHERE
             ps.setInt(5, objeto.getId_historial());
 
             ps.executeUpdate();
@@ -97,9 +123,7 @@ public class Calificacion_Historial_dao implements Dao<Calificacion_Historial, I
         try (Connection conexion = Conexion.getConnection();
              PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
-            //asignamos el id del registro a eliminar
             ps.setInt(1, id);
-
             ps.executeUpdate();
 
         } catch (SQLException error) {

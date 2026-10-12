@@ -1,17 +1,18 @@
-C:\Users\Nico\eclipse-workspace\academia_integral_xxipackage paneles;
-
+package paneles;
 import clases.Usuario;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class LoginFrame extends JFrame {
+public class Login_panel extends JFrame {
+	
+	private Login_servicio loginServicio;
     private JTextField txtUsuario;
     private JPasswordField txtContraseña;
     private JButton btnIngresar;
 
     //constructor vacio necesario para que el diseñador visual windowbuilder cargue la vista sin lanzar excepciones
-    public LoginFrame() {
+    public Login_panel() {
         setTitle("Academia Integral XXI - Iniciar Sesión");
         setSize(400, 280);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -97,23 +98,25 @@ public class LoginFrame extends JFrame {
     }
 
     private void realizarLogin() {
-        String user = txtUsuario.getText().trim();
-        String pass = new String(txtContraseña.getPassword());
+        String nombre_usuario = txtUsuario.getText().trim();
+        String contraseña = new String(txtContraseña.getPassword());
 
-        if (user.isEmpty() || pass.isEmpty()) {
+        if (nombre_usuario.isEmpty() || contraseña.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Por favor complete todos los campos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        Usuario usuarioLogueado = Usuario.autenticar(user, pass);
+        //aca llamamos al servicio (que a su vez validará y llamará al DAO)
+        Usuario usuarioLogueado = loginServicio.autenticarUsuario(nombre_usuario, contraseña);
 
         if (usuarioLogueado != null) {
             JOptionPane.showMessageDialog(this, "¡Bienvenido, " + usuarioLogueado.getNombre_usuario() + "!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             
-            AdminFrame adminFrame = new AdminFrame(usuarioLogueado);
-            adminFrame.setVisible(true);
+            //mostramos la otra ventana
+            Inscripcion_panel inscripcionPanel = new Inscripcion_panel();
+            inscripcionPanel.setVisible(true);
 
-            this.dispose();
+            this.dispose(); //cierra la ventana de login 
         } else {
             JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.", "Error de autenticación", JOptionPane.ERROR_MESSAGE);
             txtContraseña.setText("");

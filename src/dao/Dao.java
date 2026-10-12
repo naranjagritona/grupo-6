@@ -6,6 +6,8 @@ public interface Dao<T, ID> {
     // Crear
     void insertar(T entidad);
     
+    T obtenerPorId(ID id);
+    
     // Leer (todos los registros)
     List<T> obtenerTodos();
     

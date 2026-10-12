@@ -12,7 +12,6 @@ import java.util.List;
 
 public class Usuario_dao implements Dao<Usuario, Integer> {
 
-    //aca autenticamos el usuario verificando credenciales en la base de datos
     public Usuario autenticar(String nombreUsuario, String contraseña) {
         Usuario usuario = null;
         String consulta = "SELECT * FROM usuario WHERE nombre_usuario = ? AND contraseña = ?";
@@ -41,7 +40,6 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
         return usuario;
     }
 
-    //aca agregamos la funcion cerrar sesion solicitada dentro del usuario dao para gestionar el fin de la sesion actual
     public void cerrarSesion(Usuario usuario) {
         if (usuario != null) {
             System.out.println("el usuario " + usuario.getNombre_usuario() + " ha cerrado sesión correctamente.");
@@ -65,6 +63,33 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
             System.err.println("Error al insertar el usuario: " + error.getMessage());
             error.printStackTrace();
         }
+    }
+
+    @Override
+    public Usuario obtenerPorId(Integer id) {
+        Usuario usuario = null;
+        String consulta = "SELECT * FROM usuario WHERE id_usuario = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    usuario = new Usuario();
+                    usuario.setId_usuario(rs.getInt("id_usuario"));
+                    usuario.setId_rol(rs.getInt("id_rol"));
+                    usuario.setNombre_usuario(rs.getString("nombre_usuario"));
+                    usuario.setContraseña(rs.getString("contraseña"));
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener el usuario por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return usuario;
     }
 
     @Override

@@ -36,6 +36,40 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
     }
 
     @Override
+    public Inscripcion obtenerPorId(Integer id) {
+        Inscripcion inscripcion = null;
+        String consulta = "SELECT * FROM inscripcion WHERE id_inscripcion = ?";
+
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    inscripcion = new Inscripcion();
+
+                    inscripcion.setId_inscripcion(rs.getInt("id_inscripcion"));
+                    inscripcion.setId_alumno(rs.getInt("id_alumno"));
+                    inscripcion.setId_curso(rs.getInt("id_curso"));
+                    
+                    Date fecha = rs.getDate("fecha_inscripcion");
+                    inscripcion.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
+                    
+                    inscripcion.setEstado(rs.getString("estado"));
+                    inscripcion.setMotivo_baja(rs.getString("motivo_baja"));
+                    inscripcion.setImporte_cuota(rs.getDouble("importe_cuota"));
+                }
+            }
+
+        } catch (SQLException error) {
+            System.err.println("Error al obtener la inscripción por ID: " + error.getMessage());
+            error.printStackTrace();
+        }
+
+        return inscripcion;
+    }
+
+    @Override
     public List<Inscripcion> obtenerTodos() {
         List<Inscripcion> listaInscripciones = new ArrayList<>();
         String consulta = "SELECT * FROM inscripcion";
@@ -82,7 +116,6 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
             ps.setString(4, objeto.getEstado());
             ps.setString(5, objeto.getMotivo_baja());
             ps.setObject(6, objeto.getImporte_cuota());
-
             ps.setInt(7, objeto.getId_inscripcion());
 
             ps.executeUpdate();
@@ -95,52 +128,81 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
 
     @Override
     public void eliminar(Integer id) {
-        //al eliminar una inscripción borramos sus calificaciones y resultados asociados
-        String consultaCalificaciones = "DELETE FROM calificacion WHERE id_inscripcion = ?";
-        String consultaResultados = "DELETE FROM resultado_materia WHERE id_resultado = ?";
-        String consultaInscripcion = "DELETE FROM inscripcion WHERE id_inscripcion = ?";
+        String consulta = "DELETE FROM inscripcion WHERE id_inscripcion = ?";
 
-        Connection conexion = null;
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
-        try {
-            conexion = Conexion.getConnection();
-            conexion.setAutoCommit(false);
-
-            try (PreparedStatement ps1 = conexion.prepareStatement(consultaCalificaciones);
-                 PreparedStatement ps2 = conexion.prepareStatement(consultaResultados);
-                 PreparedStatement ps3 = conexion.prepareStatement(consultaInscripcion)) {
-
-                ps1.setInt(1, id);
-                ps1.executeUpdate();
-
-                ps2.setInt(1, id);
-                ps2.executeUpdate();
-
-                ps3.setInt(1, id);
-                ps3.executeUpdate();
-
-                conexion.commit();
-            }
+            ps.setInt(1, id);
+            ps.executeUpdate();
 
         } catch (SQLException error) {
-            System.err.println("Error al eliminar la inscripción en cascada: " + error.getMessage());
+            System.err.println("Error al eliminar la inscripción: " + error.getMessage());
             error.printStackTrace();
-            if (conexion != null) {
-                try {
-                    conexion.rollback();
-                } catch (SQLException error2) {
-                    error2.printStackTrace();
-                }
-            }
-        } finally {
-            if (conexion != null) {
-                try {
-                    conexion.setAutoCommit(true);
-                    conexion.close();
-                } catch (SQLException error3) {
-                    error3.printStackTrace();
-                }
-            }
         }
     }
+
+//Busca cada campo de la tabla de inscripciones
+public List<Inscripcion> buscarCampo(String filtro) {
+    List<Inscripcion> lista = new ArrayList<>();
+    String consulta = "SELECT i.* FROM inscripcion i " +
+                      "JOIN alumno a ON i.id_alumno = a.id_alumno " +
+                      "WHERE a.nombre LIKE ? OR a.apellido LIKE ? OR a.dni LIKE ? OR i.estado LIKE ?";
+    
+    try (Connection conexion = Conexion.getConnection();
+         PreparedStatement ps = conexion.prepareStatement(consulta)) {
+        
+        String wildcard = "%" + filtro + "%";
+        ps.setString(1, wildcard);
+        ps.setString(2, wildcard);
+        ps.setString(3, wildcard);
+        ps.setString(4, wildcard);
+        
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Inscripcion ins = new Inscripcion();
+                ins.setId_inscripcion(rs.getInt("id_inscripcion"));
+                ins.setId_alumno(rs.getInt("id_alumno"));
+                ins.setId_curso(rs.getInt("id_curso"));
+                Date fecha = rs.getDate("fecha_inscripcion");
+                ins.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
+                ins.setEstado(rs.getString("estado"));
+                ins.setMotivo_baja(rs.getString("motivo_baja"));
+                ins.setImporte_cuota(rs.getDouble("importe_cuota"));
+                lista.add(ins);
+            }
+        }
+    } catch (SQLException error) {
+        System.err.println("Error al buscar inscripciones: " + error.getMessage());
+    }
+    return lista;
+}
+
+//filtra cada estado de las inscripciones
+public List<Inscripcion> obtenerPorEstado(String estado) {
+    List<Inscripcion> lista = new ArrayList<>();
+    String consulta = "SELECT * FROM inscripcion WHERE estado = ?";
+    
+    try (Connection conexion = Conexion.getConnection();
+         PreparedStatement ps = conexion.prepareStatement(consulta)) {
+        
+        ps.setString(1, estado);
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Inscripcion ins = new Inscripcion();
+                ins.setId_inscripcion(rs.getInt("id_inscripcion"));
+                ins.setId_alumno(rs.getInt("id_alumno"));
+                ins.setId_curso(rs.getInt("id_curso"));
+                Date fecha = rs.getDate("fecha_inscripcion");
+                ins.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
+                ins.setEstado(rs.getString("estado"));
+                ins.setMotivo_baja(rs.getString("motivo_baja"));
+                ins.setImporte_cuota(rs.getDouble("importe_cuota"));
+                lista.add(ins);
+            }
+        }
+    } catch (SQLException error) {
+        System.err.println("Error al filtrar por estado: " + error.getMessage());
+    }
+    return lista;
 }
