@@ -9,7 +9,12 @@ import dao.Alumno_dao;
 import dao.Curso_dao;
 import dao.Materia_dao;
 import servicios.Inscripcion_servicio;
+import paneles.Cursos_panel;
 
+import javax.swing.SwingUtilities;
+import javax.swing.SwingConstants;
+import javax.swing.JLabel;
+import java.awt.BorderLayout;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -24,6 +29,8 @@ public class Inscripcion_panel extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
+    private JPanel panelContenido;
+    private JSplitPane splitPane;
     private JTextField textFecha;
     private JTextField txtImporteCuota;
     private JTextField txtBuscar;
@@ -54,6 +61,8 @@ public class Inscripcion_panel extends JFrame {
         contentPane.setBorder(new EmptyBorder(0, 0, 0, 0));
         setContentPane(contentPane);
         contentPane.setLayout(new BorderLayout(0, 0));
+        
+        panelContenido = new JPanel(new BorderLayout());
         
         JPanel panelTop = new JPanel();
         panelTop.setPreferredSize(new Dimension(10, 50));
@@ -86,12 +95,52 @@ public class Inscripcion_panel extends JFrame {
         panelMenu.add(btnInscripciones);
         
         JButton btnCursos = new JButton("Cursos");
+        panelMenu.add(btnCursos);
+
         btnCursos.setBounds(15, 107, 140, 35);
         btnCursos.setBackground(new Color(24, 61, 110));
         btnCursos.setForeground(new Color(203, 213, 225));
         btnCursos.setFont(new Font("Tahoma", Font.BOLD, 12));
-        panelMenu.add(btnCursos);
         
+		btnCursos.addActionListener(e -> {
+		    panelContenido.removeAll();
+		
+		    splitPane.setVisible(false);
+		
+		    Cursos_panel panelCursos = new Cursos_panel();
+		    panelContenido.add(panelCursos, BorderLayout.CENTER);
+		
+		    // Resaltar Cursos
+		    btnCursos.setBackground(new Color(37, 99, 235));
+		    btnCursos.setForeground(Color.WHITE);
+		
+		    // Restaurar el color de Inscripciones
+		    btnInscripciones.setBackground(new Color(24, 61, 110));
+		    btnInscripciones.setForeground(new Color(203, 213, 225));
+		
+		    panelContenido.revalidate();
+		    panelContenido.repaint();
+		});
+
+		btnInscripciones.addActionListener(e -> {
+		    panelContenido.removeAll();
+		
+		    splitPane.setVisible(true);
+		    panelContenido.add(splitPane, BorderLayout.CENTER);
+		
+		    // Resaltar Inscripciones
+		    btnInscripciones.setBackground(new Color(37, 99, 235));
+		    btnInscripciones.setForeground(Color.WHITE);
+		
+		    // Restaurar el color de Cursos
+		    btnCursos.setBackground(new Color(24, 61, 110));
+		    btnCursos.setForeground(new Color(203, 213, 225));
+		
+		    panelContenido.revalidate();
+		    panelContenido.repaint();
+		});
+
+       
         JButton btnMaterias = new JButton("Materias");
         btnMaterias.setBounds(15, 152, 140, 35);
         btnMaterias.setBackground(new Color(24, 61, 110));
@@ -106,9 +155,11 @@ public class Inscripcion_panel extends JFrame {
         btnCalificaciones.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnCalificaciones);
         
-        JSplitPane splitPane = new JSplitPane();
-        splitPane.setDividerLocation(420);
-        contentPane.add(splitPane, BorderLayout.CENTER);
+		contentPane.add(panelContenido, BorderLayout.CENTER);
+		
+		splitPane = new JSplitPane();
+		splitPane.setDividerLocation(420);
+		panelContenido.add(splitPane, BorderLayout.CENTER);
 		
         JPanel panelGestionInscripcion = new JPanel();
         panelGestionInscripcion.setLayout(null);
@@ -256,7 +307,9 @@ public class Inscripcion_panel extends JFrame {
 
         actualizarTabla(inscripcionServicio.buscarCampo(""));
     }
-
+    
+    
+    
     private void cargarComboAlumnos() {
         cmbAlumno.removeAllItems();
         List<Alumno> alumnos = alumnoDao.obtenerTodos();

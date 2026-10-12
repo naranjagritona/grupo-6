@@ -95,12 +95,12 @@ public class Inscripcion_servicio {
     }
 
     /** 6. Búsqueda delegada al DAO mediante SQL */
-    public List<Inscripcion> buscarCampo(String filtro) {
-        if (filtro == null || filtro.trim().isEmpty()) {
-            return inscripcionDao.obtenerTodos();
-        }
-        return inscripcionDao.buscar(filtro.trim());
-    }
+	public List<Inscripcion> buscarCampo(String filtro) {
+	    if (filtro == null || filtro.trim().isEmpty()) {
+	        return inscripcionDao.obtenerTodos();
+	    }
+	    return inscripcionDao.buscarCampo(filtro.trim());
+	}
 
     /** 7. Filtrado por estado delegado al DAO mediante SQL */
     public List<Inscripcion> filtrarEstadoInscrip(String estadoFiltro) {

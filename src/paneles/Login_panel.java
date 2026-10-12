@@ -1,11 +1,13 @@
 package paneles;
 import clases.Usuario;
+import servicios.Login_servicio;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class Login_panel extends JFrame {
 	
+	private static final long serialVersionUID = 1L;
 	private Login_servicio loginServicio;
     private JTextField txtUsuario;
     private JPasswordField txtContraseña;
@@ -13,7 +15,9 @@ public class Login_panel extends JFrame {
 
     //constructor vacio necesario para que el diseñador visual windowbuilder cargue la vista sin lanzar excepciones
     public Login_panel() {
-        setTitle("Academia Integral XXI - Iniciar Sesión");
+        loginServicio = new Login_servicio();
+
+    	setTitle("Academia Integral XXI - Iniciar Sesión");
         setSize(400, 280);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -21,7 +25,7 @@ public class Login_panel extends JFrame {
 
         initComponentes();
     }
-
+    
     private void initComponentes() {
 
         //el gridbaglayout organiza los elementos en una cuadricula centrada dentro del panel

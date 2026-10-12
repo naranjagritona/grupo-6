@@ -206,3 +206,4 @@ public List<Inscripcion> obtenerPorEstado(String estado) {
     }
     return lista;
 }
+}
