@@ -1,0 +1,2 @@
+RewriteEngine On
+RewriteRule ^(modulos/)?(inicio|alumnos|cursos|materias|calificaciones|inscripciones|docentes)\.html$ modulos/$2.php [R=301,L,NC]
