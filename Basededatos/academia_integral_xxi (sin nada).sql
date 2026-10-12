@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 30-09-2026 a las 05:03:45
+-- Tiempo de generación: 10-10-2026 a las 23:47:29
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -30,20 +30,13 @@ SET time_zone = "+00:00";
 CREATE TABLE `alumno` (
   `id_alumno` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
-  `id_responsable` int(11) DEFAULT NULL,
+  `id_responsable` int(11) NOT NULL DEFAULT 0,
   `nombre` varchar(255) NOT NULL,
   `apellido` varchar(255) NOT NULL,
-  `dni` varchar(20) NOT NULL,
+  `dni` int(20) NOT NULL,
   `matricula` varchar(50) NOT NULL,
   `estado` enum('Activo','Egresado','Inactivo') DEFAULT 'Activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `alumno`
---
-
-INSERT INTO `alumno` (`id_alumno`, `id_usuario`, `id_responsable`, `nombre`, `apellido`, `dni`, `matricula`, `estado`) VALUES
-(3, 1, 2, 'Juan', 'Pérez', '45123456', 'MAT-2026-001', 'Activo');
 
 -- --------------------------------------------------------
 
@@ -57,7 +50,7 @@ CREATE TABLE `calificacion` (
   `id_columna_notas` int(11) NOT NULL,
   `nota` decimal(4,2) NOT NULL,
   `fecha_carga` datetime NOT NULL DEFAULT current_timestamp(),
-  `observaciones` varchar(255) DEFAULT NULL
+  `observaciones` varchar(255) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -67,12 +60,12 @@ CREATE TABLE `calificacion` (
 --
 
 CREATE TABLE `calificacion_historial` (
-  `id_historial` int(11) NOT NULL,
+  `id_calificacion_historial` int(11) NOT NULL,
   `id_calificacion` int(11) NOT NULL,
-  `nota_anterior` decimal(4,2) DEFAULT NULL,
+  `nota_anterior` decimal(4,2) NOT NULL DEFAULT 0.00,
   `nota_nueva` decimal(4,2) NOT NULL,
   `fecha_modificacion` datetime NOT NULL DEFAULT current_timestamp(),
-  `motivo` varchar(255) DEFAULT NULL
+  `motivo` varchar(255) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -88,8 +81,8 @@ CREATE TABLE `columna_notas` (
   `tipo` enum('Evaluación','Trabajo Práctico','Recuperatorio','Otro') NOT NULL DEFAULT 'Evaluación',
   `nota_maxima` decimal(4,2) NOT NULL,
   `nota_aprobacion` decimal(4,2) NOT NULL,
-  `fecha_evaluacion` date DEFAULT NULL,
-  `fecha_cierre` date DEFAULT NULL,
+  `fecha_evaluacion` date NOT NULL DEFAULT '2000-01-01',
+  `fecha_cierre` date NOT NULL DEFAULT '2000-01-01',
   `estado` enum('Abierta','Cerrada') NOT NULL DEFAULT 'Abierta'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -104,13 +97,13 @@ CREATE TABLE `curso` (
   `id_periodo` int(11) NOT NULL,
   `id_materia` int(11) NOT NULL,
   `id_docente` int(11) NOT NULL,
-  `año` varchar(200) DEFAULT NULL,
-  `division` varchar(200) DEFAULT NULL,
+  `año` varchar(200) NOT NULL DEFAULT '',
+  `division` varchar(200) NOT NULL DEFAULT '',
   `modalidad` enum('Presencial','Virtual','Híbrido') DEFAULT 'Presencial',
   `turno` enum('mañana','tarde','vespertino') NOT NULL,
   `cupo_maximo` int(11) NOT NULL,
-  `fecha_inicio` date DEFAULT NULL,
-  `fecha_fin` date DEFAULT NULL,
+  `fecha_inicio` date NOT NULL DEFAULT '2000-01-01',
+  `fecha_fin` date NOT NULL DEFAULT '2000-01-01',
   `estado` enum('Activo','Finalizado','Cancelado') NOT NULL DEFAULT 'Activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -122,11 +115,11 @@ CREATE TABLE `curso` (
 
 CREATE TABLE `docente` (
   `id_docente` int(11) NOT NULL,
-  `id_usuario` int(11) DEFAULT NULL,
+  `id_usuario` int(11) NOT NULL DEFAULT 0,
   `nombre` varchar(200) NOT NULL,
   `apellido` varchar(200) NOT NULL,
   `dni` varchar(20) NOT NULL,
-  `legajo` varchar(50) DEFAULT NULL,
+  `legajo` varchar(50) NOT NULL DEFAULT '',
   `estado` enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -142,10 +135,10 @@ CREATE TABLE `inscripcion` (
   `id_curso` int(11) NOT NULL,
   `fecha_inscripcion` date NOT NULL DEFAULT curdate(),
   `estado` enum('Pendiente','Confirmada','Cancelada','Finalizada') NOT NULL DEFAULT 'Pendiente',
-  `motivo_baja` varchar(255) DEFAULT NULL,
-  `importe_cuota` decimal(10,2) DEFAULT NULL,
+  `motivo_baja` varchar(255) NOT NULL DEFAULT '',
+  `importe_cuota` decimal(10,2) NOT NULL DEFAULT 0.00,
   `fecha_creacion` datetime NOT NULL DEFAULT current_timestamp(),
-  `fecha_modificacion` datetime DEFAULT NULL ON UPDATE current_timestamp()
+  `fecha_modificacion` datetime NOT NULL DEFAULT '2000-01-01 00:00:00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -158,9 +151,9 @@ CREATE TABLE `log_usuario` (
   `id_log_usuario` int(11) NOT NULL,
   `id_usuario` int(11) NOT NULL,
   `accion` varchar(20) NOT NULL,
-  `campo_modificado` varchar(100) DEFAULT NULL,
-  `valor_anterior` varchar(255) DEFAULT NULL,
-  `valor_nuevo` varchar(255) DEFAULT NULL,
+  `campo_modificado` varchar(100) NOT NULL DEFAULT '',
+  `valor_anterior` varchar(255) NOT NULL DEFAULT '',
+  `valor_nuevo` varchar(255) NOT NULL DEFAULT '',
   `fecha_hora` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -182,7 +175,7 @@ CREATE TABLE `materia` (
 --
 
 CREATE TABLE `periodo_lectivo` (
-  `id_periodo` int(11) NOT NULL,
+  `id_periodo_lectivo` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
   `tipo` enum('Anual','Cuatrimestral','Otro') NOT NULL DEFAULT 'Anual',
   `fecha_inicio` date NOT NULL,
@@ -198,18 +191,11 @@ CREATE TABLE `periodo_lectivo` (
 
 CREATE TABLE `responsable` (
   `id_responsable` int(11) NOT NULL,
-  `nombre` varchar(200) DEFAULT NULL,
-  `apellido` varchar(200) DEFAULT NULL,
-  `dni` int(11) DEFAULT NULL,
-  `tipo_relacion` varchar(200) DEFAULT NULL
+  `nombre` varchar(200) NOT NULL DEFAULT '',
+  `apellido` varchar(200) NOT NULL DEFAULT '',
+  `dni` int(11) NOT NULL DEFAULT 0,
+  `tipo_relacion` varchar(200) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `responsable`
---
-
-INSERT INTO `responsable` (`id_responsable`, `nombre`, `apellido`, `dni`, `tipo_relacion`) VALUES
-(2, 'Carlos', 'Pérez', 20123456, 'Padre');
 
 -- --------------------------------------------------------
 
@@ -218,11 +204,11 @@ INSERT INTO `responsable` (`id_responsable`, `nombre`, `apellido`, `dni`, `tipo_
 --
 
 CREATE TABLE `resultado_materia` (
-  `id_resultado` int(11) NOT NULL,
+  `id_resultado_materia` int(11) NOT NULL,
   `id_inscripcion` int(11) NOT NULL,
-  `promedio` decimal(4,2) DEFAULT NULL,
+  `promedio` decimal(4,2) NOT NULL DEFAULT 0.00,
   `resultado` enum('En curso','Aprobada','Desaprobada','Pendiente') NOT NULL DEFAULT 'En curso',
-  `fecha_calculo` datetime DEFAULT NULL
+  `fecha_calculo` datetime NOT NULL DEFAULT '2000-01-01 00:00:00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -233,8 +219,8 @@ CREATE TABLE `resultado_materia` (
 
 CREATE TABLE `rol` (
   `id_rol` int(11) NOT NULL,
-  `nombre` varchar(200) DEFAULT NULL,
-  `descripcion_rol` varchar(200) DEFAULT NULL
+  `nombre` varchar(200) NOT NULL DEFAULT '',
+  `descripcion_rol` varchar(200) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -246,16 +232,9 @@ CREATE TABLE `rol` (
 CREATE TABLE `usuario` (
   `id_usuario` int(11) NOT NULL,
   `id_rol` int(11) NOT NULL,
-  `nombre_usuario` varchar(200) DEFAULT NULL,
-  `contraseña` varchar(200) DEFAULT NULL
+  `nombre_usuario` varchar(200) NOT NULL DEFAULT '',
+  `contraseña` varchar(200) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `usuario`
---
-
-INSERT INTO `usuario` (`id_usuario`, `id_rol`, `nombre_usuario`, `contraseña`) VALUES
-(1, 1, 'usuario_prueba', '123456');
 
 --
 -- Índices para tablas volcadas
@@ -331,7 +310,7 @@ ALTER TABLE `materia`
 -- Indices de la tabla `periodo_lectivo`
 --
 ALTER TABLE `periodo_lectivo`
-  ADD PRIMARY KEY (`id_periodo`);
+  ADD PRIMARY KEY (`id_periodo_lectivo`);
 
 --
 -- Indices de la tabla `responsable`
@@ -343,7 +322,7 @@ ALTER TABLE `responsable`
 -- Indices de la tabla `resultado_materia`
 --
 ALTER TABLE `resultado_materia`
-  ADD PRIMARY KEY (`id_resultado`),
+  ADD PRIMARY KEY (`id_resultado_materia`),
   ADD UNIQUE KEY `id_inscripcion` (`id_inscripcion`);
 
 --
@@ -367,7 +346,7 @@ ALTER TABLE `usuario`
 -- AUTO_INCREMENT de la tabla `alumno`
 --
 ALTER TABLE `alumno`
-  MODIFY `id_alumno` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_alumno` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `calificacion`
@@ -415,19 +394,19 @@ ALTER TABLE `materia`
 -- AUTO_INCREMENT de la tabla `periodo_lectivo`
 --
 ALTER TABLE `periodo_lectivo`
-  MODIFY `id_periodo` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_periodo_lectivo` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `responsable`
 --
 ALTER TABLE `responsable`
-  MODIFY `id_responsable` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_responsable` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `resultado_materia`
 --
 ALTER TABLE `resultado_materia`
-  MODIFY `id_resultado` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_resultado_materia` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
@@ -439,7 +418,7 @@ ALTER TABLE `rol`
 -- AUTO_INCREMENT de la tabla `usuario`
 --
 ALTER TABLE `usuario`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
@@ -450,7 +429,7 @@ ALTER TABLE `usuario`
 --
 ALTER TABLE `alumno`
   ADD CONSTRAINT `alumno_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `alumno_ibfk_2` FOREIGN KEY (`id_responsable`) REFERENCES `responsable` (`id_responsable`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `alumno_ibfk_2` FOREIGN KEY (`id_responsable`) REFERENCES `responsable` (`id_responsable`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `calificacion`
@@ -475,7 +454,7 @@ ALTER TABLE `columna_notas`
 -- Filtros para la tabla `curso`
 --
 ALTER TABLE `curso`
-  ADD CONSTRAINT `curso_ibfk_1` FOREIGN KEY (`id_periodo`) REFERENCES `periodo_lectivo` (`id_periodo`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `curso_ibfk_1` FOREIGN KEY (`id_periodo`) REFERENCES `periodo_lectivo` (`id_periodo_lectivo`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `curso_ibfk_2` FOREIGN KEY (`id_materia`) REFERENCES `materia` (`id_materia`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `curso_ibfk_3` FOREIGN KEY (`id_docente`) REFERENCES `docente` (`id_docente`) ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -502,7 +481,13 @@ ALTER TABLE `log_usuario`
 -- Filtros para la tabla `resultado_materia`
 --
 ALTER TABLE `resultado_materia`
-  ADD CONSTRAINT `resultado_materia_ibfk_1` FOREIGN KEY (`id_resultado`) REFERENCES `inscripcion` (`id_inscripcion`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `resultado_materia_ibfk_1` FOREIGN KEY (`id_resultado_materia`) REFERENCES `inscripcion` (`id_inscripcion`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `usuario`
+--
+ALTER TABLE `usuario`
+  ADD CONSTRAINT `usuario_ibfk_1` FOREIGN KEY (`id_rol`) REFERENCES `rol` (`id_rol`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
