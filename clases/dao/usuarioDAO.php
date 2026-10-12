@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../database.php';
 require_once 'dao.php';
 
 class UsuarioDAO implements dao {
@@ -50,6 +51,28 @@ class UsuarioDAO implements dao {
             );
         }
         return $resultados;
+    }
+
+    public function autenticar($nombre_usuario, $contraseña) {
+
+        try {
+
+            //hacemos la conexión a la base de datos
+            $conexion =  databaseConnection();
+            
+            $consulta = "SELECT * FROM usuario WHERE nombre_usuario = ? AND contraseña = ?";
+            $stmt = $conexion->prepare($consulta);
+            $stmt->execute([$nombre_usuario, $contraseña]);
+            
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $usuario ? $usuario : false;
+            
+        } catch (PDOException $e) {
+            //manejo de errores de conexión o consulta
+            error_log("Error en autenticación: " . $e->getMessage());
+            return false;
+        }
     }
 }
 ?>
