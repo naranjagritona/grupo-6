@@ -1,45 +1,23 @@
 <?php
-//aca iniciamos la sesion para mantener los datos del usuario
 session_start();
 require_once dirname(__DIR__) . '/clases/database.php';
 require_once dirname(__DIR__) . '/clases/dao/inscripcionDAO.php';
+require_once dirname(__DIR__) . '/clases/dao/usuarioDAO.php';
 require_once dirname(__DIR__) . '/clases/php/inscripcion.php';
 
 $conexion = databaseConnection();
 $inscripcionDao = new InscripcionDAO($conexion);
+$usuarioDao = new UsuarioDAO($conexion);
 
-//aca buscamos el nombre real del usuario segun si esta registrado como docente o alumno
-function obtenerNombreReal(PDO $conexion): string {
-    $idUsuario = $_SESSION['id_usuario'] ?? null;
-    if (!$idUsuario) {
-        return $_SESSION['usuario'] ?? 'Usuario';
-    }
-
-    // verificar si es docente
-    $stmtDocente = $conexion->prepare("SELECT nombre, apellido FROM docente WHERE id_usuario = ?");
-    $stmtDocente->execute([$idUsuario]);
-    $docente = $stmtDocente->fetch(PDO::FETCH_ASSOC);
-    if ($docente) {
-        return $docente['nombre'] . ' ' . $docente['apellido'];
-    }
-
-    // verificar si es alumno
-    $stmtAlumno = $conexion->prepare("SELECT nombre, apellido FROM alumno WHERE id_usuario = ?");
-    $stmtAlumno->execute([$idUsuario]);
-    $alumno = $stmtAlumno->fetch(PDO::FETCH_ASSOC);
-    if ($alumno) {
-        return $alumno['nombre'] . ' ' . $alumno['apellido'];
-    }
-
-    return $_SESSION['usuario'] ?? 'Usuario';
-}
-
-$nombreRealUsuario = obtenerNombreReal($conexion);
+// Obtener el nombre real del usuario a través del UsuarioDAO
+$idUsuario = $_SESSION['id_usuario'] ?? null;
+$usuarioSesion = $_SESSION['usuario'] ?? 'Usuario';
+$nombreRealUsuario = $usuarioDao->obtenerNombreReal($idUsuario, $usuarioSesion);
 
 $modoFormulario = ""; 
 $inscripcionAEditar = null;
 
-//aca procesamos los envios de formularios por post
+// Procesamiento de peticiones POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
 
@@ -81,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-//aca controlamos la apertura de las ventanas modales mediante get
+// Control de modales mediante GET
 if (isset($_GET['nuevo'])) {
     $modoFormulario = 'nuevo';
 }
@@ -94,7 +72,7 @@ if (isset($_GET['editar'])) {
 
 $idBajaModal = isset($_GET['baja']) ? (int)$_GET['baja'] : 0;
 
-//aca manejamos los filtros y busquedas de la tabla
+// Filtros y búsquedas mediante el DAO de inscripciones
 $terminoBusqueda = $_GET['q'] ?? '';
 $filtroEstado = $_GET['estado'] ?? 'Todos';
 $filtroCursoId = isset($_GET['curso']) ? (int)$_GET['curso'] : 0;
@@ -109,12 +87,9 @@ if (!empty($terminoBusqueda)) {
     $listaInscripciones = $inscripcionDao->listarDiezInscripcionesDetalladas();
 }
 
-//aca obtenemos listas para los selects de los formularios
-$alumnosConsulta = $conexion->query("SELECT id_alumno, CONCAT(apellido, ', ', nombre) AS nombre_completo FROM alumno WHERE estado = 'Activo' ORDER BY apellido");
-$listaAlumnos = $alumnosConsulta->fetchAll(PDO::FETCH_ASSOC);
-
-$cursosConsulta = $conexion->query("SELECT c.id_curso, CONCAT(c.año, '° ', c.division, ' - ', m.nombre_materia) AS curso_nombre FROM curso c JOIN materia m ON c.id_materia = m.id_materia WHERE c.estado = 'Activo'");
-$listaCursosSelect = $cursosConsulta->fetchAll(PDO::FETCH_ASSOC);
+// Obtención de listas para los selectores mediante el DAO
+$listaAlumnos = $inscripcionDao->listarAlumnosActivos();
+$listaCursosSelect = $inscripcionDao->listarCursosActivos();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -122,27 +97,54 @@ $listaCursosSelect = $cursosConsulta->fetchAll(PDO::FETCH_ASSOC);
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Academia Integral XXI - Inscripciones</title>
-  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <link rel="stylesheet" href="estilos/styles.css" />
   <link rel="stylesheet" href="estilos/inscripciones_estilo.css" />
 </head>
 <body class="app">
-  <aside class="sidebar">
+
+<aside class="sidebar">
     <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <path d="M24 4L7 9V22C7 32.5 14.2 42.3 24 45C33.8 42.3 41 32.5 41 22V9L24 4Z" fill="rgba(255,255,255,0.08)" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M16 28C19 26 22 26 24 28C26 26 29 26 32 28V19C29 17 26 17 24 19C22 17 19 17 16 19V28Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="24" y="24" text-anchor="middle" font-size="9" font-weight="700" fill="white" font-family="Inter, sans-serif" letter-spacing="1">AI</text>
+        </svg>
+      </div>
       <div class="brand-text"><span>Academia</span><small>Integral XXI</small></div>
     </div>
-    <nav class="nav">
-      <a class="nav-link" href="inicio.php"><span>Inicio</span></a>
-      <a class="nav-link" href="cursos.php"><span>Cursos</span></a>
-      <a class="nav-link" href="calificaciones.php"><span>Calificaciones</span></a>
-      <a class="nav-link active" href="inscripciones.php"><span>Inscripciones</span></a>
+    
+    <nav class="nav" aria-label="Navegación principal">
+      <a class="nav-link" href="inicio.php">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span>Inicio</span>
+      </a>
+      <a class="nav-link" href="cursos.php">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14v7"/></svg>
+        <span>Cursos</span>
+      </a>
+      <a class="nav-link" href="calificaciones.php">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        <span>Calificaciones</span>
+      </a>
+      <a class="nav-link active" href="inscripciones.php">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+        <span>Inscripciones</span>
+      </a>
     </nav>
+    
+    <div class="nav-footer">
+      <a class="nav-link" href="#">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Configuración</span>
+      </a>
+    </div>
   </aside>
-
+  
   <div class="main-panel">
     <header class="topbar">
       <div></div>
       <div class="topbar-tools">
-    
         <div class="user">
           <div class="user-meta">
             <strong><?= htmlspecialchars($nombreRealUsuario) ?></strong>
@@ -161,7 +163,6 @@ $listaCursosSelect = $cursosConsulta->fetchAll(PDO::FETCH_ASSOC);
           <a href="inscripciones.php?nuevo=1" class="boton-nueva-inscripcion">Nueva inscripción</a>
         </div>
 
-        <!-- Ventana para nueva inscripción -->
         <?php if ($modoFormulario === 'nuevo'): ?>
           <div class="modal-overlay">
             <div class="modal-ventana">
@@ -212,7 +213,6 @@ $listaCursosSelect = $cursosConsulta->fetchAll(PDO::FETCH_ASSOC);
           </div>
         <?php endif; ?>
 
-        <!-- Ventana modal para editar inscripción -->
         <?php if ($modoFormulario === 'editar' && $inscripcionAEditar): ?>
           <div class="modal-overlay">
             <div class="modal-ventana">
@@ -268,7 +268,6 @@ $listaCursosSelect = $cursosConsulta->fetchAll(PDO::FETCH_ASSOC);
           </div>
         <?php endif; ?>
 
-        <!-- Ventana para dar de baja con motivo -->
         <?php if ($idBajaModal > 0): ?>
           <div class="modal-overlay">
             <div class="modal-ventana" style="border-top: 5px solid #dc3545;">
@@ -327,7 +326,6 @@ $listaCursosSelect = $cursosConsulta->fetchAll(PDO::FETCH_ASSOC);
           <button type="submit" class="boton-buscar">Filtrar</button>
         </form>
 
-        <!-- BUSCADOR -->
         <div class="buscador-tabla-container">
           <form method="GET" action="inscripciones.php">
             <input type="text" name="q" value="<?= htmlspecialchars($terminoBusqueda) ?>" placeholder="Buscar por alumno, DNI o materia..." />

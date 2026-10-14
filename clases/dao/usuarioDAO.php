@@ -37,7 +37,6 @@ class UsuarioDAO implements dao {
         $consulta->execute([$id]);
     }
 
-
     public function listarTodos() {
         $sql = "SELECT * FROM usuario";
         $consulta = $this->conexion->query($sql);
@@ -54,11 +53,8 @@ class UsuarioDAO implements dao {
     }
 
     public function autenticar($nombre_usuario, $contraseña) {
-
         try {
-
-            //hacemos la conexión a la base de datos
-            $conexion =  databaseConnection();
+            $conexion = databaseConnection();
             
             $consulta = "SELECT * FROM usuario WHERE nombre_usuario = ? AND contraseña = ?";
             $stmt = $conexion->prepare($consulta);
@@ -69,10 +65,36 @@ class UsuarioDAO implements dao {
             return $usuario ? $usuario : false;
             
         } catch (PDOException $e) {
-            //manejo de errores de conexión o consulta
             error_log("Error en autenticación: " . $e->getMessage());
             return false;
         }
+    }
+
+    // Función de consulta relacionada con usuario movida al DAO
+    public function obtenerNombreReal(?int $idUsuario, ?string $usuarioSesion): string {
+        if (!$idUsuario) {
+            return $usuarioSesion ?? 'Usuario';
+        }
+
+        try {
+            $stmtDocente = $this->conexion->prepare("SELECT nombre, apellido FROM docente WHERE id_usuario = ?");
+            $stmtDocente->execute([$idUsuario]);
+            $docente = $stmtDocente->fetch(PDO::FETCH_ASSOC);
+            if ($docente) {
+                return $docente['nombre'] . ' ' . $docente['apellido'];
+            }
+
+            $stmtAlumno = $this->conexion->prepare("SELECT nombre, apellido FROM alumno WHERE id_usuario = ?");
+            $stmtAlumno->execute([$idUsuario]);
+            $alumno = $stmtAlumno->fetch(PDO::FETCH_ASSOC);
+            if ($alumno) {
+                return $alumno['nombre'] . ' ' . $alumno['apellido'];
+            }
+        } catch (PDOException $e) {
+            error_log("Error en obtenerNombreReal: " . $e->getMessage());
+        }
+
+        return $usuarioSesion ?? 'Usuario';
     }
 }
 ?>
