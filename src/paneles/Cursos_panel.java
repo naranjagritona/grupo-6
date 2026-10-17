@@ -119,7 +119,7 @@ public class Cursos_panel extends JPanel {
         btnActualizar.setForeground(Color.WHITE);
         btnActualizar.setFocusPainted(false);
 
-        btnActualizar.addActionListener(e -> cargarCursos());
+        btnActualizar.addActionListener(_ -> cargarCursos());
 
         panelBotones.add(btnActualizar);
         add(panelBotones, BorderLayout.SOUTH);

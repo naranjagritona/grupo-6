@@ -5,16 +5,12 @@ import clases.Curso;
 import clases.Inscripcion;
 import clases.ItemCombo;
 import clases.Materia;
+import clases.Usuario; 
 import dao.Alumno_dao;
 import dao.Curso_dao;
 import dao.Materia_dao;
 import servicios.Inscripcion_servicio;
-import paneles.Cursos_panel;
 
-import javax.swing.SwingUtilities;
-import javax.swing.SwingConstants;
-import javax.swing.JLabel;
-import java.awt.BorderLayout;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -28,6 +24,13 @@ import java.util.List;
 public class Inscripcion_panel extends JFrame {
 
     private static final long serialVersionUID = 1L;
+    
+    private Usuario usuarioLogueado;
+    private JButton btnInscripciones;
+    private JButton btnCursos;
+    private JButton btnMaterias;
+    private JButton btnCalificaciones;
+    
     private JPanel contentPane;
     private JPanel panelContenido;
     private JSplitPane splitPane;
@@ -35,8 +38,9 @@ public class Inscripcion_panel extends JFrame {
     private JTextField txtImporteCuota;
     private JTextField txtBuscar;
     private JTable table;
+    private JPanel panelTablaInscripcion; 
+    private JPanel panelGestionInscripcion;
     
-    // Declaración explícita de tipos para evitar errores en WindowBuilder
     private JComboBox<ItemCombo> cmbAlumno;
     private JComboBox<ItemCombo> cmbCurso;
     private JComboBox<String> cmbEstado;
@@ -49,13 +53,21 @@ public class Inscripcion_panel extends JFrame {
     
     private Integer idInscripcionSeleccionada = null;
 
+    // Constructor vacío por defecto (necesario para WindowBuilder)
     public Inscripcion_panel() {
+        this(null);
+    }
+
+    // Constructor que recibe el usuario autenticado
+    public Inscripcion_panel(Usuario usuario) {
+        this.usuarioLogueado = usuario;
+
         this.inscripcionServicio = new Inscripcion_servicio();
         this.alumnoDao = new Alumno_dao();
         this.cursoDao = new Curso_dao();
         this.materiaDao = new Materia_dao();
 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setBounds(100, 100, 1150, 680);
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -87,81 +99,68 @@ public class Inscripcion_panel extends JFrame {
         lblMenu.setBounds(49, 0, 60, 57);
         panelMenu.add(lblMenu);
         
-        JButton btnInscripciones = new JButton("Inscripciones");
+        // Inicialización de botones usando los atributos de la clase
+        btnInscripciones = new JButton("Inscripciones");
         btnInscripciones.setBounds(15, 61, 140, 35);
         btnInscripciones.setBackground(new Color(37, 99, 235));
         btnInscripciones.setForeground(Color.WHITE);
         btnInscripciones.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnInscripciones);
         
-        JButton btnCursos = new JButton("Cursos");
-        panelMenu.add(btnCursos);
-
+        btnCursos = new JButton("Cursos");
         btnCursos.setBounds(15, 107, 140, 35);
         btnCursos.setBackground(new Color(24, 61, 110));
         btnCursos.setForeground(new Color(203, 213, 225));
         btnCursos.setFont(new Font("Tahoma", Font.BOLD, 12));
-        
-		btnCursos.addActionListener(e -> {
-		    panelContenido.removeAll();
-		
-		    splitPane.setVisible(false);
-		
-		    Cursos_panel panelCursos = new Cursos_panel();
-		    panelContenido.add(panelCursos, BorderLayout.CENTER);
-		
-		    // Resaltar Cursos
-		    btnCursos.setBackground(new Color(37, 99, 235));
-		    btnCursos.setForeground(Color.WHITE);
-		
-		    // Restaurar el color de Inscripciones
-		    btnInscripciones.setBackground(new Color(24, 61, 110));
-		    btnInscripciones.setForeground(new Color(203, 213, 225));
-		
-		    panelContenido.revalidate();
-		    panelContenido.repaint();
-		});
+        panelMenu.add(btnCursos);
 
-		btnInscripciones.addActionListener(e -> {
-		    panelContenido.removeAll();
-		
-		    splitPane.setVisible(true);
-		    panelContenido.add(splitPane, BorderLayout.CENTER);
-		
-		    // Resaltar Inscripciones
-		    btnInscripciones.setBackground(new Color(37, 99, 235));
-		    btnInscripciones.setForeground(Color.WHITE);
-		
-		    // Restaurar el color de Cursos
-		    btnCursos.setBackground(new Color(24, 61, 110));
-		    btnCursos.setForeground(new Color(203, 213, 225));
-		
-		    panelContenido.revalidate();
-		    panelContenido.repaint();
-		});
-
-       
-        JButton btnMaterias = new JButton("Materias");
+        btnMaterias = new JButton("Materias");
         btnMaterias.setBounds(15, 152, 140, 35);
         btnMaterias.setBackground(new Color(24, 61, 110));
         btnMaterias.setForeground(new Color(203, 213, 225));
         btnMaterias.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnMaterias);
         
-        JButton btnCalificaciones = new JButton("Calificaciones");
+        btnCalificaciones = new JButton("Calificaciones");
         btnCalificaciones.setBounds(15, 197, 140, 35);
         btnCalificaciones.setBackground(new Color(24, 61, 110));
         btnCalificaciones.setForeground(new Color(203, 213, 225));
         btnCalificaciones.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnCalificaciones);
+
+        // Listeners de los botones del menú
+        btnCursos.addActionListener(_ -> {
+            panelContenido.removeAll();
+            splitPane.setVisible(false);
+            Cursos_panel panelCursos = new Cursos_panel();
+            panelContenido.add(panelCursos, BorderLayout.CENTER);
+            btnCursos.setBackground(new Color(37, 99, 235));
+            btnCursos.setForeground(Color.WHITE);
+            btnInscripciones.setBackground(new Color(24, 61, 110));
+            btnInscripciones.setForeground(new Color(203, 213, 225));
+            panelContenido.revalidate();
+            panelContenido.repaint();
+        });
+
+        btnInscripciones.addActionListener(_ -> {
+            panelContenido.removeAll();
+            splitPane.setVisible(true);
+            panelContenido.add(splitPane, BorderLayout.CENTER);
+            btnInscripciones.setBackground(new Color(37, 99, 235));
+            btnInscripciones.setForeground(Color.WHITE);
+            btnCursos.setBackground(new Color(24, 61, 110));
+            btnCursos.setForeground(new Color(203, 213, 225));
+            panelContenido.revalidate();
+            panelContenido.repaint();
+        });
         
-		contentPane.add(panelContenido, BorderLayout.CENTER);
-		
-		splitPane = new JSplitPane();
-		splitPane.setDividerLocation(420);
-		panelContenido.add(splitPane, BorderLayout.CENTER);
-		
-        JPanel panelGestionInscripcion = new JPanel();
+        contentPane.add(panelContenido, BorderLayout.CENTER);
+        
+        splitPane = new JSplitPane();
+        splitPane.setDividerLocation(420);
+        panelContenido.add(splitPane, BorderLayout.CENTER);
+        
+        panelGestionInscripcion = new JPanel();
         panelGestionInscripcion.setLayout(null);
         splitPane.setLeftComponent(panelGestionInscripcion);
 		
@@ -196,16 +195,13 @@ public class Inscripcion_panel extends JFrame {
         lblImporte.setBounds(10, 246, 130, 21);
         panelGestionInscripcion.add(lblImporte);
 		
-        // Inicialización correcta de los JComboBox con tipos explícitos
         cmbAlumno = new JComboBox<ItemCombo>();
         cmbAlumno.setBounds(140, 84, 250, 22);
         panelGestionInscripcion.add(cmbAlumno);
-        cargarComboAlumnos();
 
         cmbCurso = new JComboBox<ItemCombo>();
         cmbCurso.setBounds(140, 124, 250, 22);
         panelGestionInscripcion.add(cmbCurso);
-        cargarComboCursos();
 		
         textFecha = new JTextField();
         textFecha.setBounds(140, 165, 250, 22);
@@ -232,7 +228,7 @@ public class Inscripcion_panel extends JFrame {
         btnRegistrar.setBackground(new Color(37, 99, 235));
         btnRegistrar.setBounds(48, 311, 100, 32);
         panelGestionInscripcion.add(btnRegistrar);
-        btnRegistrar.addActionListener(e -> registrarInscripcion());
+        btnRegistrar.addActionListener(_ -> registrarInscripcion());
 		
         JButton btnModificar = new JButton("Modificar");
         btnModificar.setForeground(Color.WHITE);
@@ -240,7 +236,7 @@ public class Inscripcion_panel extends JFrame {
         btnModificar.setBackground(new Color(59, 130, 246));
         btnModificar.setBounds(161, 311, 100, 32);
         panelGestionInscripcion.add(btnModificar);
-        btnModificar.addActionListener(e -> modificarInscripcion());
+        btnModificar.addActionListener(_ -> modificarInscripcion());
 		
         JButton btnDarDeBaja = new JButton("Dar de baja");
         btnDarDeBaja.setForeground(Color.WHITE);
@@ -248,9 +244,9 @@ public class Inscripcion_panel extends JFrame {
         btnDarDeBaja.setBackground(new Color(100, 116, 139));
         btnDarDeBaja.setBounds(274, 311, 100, 32);
         panelGestionInscripcion.add(btnDarDeBaja);
-        btnDarDeBaja.addActionListener(e -> darDeBajaInscripcion());
+        btnDarDeBaja.addActionListener(_ -> darDeBajaInscripcion());
 		
-        JPanel panelTablaInscripcion = new JPanel();
+        panelTablaInscripcion = new JPanel();
         splitPane.setRightComponent(panelTablaInscripcion);
         panelTablaInscripcion.setLayout(new BorderLayout(0, 0));
 		
@@ -268,7 +264,18 @@ public class Inscripcion_panel extends JFrame {
         txtBuscar = new JTextField();
         txtBuscar.setBounds(65, 18, 160, 22);
         panelFiltros.add(txtBuscar);
-        txtBuscar.addActionListener(e -> buscarInscripciones());
+
+        // Timer de búsqueda en tiempo real
+        Timer timerBusqueda = new Timer(300, _ -> buscarInscripciones());
+        timerBusqueda.setRepeats(false);
+        txtBuscar.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { timerBusqueda.restart(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { timerBusqueda.restart(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { timerBusqueda.restart(); }
+        });
         
         JLabel lblFiltrarEstado = new JLabel("Estado:");
         lblFiltrarEstado.setFont(new Font("Tahoma", Font.PLAIN, 14));
@@ -290,7 +297,7 @@ public class Inscripcion_panel extends JFrame {
         btnFiltrar.setBackground(new Color(30, 58, 138));
         btnFiltrar.setBounds(420, 17, 90, 25);
         panelFiltros.add(btnFiltrar);
-        btnFiltrar.addActionListener(e -> filtrarInscripciones());
+        btnFiltrar.addActionListener(_ -> filtrarInscripciones());
         
         JScrollPane scrollPane = new JScrollPane();
         panelTablaInscripcion.add(scrollPane, BorderLayout.CENTER);
@@ -305,33 +312,157 @@ public class Inscripcion_panel extends JFrame {
             }
         });
 
-        actualizarTabla(inscripcionServicio.buscarCampo(""));
-    }
-    
-    
-    
-    private void cargarComboAlumnos() {
-        cmbAlumno.removeAllItems();
-        List<Alumno> alumnos = alumnoDao.obtenerTodos();
-        for (Alumno a : alumnos) {
-            String texto = a.getNombre() + ", " + a.getApellido() + " - " + a.getDni();
-            cmbAlumno.addItem(new ItemCombo(a.getId_alumno(), texto));
-        }
+        // Aplicar permisos y cargar datos
+        aplicarPermisosPorRol();
+        cargarDatosAsincronos();
     }
 
-    private void cargarComboCursos() {
-        cmbCurso.removeAllItems();
-        List<Curso> cursos = cursoDao.obtenerTodos();
-        for (Curso c : cursos) {
-            Materia m = materiaDao.obtenerPorId(c.getId_materia());
-            String nombreMateria = m != null ? m.getNombre_materia() : "Materia desconocida";
-            String texto = c.getAño() + "° - " + nombreMateria + " (" + c.getTurno() + ")";
-            cmbCurso.addItem(new ItemCombo(c.getId_curso(), texto));
+    // METODOSSS
+
+    private void aplicarPermisosPorRol() {
+        if (usuarioLogueado == null) return;
+
+        int rol = usuarioLogueado.getId_rol();
+        //Este es rol del administrador
+        if (rol == 1) { 
+        	
+            //el admin ve todo y tiene acceso completo a todos los botones y módulos
+            btnInscripciones.setVisible(true);
+            btnCursos.setVisible(true);
+            btnMaterias.setVisible(true);
+            btnCalificaciones.setVisible(true);
+            
+            // Posiciones originales del menú lateral
+            btnInscripciones.setBounds(15, 61, 140, 35);
+            btnCursos.setBounds(15, 107, 140, 35);
+            btnMaterias.setBounds(15, 152, 140, 35);
+            btnCalificaciones.setBounds(15, 197, 140, 35);
+
+        //este es rol de docente
+        } else if (rol == 2) { 
+            
+            btnInscripciones.setVisible(false);
+            btnCursos.setVisible(true);
+            btnMaterias.setVisible(true);
+            btnCalificaciones.setVisible(true);
+            
+            //reorganizamos los botones hacia arriba para que no queden huecos
+            btnCursos.setBounds(15, 61, 140, 35);
+            btnMaterias.setBounds(15, 107, 140, 35);
+            btnCalificaciones.setBounds(15, 152, 140, 35);
+
+            // Entra directamente al panel de Cursos por defecto
+            mostrarPanelCursos();
+
+        //este es el rol de alumno
+        } else if (rol == 3) { 
+                 
+            splitPane.setVisible(false);
+            panelContenido.add(panelTablaInscripcion, BorderLayout.CENTER);
+            
+            //carga únicamente sus propias inscripciones
+            cargarInscripcionesPropiasAlumno();
         }
+    }
+    private void mostrarPanelCursos() {
+        panelContenido.removeAll();
+        splitPane.setVisible(false);
+
+        Cursos_panel panelCursos = new Cursos_panel();
+        panelContenido.add(panelCursos, BorderLayout.CENTER);
+
+        btnCursos.setBackground(new Color(37, 99, 235));
+        btnCursos.setForeground(Color.WHITE);
+
+        panelContenido.revalidate();
+        panelContenido.repaint();
+    }
+
+    private void cargarInscripcionesPropiasAlumno() {
+        new SwingWorker<Void, Void>() {
+            List<Inscripcion> misInscripciones;
+
+            @Override
+            protected Void doInBackground() {
+                List<Alumno> alumnos = alumnoDao.obtenerTodos();
+                Integer idAlumnoLogueado = null;
+                
+                for (Alumno a : alumnos) {
+                    if (a.getId_usuario() != null && a.getId_usuario().equals(usuarioLogueado.getId_usuario())) {
+                        idAlumnoLogueado = a.getId_alumno();
+                        break;
+                    }
+                }
+
+                if (idAlumnoLogueado != null) {
+                    List<Inscripcion> todas = inscripcionServicio.buscarCampo("");
+                    misInscripciones = new java.util.ArrayList<>();
+                    for (Inscripcion ins : todas) {
+                        if (ins.getId_alumno().equals(idAlumnoLogueado)) {
+                            misInscripciones.add(ins);
+                        }
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                if (misInscripciones != null) {
+                    actualizarTabla(misInscripciones);
+                }
+            }
+        }.execute();
+    }
+
+    private void cargarDatosAsincronos() {
+        if (usuarioLogueado != null && usuarioLogueado.getId_rol() == 3) {
+            return; // Si es alumno ya cargamos sus inscripciones arriba
+        }
+
+        new SwingWorker<Void, Void>() {
+            List<Alumno> alumnos;
+            List<Curso> cursos;
+            List<Materia> materias;
+            List<Inscripcion> inscripciones;
+
+            @Override
+            protected Void doInBackground() {
+                alumnos = alumnoDao.obtenerTodos();
+                cursos = cursoDao.obtenerTodos();
+                materias = materiaDao.obtenerTodos();
+                inscripciones = inscripcionServicio.buscarCampo("");
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                cmbAlumno.removeAllItems();
+                for (Alumno a : alumnos) {
+                    String texto = a.getNombre() + ", " + a.getApellido() + " - " + a.getDni();
+                    cmbAlumno.addItem(new ItemCombo(a.getId_alumno(), texto));
+                }
+
+                cmbCurso.removeAllItems();
+                java.util.Map<Integer, String> mapaMaterias = new java.util.HashMap<>();
+                for (Materia m : materias) {
+                    mapaMaterias.put(m.getId_materia(), m.getNombre_materia());
+                }
+
+                for (Curso c : cursos) {
+                    String nombreMateria = mapaMaterias.getOrDefault(c.getId_materia(), "Materia desconocida");
+                    String texto = c.getAño() + "° - " + nombreMateria + " (" + c.getTurno() + ")";
+                    cmbCurso.addItem(new ItemCombo(c.getId_curso(), texto));
+                }
+
+                actualizarTabla(inscripciones);
+            }
+        }.execute();
     }
 
     private void actualizarTabla(List<Inscripcion> lista) {
         DefaultTableModel modelo = new DefaultTableModel() {
+            private static final long serialVersionUID = 1L;
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -343,9 +474,14 @@ public class Inscripcion_panel extends JFrame {
         modelo.addColumn("Estado");
         modelo.addColumn("Importe ($)");
 
+        List<Alumno> alumnos = alumnoDao.obtenerTodos();
+        java.util.Map<Integer, String> mapaAlumnos = new java.util.HashMap<>();
+        for (Alumno a : alumnos) {
+            mapaAlumnos.put(a.getId_alumno(), a.getNombre() + " " + a.getApellido());
+        }
+
         for (Inscripcion ins : lista) {
-            Alumno a = alumnoDao.obtenerPorId(ins.getId_alumno());
-            String nombreAlumno = a != null ? a.getNombre() + " " + a.getApellido() : "Desconocido";
+            String nombreAlumno = mapaAlumnos.getOrDefault(ins.getId_alumno(), "Desconocido");
             
             modelo.addRow(new Object[]{
                 ins.getId_inscripcion(),
@@ -437,7 +573,7 @@ public class Inscripcion_panel extends JFrame {
             return;
         }
 
-        String motivo = JOptionPane.showInputDialog(this, "Ingrese obligatoriamente el motivo de la baja:", "Motivo de Baja", JOptionPane.WARNING_MESSAGE);
+        String motivo = JOptionPane.showInputDialog(this, "Ingrese el motivo de la baja:", "Motivo de Baja", JOptionPane.WARNING_MESSAGE);
 
         if (motivo == null || motivo.trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "La operación fue cancelada o el motivo está vacío.", "Operación Cancelada", JOptionPane.WARNING_MESSAGE);
@@ -465,8 +601,9 @@ public class Inscripcion_panel extends JFrame {
         if (fila >= 0) {
             idInscripcionSeleccionada = (Integer) table.getValueAt(fila, 0);
             
-            dao.Inscripcion_dao dao = new dao.Inscripcion_dao();
-            Inscripcion ins = dao.obtenerPorId(idInscripcionSeleccionada);
+            Inscripcion ins = inscripcionServicio.buscarCampo("").stream()
+                .filter(i -> i.getId_inscripcion().equals(idInscripcionSeleccionada))
+                .findFirst().orElse(null);
             
             if (ins != null) {
                 txtImporteCuota.setText(String.valueOf(ins.getImporte_cuota()));
@@ -477,7 +614,7 @@ public class Inscripcion_panel extends JFrame {
 
                 for (int i = 0; i < cmbAlumno.getItemCount(); i++) {
                     ItemCombo item = cmbAlumno.getItemAt(i);
-                    if (item.getId() == ins.getId_alumno()) {
+                    if (item.getId().equals(ins.getId_alumno())) {
                         cmbAlumno.setSelectedIndex(i);
                         break;
                     }
@@ -485,7 +622,7 @@ public class Inscripcion_panel extends JFrame {
 
                 for (int i = 0; i < cmbCurso.getItemCount(); i++) {
                     ItemCombo item = cmbCurso.getItemAt(i);
-                    if (item.getId() == ins.getId_curso()) {
+                    if (item.getId().equals(ins.getId_curso())) {
                         cmbCurso.setSelectedIndex(i);
                         break;
                     }

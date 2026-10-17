@@ -98,7 +98,7 @@ public class Login_panel extends JFrame {
         add(panel);
 
         //configuracion del evento de autenticacion al hacer clic en el boton
-        btnIngresar.addActionListener(e -> realizarLogin());
+        btnIngresar.addActionListener(_ -> realizarLogin());
     }
 
     private void realizarLogin() {
@@ -110,17 +110,16 @@ public class Login_panel extends JFrame {
             return;
         }
 
-        //aca llamamos al servicio (que a su vez validará y llamará al DAO)
         Usuario usuarioLogueado = loginServicio.autenticarUsuario(nombre_usuario, contraseña);
 
         if (usuarioLogueado != null) {
             JOptionPane.showMessageDialog(this, "¡Bienvenido, " + usuarioLogueado.getNombre_usuario() + "!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             
-            //mostramos la otra ventana
-            Inscripcion_panel inscripcionPanel = new Inscripcion_panel();
+            // Pasamos el usuario autenticado a la ventana principal
+            Inscripcion_panel inscripcionPanel = new Inscripcion_panel(usuarioLogueado);
             inscripcionPanel.setVisible(true);
 
-            this.dispose(); //cierra la ventana de login 
+            this.dispose(); 
         } else {
             JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.", "Error de autenticación", JOptionPane.ERROR_MESSAGE);
             txtContraseña.setText("");
