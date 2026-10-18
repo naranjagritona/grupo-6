@@ -30,6 +30,7 @@ public class Inscripcion_panel extends JFrame {
     private JButton btnCursos;
     private JButton btnMaterias;
     private JButton btnCalificaciones;
+    private JButton btnAdmin; 
     
     private JPanel contentPane;
     private JPanel panelContenido;
@@ -40,6 +41,7 @@ public class Inscripcion_panel extends JFrame {
     private JTable table;
     private JPanel panelTablaInscripcion; 
     private JPanel panelGestionInscripcion;
+    
     
     private JComboBox<ItemCombo> cmbAlumno;
     private JComboBox<ItemCombo> cmbCurso;
@@ -127,21 +129,36 @@ public class Inscripcion_panel extends JFrame {
         btnCalificaciones.setForeground(new Color(203, 213, 225));
         btnCalificaciones.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnCalificaciones);
+        
+        btnAdmin = new JButton("Admin");
+        btnAdmin.setBounds(15, 243, 140, 35);
+        btnAdmin.setBackground(new Color(24, 61, 110));
+        btnAdmin.setForeground(new Color(203, 213, 225));
+        btnAdmin.setFont(new Font("Tahoma", Font.BOLD, 12));
+        panelMenu.add(btnAdmin);
 
-        // Listeners de los botones del menú
+        //Listeners de los botones del menú
         btnCursos.addActionListener(_ -> {
             panelContenido.removeAll();
             splitPane.setVisible(false);
             Cursos_panel panelCursos = new Cursos_panel();
             panelContenido.add(panelCursos, BorderLayout.CENTER);
+            
             btnCursos.setBackground(new Color(37, 99, 235));
             btnCursos.setForeground(Color.WHITE);
+            
             btnInscripciones.setBackground(new Color(24, 61, 110));
             btnInscripciones.setForeground(new Color(203, 213, 225));
+            
+            if (btnAdmin != null) {
+                btnAdmin.setBackground(new Color(24, 61, 110));
+                btnAdmin.setForeground(new Color(203, 213, 225));
+            }
+            
             panelContenido.revalidate();
             panelContenido.repaint();
         });
-
+ 
         btnInscripciones.addActionListener(_ -> {
             panelContenido.removeAll();
             splitPane.setVisible(true);
@@ -150,6 +167,22 @@ public class Inscripcion_panel extends JFrame {
             btnInscripciones.setForeground(Color.WHITE);
             btnCursos.setBackground(new Color(24, 61, 110));
             btnCursos.setForeground(new Color(203, 213, 225));
+            panelContenido.revalidate();
+            panelContenido.repaint();
+        });
+        
+        btnAdmin.addActionListener(_ -> {
+            panelContenido.removeAll();
+            splitPane.setVisible(false);
+            Admin_panel panelAdmin = new Admin_panel();
+            panelContenido.add(panelAdmin, BorderLayout.CENTER);
+            btnAdmin.setBackground(new Color(37, 99, 235));
+            btnAdmin.setForeground(Color.WHITE);
+            btnInscripciones.setBackground(new Color(24, 61, 110));
+            btnInscripciones.setForeground(new Color(203, 213, 225));
+            btnCursos.setBackground(new Color(24, 61, 110));
+            btnCursos.setForeground(new Color(203, 213, 225));
+
             panelContenido.revalidate();
             panelContenido.repaint();
         });
@@ -323,20 +356,22 @@ public class Inscripcion_panel extends JFrame {
         if (usuarioLogueado == null) return;
 
         int rol = usuarioLogueado.getId_rol();
-        //Este es rol del administrador
+        //este es rol del administrador
         if (rol == 1) { 
-        	
-            //el admin ve todo y tiene acceso completo a todos los botones y módulos
+            
+            // admin ve todo y tiene acceso completo a todos los botones y módulos
             btnInscripciones.setVisible(true);
             btnCursos.setVisible(true);
             btnMaterias.setVisible(true);
             btnCalificaciones.setVisible(true);
+            btnAdmin.setVisible(true);
             
-            // Posiciones originales del menú lateral
+            //posiciones originales del menú lateral
             btnInscripciones.setBounds(15, 61, 140, 35);
             btnCursos.setBounds(15, 107, 140, 35);
             btnMaterias.setBounds(15, 152, 140, 35);
             btnCalificaciones.setBounds(15, 197, 140, 35);
+            btnAdmin.setBounds(15, 242, 140, 35);
 
         //este es rol de docente
         } else if (rol == 2) { 
@@ -345,18 +380,20 @@ public class Inscripcion_panel extends JFrame {
             btnCursos.setVisible(true);
             btnMaterias.setVisible(true);
             btnCalificaciones.setVisible(true);
+            btnAdmin.setVisible(false);
             
             //reorganizamos los botones hacia arriba para que no queden huecos
             btnCursos.setBounds(15, 61, 140, 35);
             btnMaterias.setBounds(15, 107, 140, 35);
             btnCalificaciones.setBounds(15, 152, 140, 35);
 
-            // Entra directamente al panel de Cursos por defecto
+            //entra directamente al panel de Cursos por defecto
             mostrarPanelCursos();
 
         //este es el rol de alumno
         } else if (rol == 3) { 
-                 
+            
+            btnAdmin.setVisible(false);
             splitPane.setVisible(false);
             panelContenido.add(panelTablaInscripcion, BorderLayout.CENTER);
             
@@ -364,6 +401,7 @@ public class Inscripcion_panel extends JFrame {
             cargarInscripcionesPropiasAlumno();
         }
     }
+    
     private void mostrarPanelCursos() {
         panelContenido.removeAll();
         splitPane.setVisible(false);
@@ -525,7 +563,9 @@ public class Inscripcion_panel extends JFrame {
             nueva.setEstado(estado);
             nueva.setImporte_cuota(importe);
 
-            inscripcionServicio.registrar(nueva);
+            Integer idUsuarioActual = usuarioLogueado != null ? usuarioLogueado.getId_usuario() : null;
+            inscripcionServicio.registrar(nueva, idUsuarioActual);
+            
             JOptionPane.showMessageDialog(this, "Inscripción registrada con éxito.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             actualizarTabla(inscripcionServicio.buscarCampo(""));
             limpiarFormulario();
@@ -557,7 +597,9 @@ public class Inscripcion_panel extends JFrame {
             mod.setEstado(estado);
             mod.setImporte_cuota(importe);
 
-            inscripcionServicio.modificar(mod);
+            Integer idUsuarioActual = usuarioLogueado != null ? usuarioLogueado.getId_usuario() : null;
+            inscripcionServicio.modificar(mod, idUsuarioActual);
+            
             JOptionPane.showMessageDialog(this, "Inscripción modificada con éxito.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             actualizarTabla(inscripcionServicio.buscarCampo(""));
             limpiarFormulario();
@@ -580,7 +622,9 @@ public class Inscripcion_panel extends JFrame {
             return;
         }
 
-        inscripcionServicio.darDeBaja(idInscripcionSeleccionada, motivo.trim());
+        Integer idUsuarioActual = usuarioLogueado != null ? usuarioLogueado.getId_usuario() : null;
+        inscripcionServicio.darDeBaja(idInscripcionSeleccionada, motivo.trim(), idUsuarioActual);
+        
         JOptionPane.showMessageDialog(this, "La inscripción ha sido dada de baja (Finalizada).", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         actualizarTabla(inscripcionServicio.buscarCampo(""));
         limpiarFormulario();
