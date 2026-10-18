@@ -15,6 +15,9 @@ public class Curso {
     private LocalDate fecha_inicio;
     private LocalDate fecha_fin;
     private String estado;
+    private String nombre_periodo;
+    private String nombre_materia;
+    private String nombre_docente;
 
     public Curso() {
     }
@@ -128,5 +131,29 @@ public class Curso {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+    
+    public String getNombre_periodo() {
+        return nombre_periodo;
+    }
+
+    public void setNombre_periodo(String nombre_periodo) {
+        this.nombre_periodo = nombre_periodo;
+    }
+
+    public String getNombre_materia() {
+        return nombre_materia;
+    }
+
+    public void setNombre_materia(String nombre_materia) {
+        this.nombre_materia = nombre_materia;
+    }
+
+    public String getNombre_docente() {
+        return nombre_docente;
+    }
+
+    public void setNombre_docente(String nombre_docente) {
+        this.nombre_docente = nombre_docente;
     }
 }

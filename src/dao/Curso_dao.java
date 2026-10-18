@@ -81,46 +81,69 @@ public class Curso_dao implements Dao<Curso, Integer> {
         return curso;
     }
 
-    @Override
-    public List<Curso> obtenerTodos() {
-        List<Curso> listaCursos = new ArrayList<>();
-        String consulta = "SELECT * FROM curso";
 
-        try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                Curso curso = new Curso();
-
-                curso.setId_curso(rs.getInt("id_curso"));
-                curso.setId_periodo(rs.getInt("id_periodo"));
-                curso.setId_materia(rs.getInt("id_materia"));
-                curso.setId_docente(rs.getInt("id_docente"));
-                curso.setAño(rs.getInt("año"));
-                curso.setDivision(rs.getString("division"));
-                curso.setModalidad(rs.getString("modalidad"));
-                curso.setTurno(rs.getString("turno"));
-                curso.setCupo_maximo(rs.getInt("cupo_maximo"));
-                
-                Date fInicio = rs.getDate("fecha_inicio");
-                curso.setFecha_inicio(fInicio != null ? fInicio.toLocalDate() : null);
-                
-                Date fFin = rs.getDate("fecha_fin");
-                curso.setFecha_fin(fFin != null ? fFin.toLocalDate() : null);
-                
-                curso.setEstado(rs.getString("estado"));
-
-                listaCursos.add(curso);
-            }
-
-        } catch (SQLException error) {
-            System.err.println("Error al obtener la lista de cursos: " + error.getMessage());
-            error.printStackTrace();
-        }
-
-        return listaCursos;
-    }
+	@Override
+	public List<Curso> obtenerTodos() {
+	    List<Curso> listaCursos = new ArrayList<>();
+	
+	    String consulta =
+	        "SELECT c.*, " +
+	        "p.nombre AS nombre_periodo, " +
+	        "m.nombre_materia AS nombre_materia, " +
+	        "d.nombre AS nombre_docente, " +
+	        "d.apellido AS apellido_docente " +
+	        "FROM curso c " +
+	        "LEFT JOIN periodo_lectivo p ON c.id_periodo = p.id_periodo_lectivo " +
+	        "LEFT JOIN materia m ON c.id_materia = m.id_materia " +
+	        "LEFT JOIN docente d ON c.id_docente = d.id_docente";
+	
+	    try (Connection conexion = Conexion.getConnection();
+	         PreparedStatement ps = conexion.prepareStatement(consulta);
+	         ResultSet rs = ps.executeQuery()) {
+	
+	        while (rs.next()) {
+	            Curso curso = new Curso();
+	
+	            curso.setId_curso(rs.getInt("id_curso"));
+	            curso.setId_periodo(rs.getInt("id_periodo"));
+	            curso.setId_materia(rs.getInt("id_materia"));
+	            curso.setId_docente(rs.getInt("id_docente"));
+	            curso.setAño(rs.getInt("año"));
+	            curso.setDivision(rs.getString("division"));
+	            curso.setModalidad(rs.getString("modalidad"));
+	            curso.setTurno(rs.getString("turno"));
+	            curso.setCupo_maximo(rs.getInt("cupo_maximo"));
+	
+	            Date fInicio = rs.getDate("fecha_inicio");
+	            curso.setFecha_inicio(
+	                fInicio != null ? fInicio.toLocalDate() : null
+	            );
+	
+	            Date fFin = rs.getDate("fecha_fin");
+	            curso.setFecha_fin(
+	                fFin != null ? fFin.toLocalDate() : null
+	            );
+	
+	            curso.setEstado(rs.getString("estado"));
+	            curso.setNombre_periodo(rs.getString("nombre_periodo"));
+	            curso.setNombre_materia(rs.getString("nombre_materia"));
+	            curso.setNombre_docente(
+	                rs.getString("nombre_docente") + " " +
+	                rs.getString("apellido_docente")
+	            );
+	
+	            listaCursos.add(curso);
+	        }
+	
+	    } catch (SQLException error) {
+	        System.err.println(
+	            "Error al obtener la lista de cursos: " + error.getMessage()
+	        );
+	        error.printStackTrace();
+	    }
+	
+	    return listaCursos;
+	}
 
     @Override
     public void modificar(Curso objeto) {
