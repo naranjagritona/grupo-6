@@ -1,0 +1,29 @@
+MANTENIMIENTO DE LA BASE - 19/10/2026
+
+Se realizó una copia completa de estructura y datos antes del mantenimiento.
+El respaldo se restauró en una base temporal y se compararon los 14 conteos y
+checksums: 31.811 registros verificados. La copia temporal se retiró después.
+El respaldo y sus manifiestos se conservan de forma privada, fuera de Git.
+
+Operaciones ejecutadas en MySQL 8.0.46:
+- OPTIMIZE TABLE calificacion, tras verificar espacio libre y tablespace propio.
+- ANALYZE TABLE sobre las 14 tablas.
+
+Resultado medido del archivo de calificacion:
+- Antes: 9.437.184 bytes (9 MiB).
+- Después: 8.388.608 bytes (8 MiB).
+- Espacio recuperado: 1.048.576 bytes (1 MiB).
+- Conteos y checksums de contenido de las 14 tablas: sin cambios.
+
+No se borraron registros ni se renumeraron IDs. No se modificaron las tablas,
+restricciones, credenciales o permisos. No se agregaron índices sin evidencia:
+los índices existentes cubren la consulta acotada de calificaciones incorporada
+en la rama java. La reducción del tamaño no implica un aumento medido de
+velocidad; la consulta Java también evita traer tablas completas al cliente.
+
+optimizacion_academia.sql documenta las sentencias del mantenimiento puntual.
+No es una migración obligatoria ni una tarea para ejecutar repetidamente:
+revisar el estado actual y tener un respaldo verificado antes de repetirla.
+
+Referencia de MySQL:
+https://dev.mysql.com/doc/refman/8.0/en/optimize-table.html
