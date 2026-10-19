@@ -8,10 +8,58 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Calificacion_dao implements Dao<Calificacion, Integer> {
+
+    public void insertarVerificando(Calificacion objeto) throws SQLException {
+        String sql = "INSERT INTO calificacion (id_inscripcion, id_columna_notas, nota, observaciones) VALUES (?, ?, ?, ?)";
+        try (Connection conexion = Conexion.getConnection()) {
+            if (conexion == null) throw new SQLException("No se pudo establecer conexión con la base de datos.");
+            try (PreparedStatement ps = conexion.prepareStatement(sql)) {
+                ps.setInt(1, objeto.getId_inscripcion());
+                ps.setInt(2, objeto.getId_columna_notas());
+                ps.setDouble(3, objeto.getNota());
+                ps.setString(4, objeto.getObservaciones());
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    /** Actualiza la nota y registra su auditoría en una única transacción. */
+    public void modificarConHistorial(Calificacion objeto, Double notaAnterior, String motivo) throws SQLException {
+        String actualizar = "UPDATE calificacion SET nota = ?, fecha_carga = ?, observaciones = ? WHERE id_calificacion = ?";
+        String historial = "INSERT INTO calificacion_historial (id_calificacion, nota_anterior, nota_nueva, fecha_modificacion, motivo) VALUES (?, ?, ?, ?, ?)";
+        try (Connection conexion = Conexion.getConnection()) {
+            if (conexion == null) throw new SQLException("No se pudo establecer conexión con la base de datos.");
+            boolean autoCommit = conexion.getAutoCommit();
+            conexion.setAutoCommit(false);
+            try (PreparedStatement psNota = conexion.prepareStatement(actualizar);
+                 PreparedStatement psHistorial = conexion.prepareStatement(historial)) {
+                psNota.setDouble(1, objeto.getNota());
+                psNota.setObject(2, objeto.getFecha_carga());
+                psNota.setString(3, objeto.getObservaciones());
+                psNota.setInt(4, objeto.getId_calificacion());
+                if (psNota.executeUpdate() != 1) throw new SQLException("La calificación ya no existe.");
+
+                psHistorial.setInt(1, objeto.getId_calificacion());
+                psHistorial.setDouble(2, notaAnterior);
+                psHistorial.setDouble(3, objeto.getNota());
+                psHistorial.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
+                psHistorial.setString(5, motivo);
+                psHistorial.executeUpdate();
+                conexion.commit();
+            } catch (SQLException error) {
+                conexion.rollback();
+                throw error;
+            } finally {
+                conexion.setAutoCommit(autoCommit);
+            }
+        }
+    }
 
     @Override
     public void insertar(Calificacion objeto) {

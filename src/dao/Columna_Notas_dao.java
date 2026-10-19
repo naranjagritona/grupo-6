@@ -13,6 +13,24 @@ import java.util.List;
 
 public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
 
+    public void insertarVerificando(Columna_Notas objeto) throws SQLException {
+        String sql = "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion, fecha_evaluacion, fecha_cierre, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conexion = Conexion.getConnection()) {
+            if (conexion == null) throw new SQLException("No se pudo establecer conexión con la base de datos.");
+            try (PreparedStatement ps = conexion.prepareStatement(sql)) {
+                ps.setInt(1, objeto.getId_curso());
+                ps.setString(2, objeto.getTitulo());
+                ps.setString(3, objeto.getTipo());
+                ps.setDouble(4, objeto.getNota_maxima());
+                ps.setDouble(5, objeto.getNota_aprobacion());
+                ps.setObject(6, objeto.getFecha_evaluacion());
+                ps.setObject(7, objeto.getFecha_cierre());
+                ps.setString(8, objeto.getEstado());
+                ps.executeUpdate();
+            }
+        }
+    }
+
     @Override
     public void insertar(Columna_Notas objeto) {
         String consulta = "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion, fecha_evaluacion, fecha_cierre, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";

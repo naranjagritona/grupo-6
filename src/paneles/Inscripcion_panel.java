@@ -170,6 +170,26 @@ public class Inscripcion_panel extends JFrame {
             panelContenido.revalidate();
             panelContenido.repaint();
         });
+
+        btnCalificaciones.addActionListener(_ -> {
+            panelContenido.removeAll();
+            splitPane.setVisible(false);
+            panelContenido.add(new Calificaciones_panel(usuarioLogueado), BorderLayout.CENTER);
+            btnCalificaciones.setBackground(new Color(37, 99, 235));
+            btnCalificaciones.setForeground(Color.WHITE);
+            btnInscripciones.setBackground(new Color(24, 61, 110));
+            btnInscripciones.setForeground(new Color(203, 213, 225));
+            btnCursos.setBackground(new Color(24, 61, 110));
+            btnCursos.setForeground(new Color(203, 213, 225));
+            btnMaterias.setBackground(new Color(24, 61, 110));
+            btnMaterias.setForeground(new Color(203, 213, 225));
+            if (btnAdmin != null) {
+                btnAdmin.setBackground(new Color(24, 61, 110));
+                btnAdmin.setForeground(new Color(203, 213, 225));
+            }
+            panelContenido.revalidate();
+            panelContenido.repaint();
+        });
         
         btnAdmin.addActionListener(_ -> {
             panelContenido.removeAll();
@@ -394,6 +414,9 @@ public class Inscripcion_panel extends JFrame {
         } else if (rol == 3) { 
             
             btnAdmin.setVisible(false);
+            btnCursos.setVisible(false);
+            btnMaterias.setVisible(false);
+            btnCalificaciones.setVisible(false);
             splitPane.setVisible(false);
             panelContenido.add(panelTablaInscripcion, BorderLayout.CENTER);
             
