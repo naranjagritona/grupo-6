@@ -15,8 +15,8 @@ Resultado medido del archivo de calificacion:
 - Espacio recuperado: 1.048.576 bytes (1 MiB).
 - Conteos y checksums de contenido de las 14 tablas: sin cambios.
 
-No se borraron registros ni se renumeraron IDs. No se modificaron las tablas,
-restricciones, credenciales o permisos. No se agregaron índices sin evidencia:
+No se borraron registros ni se renumeraron IDs. No se modificaron el esquema,
+las restricciones, credenciales o permisos. No se agregaron índices sin evidencia:
 los índices existentes cubren la consulta acotada de calificaciones incorporada
 en la rama java. La reducción del tamaño no implica un aumento medido de
 velocidad; la consulta Java también evita traer tablas completas al cliente.
