@@ -1,0 +1,290 @@
+/* Corrección para habilitar el scroll vertical en todo el panel de administración */
+html, body.app {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* Evita doble scroll general y fija la estructura app */
+}
+
+.main-panel {
+  height: 100vh;
+  overflow-y: auto; /* Habilita el scroll vertical en el panel derecho */
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  padding-bottom: 4rem; /* Espacio adicional al final para ver cómodamente la tabla de logs */
+}
+
+/* Estilos generales y específicos para el panel de administración */
+
+.admin-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.admin-card {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 1rem;
+  padding: 1.2rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  text-align: center;
+}
+
+.admin-card .card-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.admin-card .card-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #0b63e5;
+}
+
+.admin-forms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .admin-forms-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-panel-card {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.3s ease;
+}
+
+/* Estilos para formularios desplegables (toggle) */
+.admin-panel-card.formulario-colapsado {
+  padding: 1rem 1.5rem;
+}
+
+.admin-panel-card.formulario-colapsado .admin-form,
+.admin-panel-card.formulario-colapsado .panel-desc,
+.admin-panel-card.formulario-colapsado h3 {
+  display: none;
+}
+
+.btn-toggle-formulario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-toggle-formulario:hover {
+  background: #f1f5f9;
+  border-color: #0b63e5;
+  color: #0b63e5;
+}
+
+.btn-toggle-formulario .icono-flecha {
+  font-size: 1.1rem;
+  transition: transform 0.3s ease;
+}
+
+.admin-panel-card:not(.formulario-colapsado) .btn-toggle-formulario .icono-flecha {
+  transform: rotate(180deg);
+}
+
+.admin-panel-card h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.admin-panel-card h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 1.2rem 0 0.6rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.25rem;
+}
+
+.panel-desc {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0.8rem 0 1rem 0;
+}
+
+.admin-form .form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.admin-form .form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.admin-form input,
+.admin-form select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.admin-form input:focus,
+.admin-form select:focus {
+  border-color: #0b63e5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(11, 99, 229, 0.12);
+}
+
+.btn-admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.2rem;
+  border: 0;
+  border-radius: 0.7rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  margin-top: 1rem;
+}
+
+.btn-admin.primary {
+  background: #0b63e5;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.btn-admin.primary:hover {
+  background: #0952be;
+}
+
+/* Tabla de Log */
+.tabla-contenedor {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.admin-table th {
+  background: #f8fafc;
+  padding: 0.85rem 1rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.admin-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.admin-table tr:hover {
+  background: #f8fafc;
+}
+
+.badge-rol {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.badge-accion {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.badge-accion.crear {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-accion.modificar {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-accion.eliminar {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.mensaje-alerta {
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.mensaje-alerta.exito {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.mensaje-alerta.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.empty-state {
+  text-align: center;
+  color: #64748b;
+  padding: 1.5rem !important;
+}
