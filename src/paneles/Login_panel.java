@@ -13,7 +13,7 @@ public class Login_panel extends JFrame {
     private JPasswordField txtContraseña;
     private JButton btnIngresar;
 
-    //constructor vacio necesario para que el diseñador visual windowbuilder cargue la vista sin lanzar excepciones
+   
     public Login_panel() {
         loginServicio = new Login_servicio();
 

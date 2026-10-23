@@ -31,6 +31,7 @@ public class Inscripcion_panel extends JFrame {
     private JButton btnMaterias;
     private JButton btnCalificaciones;
     private JButton btnAdmin; 
+    private JButton btnCerrarSesion;
     
     private JPanel contentPane;
     private JPanel panelContenido;
@@ -41,7 +42,6 @@ public class Inscripcion_panel extends JFrame {
     private JTable table;
     private JPanel panelTablaInscripcion; 
     private JPanel panelGestionInscripcion;
-    
     
     private JComboBox<ItemCombo> cmbAlumno;
     private JComboBox<ItemCombo> cmbCurso;
@@ -55,7 +55,7 @@ public class Inscripcion_panel extends JFrame {
     
     private Integer idInscripcionSeleccionada = null;
 
-    // Constructor vacío por defecto (necesario para WindowBuilder)
+    // Constructor vacío por defecto
     public Inscripcion_panel() {
         this(null);
     }
@@ -89,6 +89,20 @@ public class Inscripcion_panel extends JFrame {
         lblTituloAcademia.setFont(new Font("Tahoma", Font.BOLD, 18));
         panelTop.add(lblTituloAcademia, BorderLayout.CENTER);
         
+        // Panel derecho en el header para alinear el botón de cerrar sesión
+        JPanel panelHeaderRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 8));
+        panelHeaderRight.setOpaque(false);
+        
+        btnCerrarSesion = new JButton("Cerrar sesión");
+        // Color azul marino elegante
+        btnCerrarSesion.setBackground(new Color(20, 40, 75)); 
+        btnCerrarSesion.setForeground(Color.WHITE);
+        btnCerrarSesion.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnCerrarSesion.setFocusPainted(false);
+        btnCerrarSesion.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        panelHeaderRight.add(btnCerrarSesion);
+        panelTop.add(panelHeaderRight, BorderLayout.EAST);
+        
         JPanel panelMenu = new JPanel();
         panelMenu.setBackground(new Color(0, 0, 64));
         panelMenu.setPreferredSize(new Dimension(170, 10));
@@ -101,7 +115,7 @@ public class Inscripcion_panel extends JFrame {
         lblMenu.setBounds(49, 0, 60, 57);
         panelMenu.add(lblMenu);
         
-        // Inicialización de botones usando los atributos de la clase
+        // Inicialización de botones del menú lateral
         btnInscripciones = new JButton("Inscripciones");
         btnInscripciones.setBounds(15, 61, 140, 35);
         btnInscripciones.setBackground(new Color(37, 99, 235));
@@ -137,7 +151,25 @@ public class Inscripcion_panel extends JFrame {
         btnAdmin.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnAdmin);
 
-        //Listeners de los botones del menú
+        // Listener del botón de cerrar sesión
+        btnCerrarSesion.addActionListener(_ -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "¿Estás seguro de que querés cerrar sesión?",
+                "Cerrar sesión",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+            );
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                new dao.Usuario_dao().cerrarSesion(usuarioLogueado);
+                this.dispose(); 
+                Login_panel login = new Login_panel(); 
+                login.setVisible(true);
+            }
+        });
+
+        // Listeners del menú
         btnCursos.addActionListener(_ -> {
             panelContenido.removeAll();
             splitPane.setVisible(false);
@@ -235,7 +267,7 @@ public class Inscripcion_panel extends JFrame {
 		
         JLabel lblFecha = new JLabel("Fecha (DD/MM/YYYY):");
         lblFecha.setFont(new Font("Tahoma", Font.PLAIN, 14));
-        lblFecha.setBounds(10, 166, 130, 14);
+        lblFecha.setBounds(10, 166, 138, 14);
         panelGestionInscripcion.add(lblFecha);
 		
         JLabel lblEstado = new JLabel("Estado:");
@@ -249,22 +281,22 @@ public class Inscripcion_panel extends JFrame {
         panelGestionInscripcion.add(lblImporte);
 		
         cmbAlumno = new JComboBox<ItemCombo>();
-        cmbAlumno.setBounds(140, 84, 250, 22);
+        cmbAlumno.setBounds(150, 84, 250, 22);
         panelGestionInscripcion.add(cmbAlumno);
 
         cmbCurso = new JComboBox<ItemCombo>();
-        cmbCurso.setBounds(140, 124, 250, 22);
+        cmbCurso.setBounds(150, 124, 250, 22);
         panelGestionInscripcion.add(cmbCurso);
 		
         textFecha = new JTextField();
-        textFecha.setBounds(140, 165, 250, 22);
+        textFecha.setBounds(150, 164, 250, 22);
         textFecha.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         panelGestionInscripcion.add(textFecha);
         textFecha.setColumns(10);
 		
         txtImporteCuota = new JTextField();
         txtImporteCuota.setColumns(10);
-        txtImporteCuota.setBounds(140, 247, 250, 22);
+        txtImporteCuota.setBounds(150, 247, 250, 22);
         panelGestionInscripcion.add(txtImporteCuota);
 		
         cmbEstado = new JComboBox<String>();
@@ -272,7 +304,7 @@ public class Inscripcion_panel extends JFrame {
         cmbEstado.addItem("Confirmada");
         cmbEstado.addItem("Cancelada");
         cmbEstado.addItem("Finalizada");
-        cmbEstado.setBounds(140, 204, 250, 22);
+        cmbEstado.setBounds(150, 204, 250, 22);
         panelGestionInscripcion.add(cmbEstado);
 		
         JButton btnRegistrar = new JButton("Registrar");
@@ -370,57 +402,41 @@ public class Inscripcion_panel extends JFrame {
         cargarDatosAsincronos();
     }
 
-    // METODOSSS
-
     private void aplicarPermisosPorRol() {
         if (usuarioLogueado == null) return;
 
         int rol = usuarioLogueado.getId_rol();
-        //este es rol del administrador
-        if (rol == 1) { 
-            
-            // admin ve todo y tiene acceso completo a todos los botones y módulos
+        if (rol == 1) { // Administrador
             btnInscripciones.setVisible(true);
             btnCursos.setVisible(true);
             btnMaterias.setVisible(true);
             btnCalificaciones.setVisible(true);
             btnAdmin.setVisible(true);
             
-            //posiciones originales del menú lateral
             btnInscripciones.setBounds(15, 61, 140, 35);
             btnCursos.setBounds(15, 107, 140, 35);
             btnMaterias.setBounds(15, 152, 140, 35);
             btnCalificaciones.setBounds(15, 197, 140, 35);
-            btnAdmin.setBounds(15, 242, 140, 35);
-
-        //este es rol de docente
-        } else if (rol == 2) { 
+            btnAdmin.setBounds(15, 243, 140, 35);
             
+        } else if (rol == 2) { // Docente
             btnInscripciones.setVisible(false);
             btnCursos.setVisible(true);
             btnMaterias.setVisible(true);
             btnCalificaciones.setVisible(true);
             btnAdmin.setVisible(false);
             
-            //reorganizamos los botones hacia arriba para que no queden huecos
             btnCursos.setBounds(15, 61, 140, 35);
             btnMaterias.setBounds(15, 107, 140, 35);
             btnCalificaciones.setBounds(15, 152, 140, 35);
-
-            //entra directamente al panel de Cursos por defecto
+            
             mostrarPanelCursos();
 
-        //este es el rol de alumno
-        } else if (rol == 3) { 
-            
+        } else if (rol == 3) { // Alumno
             btnAdmin.setVisible(false);
-            btnCursos.setVisible(false);
-            btnMaterias.setVisible(false);
-            btnCalificaciones.setVisible(false);
             splitPane.setVisible(false);
             panelContenido.add(panelTablaInscripcion, BorderLayout.CENTER);
             
-            //carga únicamente sus propias inscripciones
             cargarInscripcionesPropiasAlumno();
         }
     }
@@ -478,7 +494,7 @@ public class Inscripcion_panel extends JFrame {
 
     private void cargarDatosAsincronos() {
         if (usuarioLogueado != null && usuarioLogueado.getId_rol() == 3) {
-            return; // Si es alumno ya cargamos sus inscripciones arriba
+            return; 
         }
 
         new SwingWorker<Void, Void>() {
@@ -543,7 +559,6 @@ public class Inscripcion_panel extends JFrame {
 
         for (Inscripcion ins : lista) {
             String nombreAlumno = mapaAlumnos.getOrDefault(ins.getId_alumno(), "Desconocido");
-            
             modelo.addRow(new Object[]{
                 ins.getId_inscripcion(),
                 nombreAlumno,
@@ -555,7 +570,7 @@ public class Inscripcion_panel extends JFrame {
         }
         table.setModel(modelo);
     }
-
+    
     private void registrarInscripcion() {
         try {
             ItemCombo alumnoSeleccionado = (ItemCombo) cmbAlumno.getSelectedItem();

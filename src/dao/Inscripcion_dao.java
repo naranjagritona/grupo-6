@@ -24,7 +24,11 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
             ps.setInt(2, objeto.getId_curso());
             ps.setObject(3, objeto.getFecha_inscripcion());
             ps.setString(4, objeto.getEstado());
-            ps.setString(5, objeto.getMotivo_baja());
+            
+            
+            String motivo = objeto.getMotivo_baja() != null ? objeto.getMotivo_baja() : "";
+            ps.setString(5, motivo);
+            
             ps.setObject(6, objeto.getImporte_cuota());
 
             ps.executeUpdate();
@@ -104,7 +108,7 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
     }
 
     @Override
-public void modificar(Inscripcion objeto) {
+    public void modificar(Inscripcion objeto) {
         String consulta = "UPDATE inscripcion SET id_alumno = ?, id_curso = ?, fecha_inscripcion = ?, estado = ?, motivo_baja = ?, importe_cuota = ? WHERE id_inscripcion = ?";
 
         try (Connection conexion = Conexion.getConnection();
@@ -114,7 +118,11 @@ public void modificar(Inscripcion objeto) {
             ps.setInt(2, objeto.getId_curso());
             ps.setObject(3, objeto.getFecha_inscripcion());
             ps.setString(4, objeto.getEstado());
-            ps.setString(5, objeto.getMotivo_baja());
+            
+            // Control de nulo para motivo_baja
+            String motivo = objeto.getMotivo_baja() != null ? objeto.getMotivo_baja() : "";
+            ps.setString(5, motivo);
+            
             ps.setObject(6, objeto.getImporte_cuota());
             ps.setInt(7, objeto.getId_inscripcion());
 
@@ -127,7 +135,7 @@ public void modificar(Inscripcion objeto) {
     }
 
     @Override
-public void eliminar(Integer id) {
+    public void eliminar(Integer id) {
         String consulta = "DELETE FROM inscripcion WHERE id_inscripcion = ?";
 
         try (Connection conexion = Conexion.getConnection();
@@ -142,8 +150,8 @@ public void eliminar(Integer id) {
         }
     }
 
- // Busca por alumno (nombre, apellido, DNI), id de curso o estado
-public List<Inscripcion> buscarCampo(String filtro) {
+    // Busca por alumno (nombre, apellido, DNI), id de curso o estado
+    public List<Inscripcion> buscarCampo(String filtro) {
         List<Inscripcion> lista = new ArrayList<>();
         String consulta = "SELECT DISTINCT i.* FROM inscripcion i " +
                           "JOIN alumno a ON i.id_alumno = a.id_alumno " +
@@ -183,32 +191,32 @@ public List<Inscripcion> buscarCampo(String filtro) {
         return lista;
     }
 
-//filtra cada estado de las inscripciones
-public List<Inscripcion> obtenerPorEstado(String estado) {
-    List<Inscripcion> lista = new ArrayList<>();
-    String consulta = "SELECT * FROM inscripcion WHERE estado = ?";
-    
-    try (Connection conexion = Conexion.getConnection();
-         PreparedStatement ps = conexion.prepareStatement(consulta)) {
+    // Filtra cada estado de las inscripciones
+    public List<Inscripcion> obtenerPorEstado(String estado) {
+        List<Inscripcion> lista = new ArrayList<>();
+        String consulta = "SELECT * FROM inscripcion WHERE estado = ?";
         
-        ps.setString(1, estado);
-        try (ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Inscripcion ins = new Inscripcion();
-                ins.setId_inscripcion(rs.getInt("id_inscripcion"));
-                ins.setId_alumno(rs.getInt("id_alumno"));
-                ins.setId_curso(rs.getInt("id_curso"));
-                Date fecha = rs.getDate("fecha_inscripcion");
-                ins.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
-                ins.setEstado(rs.getString("estado"));
-                ins.setMotivo_baja(rs.getString("motivo_baja"));
-                ins.setImporte_cuota(rs.getDouble("importe_cuota"));
-                lista.add(ins);
+        try (Connection conexion = Conexion.getConnection();
+             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            
+            ps.setString(1, estado);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Inscripcion ins = new Inscripcion();
+                    ins.setId_inscripcion(rs.getInt("id_inscripcion"));
+                    ins.setId_alumno(rs.getInt("id_alumno"));
+                    ins.setId_curso(rs.getInt("id_curso"));
+                    Date fecha = rs.getDate("fecha_inscripcion");
+                    ins.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
+                    ins.setEstado(rs.getString("estado"));
+                    ins.setMotivo_baja(rs.getString("motivo_baja"));
+                    ins.setImporte_cuota(rs.getDouble("importe_cuota"));
+                    lista.add(ins);
+                }
             }
+        } catch (SQLException error) {
+            System.err.println("Error al filtrar por estado: " + error.getMessage());
         }
-    } catch (SQLException error) {
-        System.err.println("Error al filtrar por estado: " + error.getMessage());
+        return lista;
     }
-    return lista;
-}
 }

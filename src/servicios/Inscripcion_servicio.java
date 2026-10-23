@@ -16,6 +16,7 @@ import java.util.List;
 
 public class Inscripcion_servicio {
 
+    //declaramos los daos que vamos a usar para consultar la base de datos
     private Inscripcion_dao inscripcionDao;
     private Alumno_dao alumnoDao;
     private Curso_dao cursoDao;
@@ -30,6 +31,8 @@ public class Inscripcion_servicio {
         this.logUsuarioDao = new Log_Usuario_dao();
     }
 
+    //registra en la tabla log_usuario cada movimiento que se hace
+    //para llevar una auditoria de los cambios
     private void registrarLog(Integer idUsuario, String accion, String campo, String valorAnterior, String valorNuevo) {
         try {
             Log_Usuario log = new Log_Usuario();
@@ -45,11 +48,15 @@ public class Inscripcion_servicio {
         }
     }
 
+    //consulta al alumno por su id usando el alumno dao
+    //para verificar si su estado actual es activo
     public boolean alumnoActivo(Integer idAlumno) {
         Alumno alumno = alumnoDao.obtenerPorId(idAlumno);
         return alumno != null && "Activo".equalsIgnoreCase(alumno.getEstado());
     }
 
+    //recorre todas las inscripciones para ver si el alumno ya esta anotado
+    //en el mismo curso con estado pendiente o confirmada
     public boolean yaInscripto(Integer idAlumno, Integer idCurso) {
         List<Inscripcion> inscripciones = inscripcionDao.obtenerTodos();
         for (Inscripcion ins : inscripciones) {
@@ -62,6 +69,8 @@ public class Inscripcion_servicio {
         return false;
     }
 
+    //cuenta cuantas inscripciones confirmadas tiene el curso
+    //y las compara con el cupo maximo permitido para saber si hay lugar
     public boolean hayCupo(Integer idCurso) {
         Curso curso = cursoDao.obtenerPorId(idCurso);
         if (curso == null) return false;
@@ -75,27 +84,22 @@ public class Inscripcion_servicio {
         }
         return confirmadas < curso.getCupo_maximo();
     }
+    
+    //verificamos que la fecha actual este en el rango del periodo lectivo 
+    //del curso 
+    public boolean plazoPeriodo(Integer idCurso) {
+        Curso curso = cursoDao.obtenerPorId(idCurso);
+        if (curso == null) return false;
 
-    public boolean tieneMateriaAprobada(Integer idAlumno, Integer idMateriaRequisito) {
-        List<Resultado_Materia> resultados = resultadoMateriaDao.obtenerTodos();
-        List<Inscripcion> inscripciones = inscripcionDao.obtenerTodos();
-
-        for (Resultado_Materia res : resultados) {
-            for (Inscripcion ins : inscripciones) {
-                if (ins.getId_inscripcion().equals(res.getId_inscripcion()) &&
-                    ins.getId_alumno().equals(idAlumno)) {
-                    Curso curso = cursoDao.obtenerPorId(ins.getId_curso());
-                    if (curso != null && curso.getId_materia().equals(idMateriaRequisito)) {
-                        if ("Aprobado".equalsIgnoreCase(res.getResultado()) || "Promocionado".equalsIgnoreCase(res.getResultado())) {
-                            return true;
-                        }
-                    }
-                }
-            }
+        LocalDate hoy = LocalDate.now();
+        if (curso.getFecha_inicio() != null && curso.getFecha_fin() != null) {
+            return !hoy.isBefore(curso.getFecha_inicio()) && !hoy.isAfter(curso.getFecha_fin());
         }
-        return false;
+        return true; // Si no tiene fechas cargadas, permite por defecto
     }
 
+    //junta todas las validaciones anteriores antes de dejar inscribir a alguien
+    //si algo falla devuelve un texto con el motivo
     public String puedeInscribirse(Integer idAlumno, Integer idCurso) {
         if (!alumnoActivo(idAlumno)) {
             return "El alumno no se encuentra con estado Activo.";
@@ -106,9 +110,13 @@ public class Inscripcion_servicio {
         if (!hayCupo(idCurso)) {
             return "El curso ha alcanzado su cupo máximo de inscripciones.";
         }
+        if (!plazoPeriodo(idCurso)) {
+            return "La inscripción está fuera de término respecto a las fechas del período lectivo.";
+        }
         return "OK";
     }
 
+    //llama al dao para buscar inscripciones por texto o filtro
     public List<Inscripcion> buscarCampo(String filtro) {
         if (filtro == null || filtro.trim().isEmpty()) {
             return inscripcionDao.obtenerTodos();
@@ -116,6 +124,7 @@ public class Inscripcion_servicio {
         return inscripcionDao.buscarCampo(filtro.trim());
     }
 
+    //filtra las inscripciones segun el estado seleccionado en la interfaz
     public List<Inscripcion> filtrarEstadoInscrip(String estadoFiltro) {
         if (estadoFiltro == null || estadoFiltro.trim().isEmpty() || "Todos".equalsIgnoreCase(estadoFiltro)) {
             return inscripcionDao.obtenerTodos();
@@ -123,12 +132,16 @@ public class Inscripcion_servicio {
         return inscripcionDao.obtenerPorEstado(estadoFiltro);
     }
 
+    //envia la nueva inscripcion al dao para guardarla en la bd
+    //y despues deja registro en el log de usuarios
     public void registrar(Inscripcion inscripcion, Integer idUsuario) {
         inscripcionDao.insertar(inscripcion);
         registrarLog(idUsuario, "REGISTRAR", "Inscripciones", null, 
             "Alumno ID: " + inscripcion.getId_alumno() + " | Curso ID: " + inscripcion.getId_curso() + " | Estado: " + inscripcion.getEstado() + " | Cuota: $" + inscripcion.getImporte_cuota());
     }
 
+    //actualiza los datos de una inscripcion existente
+    //guardando el valor viejo y el nuevo en los logs
     public void modificar(Inscripcion inscripcion, Integer idUsuario) {
         Inscripcion anterior = inscripcionDao.obtenerPorId(inscripcion.getId_inscripcion());
         String valorAnt = anterior != null ? "Estado: " + anterior.getEstado() + " | Importe: $" + anterior.getImporte_cuota() : "Desconocido";
@@ -139,11 +152,12 @@ public class Inscripcion_servicio {
         registrarLog(idUsuario, "MODIFICAR", "Inscripciones", valorAnt, valorNue);
     }
 
+    //cambia el estado de la inscripcion a canceladay guarda el motivo de baja
     public void darDeBaja(Integer idInscripcion, String motivoBaja, Integer idUsuario) {
         Inscripcion ins = inscripcionDao.obtenerPorId(idInscripcion);
         if (ins != null) {
             String valorAnt = "Estado: " + ins.getEstado();
-            ins.setEstado("Finalizada");
+            ins.setEstado("Cancelada");
             ins.setMotivo_baja(motivoBaja);
             inscripcionDao.modificar(ins);
             
