@@ -13,6 +13,7 @@ import java.util.List;
 
 public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
 
+    //inserta una nueva inscripcion en la base de datos
     @Override
     public void insertar(Inscripcion objeto) {
         String consulta = "INSERT INTO inscripcion (id_alumno, id_curso, fecha_inscripcion, estado, motivo_baja, importe_cuota) VALUES (?, ?, ?, ?, ?, ?)";
@@ -25,7 +26,7 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
             ps.setObject(3, objeto.getFecha_inscripcion());
             ps.setString(4, objeto.getEstado());
             
-            
+            //controla que el motivo de baja no sea nulo
             String motivo = objeto.getMotivo_baja() != null ? objeto.getMotivo_baja() : "";
             ps.setString(5, motivo);
             
@@ -39,6 +40,7 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
         }
     }
 
+    //obtiene una inscripcion especifica buscando por su id
     @Override
     public Inscripcion obtenerPorId(Integer id) {
         Inscripcion inscripcion = null;
@@ -73,6 +75,7 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
         return inscripcion;
     }
 
+    //devuelve una lista con todas las inscripciones registradas
     @Override
     public List<Inscripcion> obtenerTodos() {
         List<Inscripcion> listaInscripciones = new ArrayList<>();
@@ -107,6 +110,7 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
         return listaInscripciones;
     }
 
+    //actualiza los datos de una inscripcion existente
     @Override
     public void modificar(Inscripcion objeto) {
         String consulta = "UPDATE inscripcion SET id_alumno = ?, id_curso = ?, fecha_inscripcion = ?, estado = ?, motivo_baja = ?, importe_cuota = ? WHERE id_inscripcion = ?";
@@ -119,7 +123,6 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
             ps.setObject(3, objeto.getFecha_inscripcion());
             ps.setString(4, objeto.getEstado());
             
-            // Control de nulo para motivo_baja
             String motivo = objeto.getMotivo_baja() != null ? objeto.getMotivo_baja() : "";
             ps.setString(5, motivo);
             
@@ -134,6 +137,7 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
         }
     }
 
+    //elimina una inscripcion por su id
     @Override
     public void eliminar(Integer id) {
         String consulta = "DELETE FROM inscripcion WHERE id_inscripcion = ?";
@@ -150,7 +154,45 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
         }
     }
 
-    // Busca por alumno (nombre, apellido, DNI), id de curso o estado
+    //realiza la transaccion para cancelar la inscripcion actual y generar la nueva en el curso destino
+    public void cambiarCursoTransaccional(Integer idInscripcionActual, Integer idNuevoCurso, String motivoBaja) throws SQLException {
+        String actualizarActual = "UPDATE inscripcion SET estado = 'Cancelada', motivo_baja = ? WHERE id_inscripcion = ?";
+        String insertarNueva = "INSERT INTO inscripcion (id_alumno, id_curso, fecha_inscripcion, estado, motivo_baja, importe_cuota) VALUES (?, ?, ?, 'Confirmada', '', ?)";
+
+        try (Connection conexion = Conexion.getConnection()) {
+            if (conexion == null) throw new SQLException("No se pudo establecer conexión con la base de datos.");
+            boolean autoCommit = conexion.getAutoCommit();
+            conexion.setAutoCommit(false);
+
+            try {
+                Inscripcion actual = obtenerPorId(idInscripcionActual);
+                if (actual == null) throw new SQLException("La inscripción actual no existe.");
+
+                try (PreparedStatement psAct = conexion.prepareStatement(actualizarActual)) {
+                    psAct.setString(1, motivoBaja);
+                    psAct.setInt(2, idInscripcionActual);
+                    if (psAct.executeUpdate() != 1) throw new SQLException("No se pudo actualizar la inscripción anterior.");
+                }
+
+                try (PreparedStatement psIns = conexion.prepareStatement(insertarNueva)) {
+                    psIns.setInt(1, actual.getId_alumno());
+                    psIns.setInt(2, idNuevoCurso);
+                    psIns.setObject(3, java.time.LocalDate.now());
+                    psIns.setObject(4, actual.getImporte_cuota());
+                    psIns.executeUpdate();
+                }
+
+                conexion.commit();
+            } catch (SQLException error) {
+                conexion.rollback();
+                throw error;
+            } finally {
+                conexion.setAutoCommit(autoCommit);
+            }
+        }
+    }
+
+    //busca por alumno (nombre, apellido, DNI), id de curso o estado
     public List<Inscripcion> buscarCampo(String filtro) {
         List<Inscripcion> lista = new ArrayList<>();
         String consulta = "SELECT DISTINCT i.* FROM inscripcion i " +
@@ -191,7 +233,7 @@ public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
         return lista;
     }
 
-    // Filtra cada estado de las inscripciones
+    //filtra cada estado de las inscripciones
     public List<Inscripcion> obtenerPorEstado(String estado) {
         List<Inscripcion> lista = new ArrayList<>();
         String consulta = "SELECT * FROM inscripcion WHERE estado = ?";

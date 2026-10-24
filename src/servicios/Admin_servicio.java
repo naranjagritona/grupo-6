@@ -24,18 +24,17 @@ public class Admin_servicio {
         this.responsableDao = new Responsable_dao();
     }
 
-    //cuenta cuantos alumnos hay consultando al dao
-    //si ocurre un error devuelve cero para evitar que se cuelgue la vista
+    // cuenta cuantos alumnos hay consultando al dao
     public int contarAlumnos() {
         try { return alumnoDao.obtenerTodos().size(); } catch (Exception e) { return 0; }
     }
 
-    //cuenta el total de docentes registrados
+    // cuenta el total de docentes registrados
     public int contarDocentes() {
         try { return docenteDao.obtenerTodos().size(); } catch (Exception e) { return 0; }
     }
 
-    //recorre todos los cursos buscando los que tengan estado activo
+    // recorre todos los cursos buscando los que tengan estado activo
     public int contarCursosActivos() {
         try {
             List<Curso> cursos = cursoDao.obtenerTodos();
@@ -47,17 +46,17 @@ public class Admin_servicio {
         } catch (Exception e) { return 0; }
     }
 
-    //cuenta todas las inscripciones que existen en la bd
+    // cuenta todas las inscripciones que existen en la bd
     public int contarInscripciones() {
         try { return inscripcionDao.obtenerTodos().size(); } catch (Exception e) { return 0; }
     }
 
-    //cuenta el total de cuentas de usuario creadas
+    // cuenta el total de cuentas de usuario creadas
     public int contarUsuarios() {
         try { return usuarioDao.obtenerTodos().size(); } catch (Exception e) { return 0; }
     }
 
-    //revisa los legajos de los docentes existentes para calcular el proximo numero disponible
+    // revisa los legajos de los docentes existentes para calcular el proximo numero disponible
     public String generarSiguienteLegajoDocente() {
         try {
             List<Docente> docentes = docenteDao.obtenerTodos();
@@ -79,7 +78,7 @@ public class Admin_servicio {
         }
     }
 
-    //calcula de forma automatica la siguiente matricula numerica para un nuevo alumno
+    // calcula de forma automatica la siguiente matricula numerica para un nuevo alumno
     public String generarSiguienteMatriculaAlumno() {
         try {
             List<Alumno> alumnos = alumnoDao.obtenerTodos();
@@ -101,7 +100,7 @@ public class Admin_servicio {
         }
     }
 
-    //registra una accion en la tabla de auditoria log_usuario
+    // registra una accion en la tabla de auditoria log_usuario
     private void registrarLog(Integer idUsuario, String accion, String campo, String valorNuevo) {
         try {
             Log_Usuario log = new Log_Usuario();
@@ -116,18 +115,16 @@ public class Admin_servicio {
         }
     }
 
-    //registra todo junto: crea el usuario, el responsable, genera la matricula y guarda el alumno
+    // registra todo junto: crea el usuario, el responsable, genera la matricula y guarda el alumno
     public void registrarAlumnoConResponsableYUsuario(
             Integer idAdminLogueado,
             String usuario, String contraseña,
             String nombreAlumno, String apellidoAlumno, String dniAlumno, String estadoAlumno,
             String nombreResp, String apellidoResp, String dniResp, String tipoRelacion) {
         
-        //crear Usuario con rol 3 que corresponde al alumno
         Usuario u = new Usuario(null, 3, usuario, contraseña);
         usuarioDao.insertar(u);
 
-        //recupera el id del usuario que acabamos de crear en la bd
         Integer idUsuario = null;
         for (Usuario usu : usuarioDao.obtenerTodos()) {
             if (usu.getNombre_usuario().equals(usuario)) {
@@ -136,11 +133,9 @@ public class Admin_servicio {
             }
         }
 
-        //crear Responsable asociado
         Responsable resp = new Responsable(null, nombreResp, apellidoResp, dniResp, tipoRelacion);
         responsableDao.insertar(resp);
 
-        //recupera el id del responsable creado mediante su dni
         Integer idResp = null;
         for (Responsable r : responsableDao.obtenerTodos()) {
             if (r.getDni().equals(dniResp)) {
@@ -149,28 +144,22 @@ public class Admin_servicio {
             }
         }
 
-        //genera la matricula de manera automatica
         String matriculaAuto = generarSiguienteMatriculaAlumno();
-
-        //crea el objeto alumno vinculando el usuario y el responsable
         Alumno alumno = new Alumno(null, idUsuario, idResp, nombreAlumno, apellidoAlumno, dniAlumno, matriculaAuto, estadoAlumno);
         alumnoDao.insertar(alumno);
 
-        //guarda el registro en el log de auditoria
-        registrarLog(idAdminLogueado, "INSERT", "Alumnos", "Nuevo alumno registrado: " + nombreAlumno + " " + apellidoAlumno + " (Mat: " + matriculaAuto + ")");
+        registrarLog(idAdminLogueado, "INSERT", "Alumnos", "Nuevo alumno registrado: " + nombreAlumno + " " + apellidoAlumno);
     }
 
-    //crea un nuevo usuario docente con su respectivo legajo automatico
+    // crea un nuevo usuario docente con su respectivo legajo automatico
     public void registrarDocenteConUsuario(
             Integer idAdminLogueado,
             String usuario, String contraseña,
             String nombreDocente, String apellidoDocente, String dniDocente, String estadoDocente) {
         
-        //crear Usuario con rol 2 que corresponde al docente
         Usuario u = new Usuario(null, 2, usuario, contraseña);
         usuarioDao.insertar(u);
 
-        //recupera el id del usuario recien creado
         Integer idUsuario = null;
         for (Usuario usu : usuarioDao.obtenerTodos()) {
             if (usu.getNombre_usuario().equals(usuario)) {
@@ -179,14 +168,42 @@ public class Admin_servicio {
             }
         }
 
-        //genera el legajo automatico
         String legajoAuto = generarSiguienteLegajoDocente();
-
-        //crea el docente y lo guarda en la bd
         Docente docente = new Docente(null, idUsuario, nombreDocente, apellidoDocente, dniDocente, legajoAuto, estadoDocente);
         docenteDao.insertar(docente);
 
-        //registra la accion en la tabla de logs
-        registrarLog(idAdminLogueado, "INSERT", "Docentes", "Nuevo docente registrado: " + nombreDocente + " " + apellidoDocente + " (Leg: " + legajoAuto + ")");
+        registrarLog(idAdminLogueado, "INSERT", "Docentes", "Nuevo docente registrado: " + nombreDocente + " " + apellidoDocente);
+    }
+
+    // modificamos los datos del alumno y guardamos el log
+    public void modificarAlumno(Alumno alumno, Integer idAdminLogueado) {
+        alumnoDao.modificar(alumno);
+        registrarLog(idAdminLogueado, "MODIFICAR", "Alumnos", "Actualizado alumno ID: " + alumno.getId_alumno() + " - Estado: " + alumno.getEstado());
+    }
+
+    // modificamos los datos del docente y guardamos el log
+    public void modificarDocente(Docente docente, Integer idAdminLogueado) {
+        docenteDao.modificar(docente);
+        registrarLog(idAdminLogueado, "MODIFICAR", "Docentes", "Actualizado docente ID: " + docente.getId_docente() + " - Estado: " + docente.getEstado());
+    }
+
+    // damos de baja al alumno pasando su estado a inactivo
+    public void darDeBajaAlumno(Integer idAlumno, Integer idAdminLogueado) {
+        Alumno alu = alumnoDao.obtenerPorId(idAlumno);
+        if (alu != null) {
+            alu.setEstado("Inactivo");
+            alumnoDao.modificar(alu);
+            registrarLog(idAdminLogueado, "DAR DE BAJA", "Alumnos", "Alumno ID " + idAlumno + " pasado a estado Inactivo");
+        }
+    }
+
+    // damos de baja al docente pasando su estado a inactivo
+    public void darDeBajaDocente(Integer idDocente, Integer idAdminLogueado) {
+        Docente doc = docenteDao.obtenerPorId(idDocente);
+        if (doc != null) {
+            doc.setEstado("Inactivo");
+            docenteDao.modificar(doc);
+            registrarLog(idAdminLogueado, "DAR DE BAJA", "Docentes", "Docente ID " + idDocente + " pasado a estado Inactivo");
+        }
     }
 }

@@ -3,6 +3,8 @@ package paneles;
 import clases.Log_Usuario;
 import clases.Usuario;
 import clases.Rol;
+import clases.Alumno;
+import clases.Docente;
 import dao.*;
 import servicios.Admin_servicio;
 
@@ -29,10 +31,17 @@ public class Admin_panel extends JPanel {
     private JTable tablaLog;
     private DefaultTableModel modeloLog;
 
+    // tabla y combo para gestionar personas (alumnos o docentes)
+    private JTable tablaPersonas;
+    private DefaultTableModel modeloPersonas;
+    private JComboBox<String> cmbTipoPersona;
+
     private Admin_servicio adminServicio;
     private Log_Usuario_dao logUsuarioDao;
     private Usuario_dao usuarioDao;
     private Rol_dao rolDao;
+    private Alumno_dao alumnoDao;
+    private Docente_dao docenteDao;
 
     private JPanel panelFormAlumno;
     private JPanel panelFormDocente;
@@ -54,11 +63,14 @@ public class Admin_panel extends JPanel {
         logUsuarioDao = new Log_Usuario_dao();
         usuarioDao = new Usuario_dao();
         rolDao = new Rol_dao();
+        alumnoDao = new Alumno_dao();
+        docenteDao = new Docente_dao();
 
         setLayout(new BorderLayout(0, 0));
         setBackground(Color.WHITE);
         setPreferredSize(new Dimension(1150, 680));
 
+        // titulo superior
         JPanel panelTitulo = new JPanel(new BorderLayout());
         panelTitulo.setBackground(new Color(24, 61, 110));
         panelTitulo.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
@@ -67,7 +79,7 @@ public class Admin_panel extends JPanel {
         titulo.setForeground(Color.WHITE);
         titulo.setFont(new Font("Tahoma", Font.BOLD, 23));
 
-        JLabel subtitulo = new JLabel("Gestión general del sistema");
+        JLabel subtitulo = new JLabel("Gestión general del sistema y usuarios");
         subtitulo.setForeground(new Color(220, 230, 245));
         subtitulo.setFont(new Font("Tahoma", Font.PLAIN, 13));
 
@@ -86,6 +98,7 @@ public class Admin_panel extends JPanel {
         panelCentral.setBackground(Color.WHITE);
         panelCentral.setBorder(new EmptyBorder(15, 15, 15, 15));
 
+        // tarjetas de estadisticas
         JPanel panelTarjetas = new JPanel(new GridLayout(1, 5, 12, 0));
         panelTarjetas.setBackground(Color.WHITE);
         panelTarjetas.setPreferredSize(new Dimension(0, 85));
@@ -101,6 +114,7 @@ public class Admin_panel extends JPanel {
         panelCentral.add(panelTarjetas);
         panelCentral.add(Box.createRigidArea(new Dimension(0, 15)));
 
+        // botones para abrir los formularios de registro
         JPanel panelAcciones = new JPanel(new GridLayout(1, 2, 15, 0));
         panelAcciones.setBackground(Color.WHITE);
         panelAcciones.setPreferredSize(new Dimension(0, 48));
@@ -146,6 +160,66 @@ public class Admin_panel extends JPanel {
 
         panelCentral.add(Box.createRigidArea(new Dimension(0, 15)));
 
+        // seccion con la tabla para gestionar alumnos y docentes
+        JPanel panelGestionPersonas = new JPanel(new BorderLayout(0, 8));
+        panelGestionPersonas.setBackground(Color.WHITE);
+        panelGestionPersonas.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(218, 225, 233)),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+
+        JPanel panelGHeader = new JPanel(new BorderLayout());
+        panelGHeader.setBackground(Color.WHITE);
+        JLabel lblGTitle = new JLabel("Gestión de Alumnos y Docentes");
+        lblGTitle.setFont(new Font("Tahoma", Font.BOLD, 15));
+        lblGTitle.setForeground(new Color(24, 61, 110));
+        panelGHeader.add(lblGTitle, BorderLayout.WEST);
+
+        JPanel panelGFilter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        panelGFilter.setBackground(Color.WHITE);
+        panelGFilter.add(new JLabel("Ver:"));
+        cmbTipoPersona = new JComboBox<>(new String[] {"Alumnos", "Docentes"});
+        cmbTipoPersona.addActionListener(_ -> cargarTablaPersonas());
+        panelGFilter.add(cmbTipoPersona);
+        panelGHeader.add(panelGFilter, BorderLayout.EAST);
+
+        panelGestionPersonas.add(panelGHeader, BorderLayout.NORTH);
+
+        modeloPersonas = new DefaultTableModel(new String[] {"ID", "Nombre", "Apellido", "DNI", "Matrícula / Legajo", "Estado"}, 0) {
+            private static final long serialVersionUID = 1L;
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+        tablaPersonas = new JTable(modeloPersonas);
+        tablaPersonas.setRowHeight(26);
+        tablaPersonas.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        tablaPersonas.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 11));
+        tablaPersonas.getTableHeader().setBackground(new Color(240, 244, 248));
+        tablaPersonas.getTableHeader().setForeground(new Color(24, 61, 110));
+        
+        JScrollPane scrollPersonas = new JScrollPane(tablaPersonas);
+        scrollPersonas.setPreferredSize(new Dimension(0, 160));
+        panelGestionPersonas.add(scrollPersonas, BorderLayout.CENTER);
+
+        JPanel panelGButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        panelGButtons.setBackground(Color.WHITE);
+        JButton btnEditarPersona = new JButton("Modificar seleccionado");
+        btnEditarPersona.setBackground(new Color(37, 99, 235));
+        btnEditarPersona.setForeground(Color.WHITE);
+        btnEditarPersona.addActionListener(_ -> modificarPersonaSeleccionada());
+
+        JButton btnBajaPersona = new JButton("Dar de baja (Inactivo)");
+        btnBajaPersona.setBackground(new Color(220, 38, 38));
+        btnBajaPersona.setForeground(Color.WHITE);
+        btnBajaPersona.addActionListener(_ -> darDeBajaPersonaSeleccionada());
+
+        panelGButtons.add(btnEditarPersona);
+        panelGButtons.add(btnBajaPersona);
+        panelGestionPersonas.add(panelGButtons, BorderLayout.SOUTH);
+
+        panelCentral.add(panelGestionPersonas);
+        panelCentral.add(Box.createRigidArea(new Dimension(0, 15)));
+
+        // seccion de logs y auditoria
         JPanel panelLogContainer = new JPanel(new BorderLayout(0, 8));
         panelLogContainer.setBackground(Color.WHITE);
         panelLogContainer.setBorder(BorderFactory.createCompoundBorder(
@@ -157,7 +231,7 @@ public class Admin_panel extends JPanel {
         lblLogTitulo.setFont(new Font("Tahoma", Font.BOLD, 15));
         lblLogTitulo.setForeground(new Color(24, 61, 110));
 
-        JLabel lblLogSub = new JLabel("Auditoría en tiempo real de acciones, modificaciones de calificaciones, periodos y accesos.");
+        JLabel lblLogSub = new JLabel("Auditoría en tiempo real de acciones y modificaciones.");
         lblLogSub.setFont(new Font("Tahoma", Font.PLAIN, 12));
         lblLogSub.setForeground(new Color(100, 110, 120));
 
@@ -173,8 +247,7 @@ public class Admin_panel extends JPanel {
         String[] columnasLog = {"ID LOG", "USUARIO", "ROL", "ACCIÓN", "CAMPO / MÓDULO", "DETALLE / VALOR NUEVO", "FECHA Y HORA"};
         modeloLog = new DefaultTableModel(columnasLog, 0) {
             private static final long serialVersionUID = 1L;
-            @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
 
         tablaLog = new JTable(modeloLog);
@@ -183,10 +256,9 @@ public class Admin_panel extends JPanel {
         tablaLog.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 11));
         tablaLog.getTableHeader().setBackground(new Color(240, 244, 248));
         tablaLog.getTableHeader().setForeground(new Color(24, 61, 110));
-        tablaLog.getTableHeader().setReorderingAllowed(false);
 
         JScrollPane scrollLog = new JScrollPane(tablaLog);
-        scrollLog.setPreferredSize(new Dimension(0, 200));
+        scrollLog.setPreferredSize(new Dimension(0, 180));
         panelLogContainer.add(scrollLog, BorderLayout.CENTER);
 
         panelCentral.add(panelLogContainer);
@@ -205,7 +277,6 @@ public class Admin_panel extends JPanel {
         ));
 
         int row = 0;
-
         GridBagConstraints gbc0 = new GridBagConstraints();
         gbc0.insets = new Insets(5, 5, 5, 5);
         gbc0.fill = GridBagConstraints.HORIZONTAL;
@@ -217,143 +288,93 @@ public class Admin_panel extends JPanel {
 
         row++;
         GridBagConstraints gbc1 = new GridBagConstraints();
-        gbc1.insets = new Insets(5, 5, 5, 5);
-        gbc1.fill = GridBagConstraints.HORIZONTAL;
-        gbc1.gridx = 0; gbc1.gridy = row; gbc1.gridwidth = 1;
-        panel.add(new JLabel("Usuario:"), gbc1);
+        gbc1.insets = new Insets(5, 5, 5, 5); gbc1.fill = GridBagConstraints.HORIZONTAL;
+        gbc1.gridx = 0; gbc1.gridy = row; panel.add(new JLabel("Usuario:"), gbc1);
 
         GridBagConstraints gbc2 = new GridBagConstraints();
-        gbc2.insets = new Insets(5, 5, 5, 5);
-        gbc2.fill = GridBagConstraints.HORIZONTAL;
-        gbc2.gridx = 1; gbc2.gridy = row; gbc2.gridwidth = 1;
-        txtUsrAlu = new JTextField(12);
-        panel.add(txtUsrAlu, gbc2);
+        gbc2.insets = new Insets(5, 5, 5, 5); gbc2.fill = GridBagConstraints.HORIZONTAL;
+        gbc2.gridx = 1; gbc2.gridy = row; txtUsrAlu = new JTextField(12); panel.add(txtUsrAlu, gbc2);
 
         GridBagConstraints gbc3 = new GridBagConstraints();
-        gbc3.insets = new Insets(5, 5, 5, 5);
-        gbc3.fill = GridBagConstraints.HORIZONTAL;
-        gbc3.gridx = 2; gbc3.gridy = row; gbc3.gridwidth = 1;
-        panel.add(new JLabel("Contraseña:"), gbc3);
+        gbc3.insets = new Insets(5, 5, 5, 5); gbc3.fill = GridBagConstraints.HORIZONTAL;
+        gbc3.gridx = 2; gbc3.gridy = row; panel.add(new JLabel("Contraseña:"), gbc3);
 
         GridBagConstraints gbc4 = new GridBagConstraints();
-        gbc4.insets = new Insets(5, 5, 5, 5);
-        gbc4.fill = GridBagConstraints.HORIZONTAL;
-        gbc4.gridx = 3; gbc4.gridy = row; gbc4.gridwidth = 1;
-        txtPassAlu = new JPasswordField(12);
-        panel.add(txtPassAlu, gbc4);
+        gbc4.insets = new Insets(5, 5, 5, 5); gbc4.fill = GridBagConstraints.HORIZONTAL;
+        gbc4.gridx = 3; gbc4.gridy = row; txtPassAlu = new JPasswordField(12); panel.add(txtPassAlu, gbc4);
 
         row++;
         GridBagConstraints gbc5 = new GridBagConstraints();
-        gbc5.insets = new Insets(5, 5, 5, 5);
-        gbc5.fill = GridBagConstraints.HORIZONTAL;
-        gbc5.gridx = 0; gbc5.gridy = row; gbc5.gridwidth = 1;
-        panel.add(new JLabel("Nombre Alumno:"), gbc5);
+        gbc5.insets = new Insets(5, 5, 5, 5); gbc5.fill = GridBagConstraints.HORIZONTAL;
+        gbc5.gridx = 0; gbc5.gridy = row; panel.add(new JLabel("Nombre Alumno:"), gbc5);
 
         GridBagConstraints gbc6 = new GridBagConstraints();
-        gbc6.insets = new Insets(5, 5, 5, 5);
-        gbc6.fill = GridBagConstraints.HORIZONTAL;
-        gbc6.gridx = 1; gbc6.gridy = row; gbc6.gridwidth = 1;
-        txtNomAlu = new JTextField(12);
-        panel.add(txtNomAlu, gbc6);
+        gbc6.insets = new Insets(5, 5, 5, 5); gbc6.fill = GridBagConstraints.HORIZONTAL;
+        gbc6.gridx = 1; gbc6.gridy = row; txtNomAlu = new JTextField(12); panel.add(txtNomAlu, gbc6);
 
         GridBagConstraints gbc7 = new GridBagConstraints();
-        gbc7.insets = new Insets(5, 5, 5, 5);
-        gbc7.fill = GridBagConstraints.HORIZONTAL;
-        gbc7.gridx = 2; gbc7.gridy = row; gbc7.gridwidth = 1;
-        panel.add(new JLabel("Apellido Alumno:"), gbc7);
+        gbc7.insets = new Insets(5, 5, 5, 5); gbc7.fill = GridBagConstraints.HORIZONTAL;
+        gbc7.gridx = 2; gbc7.gridy = row; panel.add(new JLabel("Apellido Alumno:"), gbc7);
 
         GridBagConstraints gbc8 = new GridBagConstraints();
-        gbc8.insets = new Insets(5, 5, 5, 5);
-        gbc8.fill = GridBagConstraints.HORIZONTAL;
-        gbc8.gridx = 3; gbc8.gridy = row; gbc8.gridwidth = 1;
-        txtApeAlu = new JTextField(12);
-        panel.add(txtApeAlu, gbc8);
+        gbc8.insets = new Insets(5, 5, 5, 5); gbc8.fill = GridBagConstraints.HORIZONTAL;
+        gbc8.gridx = 3; gbc8.gridy = row; txtApeAlu = new JTextField(12); panel.add(txtApeAlu, gbc8);
 
         row++;
         GridBagConstraints gbc9 = new GridBagConstraints();
-        gbc9.insets = new Insets(5, 5, 5, 5);
-        gbc9.fill = GridBagConstraints.HORIZONTAL;
-        gbc9.gridx = 0; gbc9.gridy = row; gbc9.gridwidth = 1;
-        panel.add(new JLabel("DNI Alumno:"), gbc9);
+        gbc9.insets = new Insets(5, 5, 5, 5); gbc9.fill = GridBagConstraints.HORIZONTAL;
+        gbc9.gridx = 0; gbc9.gridy = row; panel.add(new JLabel("DNI Alumno:"), gbc9);
 
         GridBagConstraints gbc10 = new GridBagConstraints();
-        gbc10.insets = new Insets(5, 5, 5, 5);
-        gbc10.fill = GridBagConstraints.HORIZONTAL;
-        gbc10.gridx = 1; gbc10.gridy = row; gbc10.gridwidth = 1;
-        txtDniAlu = new JTextField(12);
-        panel.add(txtDniAlu, gbc10);
+        gbc10.insets = new Insets(5, 5, 5, 5); gbc10.fill = GridBagConstraints.HORIZONTAL;
+        gbc10.gridx = 1; gbc10.gridy = row; txtDniAlu = new JTextField(12); panel.add(txtDniAlu, gbc10);
 
         GridBagConstraints gbc11 = new GridBagConstraints();
-        gbc11.insets = new Insets(5, 5, 5, 5);
-        gbc11.fill = GridBagConstraints.HORIZONTAL;
-        gbc11.gridx = 2; gbc11.gridy = row; gbc11.gridwidth = 1;
-        panel.add(new JLabel("Estado:"), gbc11);
+        gbc11.insets = new Insets(5, 5, 5, 5); gbc11.fill = GridBagConstraints.HORIZONTAL;
+        gbc11.gridx = 2; gbc11.gridy = row; panel.add(new JLabel("Estado:"), gbc11);
 
         GridBagConstraints gbc12 = new GridBagConstraints();
-        gbc12.insets = new Insets(5, 5, 5, 5);
-        gbc12.fill = GridBagConstraints.HORIZONTAL;
-        gbc12.gridx = 3; gbc12.gridy = row; gbc12.gridwidth = 1;
-        cmbEstAlu = new JComboBox<>(new String[]{"Activo", "Inactivo", "Suspendido"});
+        gbc12.insets = new Insets(5, 5, 5, 5); gbc12.fill = GridBagConstraints.HORIZONTAL;
+        gbc12.gridx = 3; gbc12.gridy = row; cmbEstAlu = new JComboBox<>(new String[]{"Activo", "Inactivo", "Suspendido"});
         panel.add(cmbEstAlu, gbc12);
 
         row++;
         GridBagConstraints gbc13 = new GridBagConstraints();
-        gbc13.insets = new Insets(5, 5, 5, 5);
-        gbc13.fill = GridBagConstraints.HORIZONTAL;
-        gbc13.gridx = 0; gbc13.gridy = row; gbc13.gridwidth = 1;
-        panel.add(new JLabel("Nombre Resp.:"), gbc13);
+        gbc13.insets = new Insets(5, 5, 5, 5); gbc13.fill = GridBagConstraints.HORIZONTAL;
+        gbc13.gridx = 0; gbc13.gridy = row; panel.add(new JLabel("Nombre Resp.:"), gbc13);
 
         GridBagConstraints gbc14 = new GridBagConstraints();
-        gbc14.insets = new Insets(5, 5, 5, 5);
-        gbc14.fill = GridBagConstraints.HORIZONTAL;
-        gbc14.gridx = 1; gbc14.gridy = row; gbc14.gridwidth = 1;
-        txtNomResp = new JTextField(12);
-        panel.add(txtNomResp, gbc14);
+        gbc14.insets = new Insets(5, 5, 5, 5); gbc14.fill = GridBagConstraints.HORIZONTAL;
+        gbc14.gridx = 1; gbc14.gridy = row; txtNomResp = new JTextField(12); panel.add(txtNomResp, gbc14);
 
         GridBagConstraints gbc15 = new GridBagConstraints();
-        gbc15.insets = new Insets(5, 5, 5, 5);
-        gbc15.fill = GridBagConstraints.HORIZONTAL;
-        gbc15.gridx = 2; gbc15.gridy = row; gbc15.gridwidth = 1;
-        panel.add(new JLabel("Apellido Resp.:"), gbc15);
+        gbc15.insets = new Insets(5, 5, 5, 5); gbc15.fill = GridBagConstraints.HORIZONTAL;
+        gbc15.gridx = 2; gbc15.gridy = row; panel.add(new JLabel("Apellido Resp.:"), gbc15);
 
         GridBagConstraints gbc16 = new GridBagConstraints();
-        gbc16.insets = new Insets(5, 5, 5, 5);
-        gbc16.fill = GridBagConstraints.HORIZONTAL;
-        gbc16.gridx = 3; gbc16.gridy = row; gbc16.gridwidth = 1;
-        txtApeResp = new JTextField(12);
-        panel.add(txtApeResp, gbc16);
+        gbc16.insets = new Insets(5, 5, 5, 5); gbc16.fill = GridBagConstraints.HORIZONTAL;
+        gbc16.gridx = 3; gbc16.gridy = row; txtApeResp = new JTextField(12); panel.add(txtApeResp, gbc16);
 
         row++;
         GridBagConstraints gbc17 = new GridBagConstraints();
-        gbc17.insets = new Insets(5, 5, 5, 5);
-        gbc17.fill = GridBagConstraints.HORIZONTAL;
-        gbc17.gridx = 0; gbc17.gridy = row; gbc17.gridwidth = 1;
-        panel.add(new JLabel("DNI Resp.:"), gbc17);
+        gbc17.insets = new Insets(5, 5, 5, 5); gbc17.fill = GridBagConstraints.HORIZONTAL;
+        gbc17.gridx = 0; gbc17.gridy = row; panel.add(new JLabel("DNI Resp.:"), gbc17);
 
         GridBagConstraints gbc18 = new GridBagConstraints();
-        gbc18.insets = new Insets(5, 5, 5, 5);
-        gbc18.fill = GridBagConstraints.HORIZONTAL;
-        gbc18.gridx = 1; gbc18.gridy = row; gbc18.gridwidth = 1;
-        txtDniResp = new JTextField(12);
-        panel.add(txtDniResp, gbc18);
+        gbc18.insets = new Insets(5, 5, 5, 5); gbc18.fill = GridBagConstraints.HORIZONTAL;
+        gbc18.gridx = 1; gbc18.gridy = row; txtDniResp = new JTextField(12); panel.add(txtDniResp, gbc18);
 
         GridBagConstraints gbc19 = new GridBagConstraints();
-        gbc19.insets = new Insets(5, 5, 5, 5);
-        gbc19.fill = GridBagConstraints.HORIZONTAL;
-        gbc19.gridx = 2; gbc19.gridy = row; gbc19.gridwidth = 1;
-        panel.add(new JLabel("Tipo Relación:"), gbc19);
+        gbc19.insets = new Insets(5, 5, 5, 5); gbc19.fill = GridBagConstraints.HORIZONTAL;
+        gbc19.gridx = 2; gbc19.gridy = row; panel.add(new JLabel("Tipo Relación:"), gbc19);
 
         GridBagConstraints gbc20 = new GridBagConstraints();
-        gbc20.insets = new Insets(5, 5, 5, 5);
-        gbc20.fill = GridBagConstraints.HORIZONTAL;
-        gbc20.gridx = 3; gbc20.gridy = row; gbc20.gridwidth = 1;
-        txtRelResp = new JTextField(12);
-        panel.add(txtRelResp, gbc20);
+        gbc20.insets = new Insets(5, 5, 5, 5); gbc20.fill = GridBagConstraints.HORIZONTAL;
+        gbc20.gridx = 3; gbc20.gridy = row; txtRelResp = new JTextField(12); panel.add(txtRelResp, gbc20);
 
         row++;
         GridBagConstraints gbc21 = new GridBagConstraints();
-        gbc21.insets = new Insets(5, 5, 5, 5);
-        gbc21.fill = GridBagConstraints.HORIZONTAL;
+        gbc21.insets = new Insets(5, 5, 5, 5); gbc21.fill = GridBagConstraints.HORIZONTAL;
         gbc21.gridx = 0; gbc21.gridy = row; gbc21.gridwidth = 4;
         JButton btnGuarAlu = new JButton("Guardar Alumno");
         btnGuarAlu.setBackground(new Color(37, 99, 235));
@@ -389,10 +410,8 @@ public class Admin_panel extends JPanel {
         ));
 
         int row = 0;
-
         GridBagConstraints gbc0 = new GridBagConstraints();
-        gbc0.insets = new Insets(5, 5, 5, 5);
-        gbc0.fill = GridBagConstraints.HORIZONTAL;
+        gbc0.insets = new Insets(5, 5, 5, 5); gbc0.fill = GridBagConstraints.HORIZONTAL;
         gbc0.gridx = 0; gbc0.gridy = row++; gbc0.gridwidth = 4;
         JLabel lblT = new JLabel("REGISTRO DE NUEVO DOCENTE");
         lblT.setFont(new Font("Tahoma", Font.BOLD, 13));
@@ -401,122 +420,79 @@ public class Admin_panel extends JPanel {
 
         row++;
         GridBagConstraints gbc1 = new GridBagConstraints();
-        gbc1.insets = new Insets(5, 5, 5, 5);
-        gbc1.fill = GridBagConstraints.HORIZONTAL;
-        gbc1.gridx = 0; gbc1.gridy = row; gbc1.gridwidth = 1;
-        panel.add(new JLabel("Usuario:"), gbc1);
+        gbc1.insets = new Insets(5, 5, 5, 5); gbc1.fill = GridBagConstraints.HORIZONTAL;
+        gbc1.gridx = 0; gbc1.gridy = row; panel.add(new JLabel("Usuario:"), gbc1);
 
         GridBagConstraints gbc2 = new GridBagConstraints();
-        gbc2.insets = new Insets(5, 5, 5, 5);
-        gbc2.fill = GridBagConstraints.HORIZONTAL;
-        gbc2.gridx = 1; gbc2.gridy = row; gbc2.gridwidth = 1;
-        txtUsrDoc = new JTextField(12);
-        panel.add(txtUsrDoc, gbc2);
+        gbc2.insets = new Insets(5, 5, 5, 5); gbc2.fill = GridBagConstraints.HORIZONTAL;
+        gbc2.gridx = 1; gbc2.gridy = row; txtUsrDoc = new JTextField(12); panel.add(txtUsrDoc, gbc2);
 
         GridBagConstraints gbc3 = new GridBagConstraints();
-        gbc3.insets = new Insets(5, 5, 5, 5);
-        gbc3.fill = GridBagConstraints.HORIZONTAL;
-        gbc3.gridx = 2; gbc3.gridy = row; gbc3.gridwidth = 1;
-        panel.add(new JLabel("Contraseña:"), gbc3);
+        gbc3.insets = new Insets(5, 5, 5, 5); gbc3.fill = GridBagConstraints.HORIZONTAL;
+        gbc3.gridx = 2; gbc3.gridy = row; panel.add(new JLabel("Contraseña:"), gbc3);
 
         GridBagConstraints gbc4 = new GridBagConstraints();
-        gbc4.insets = new Insets(5, 5, 5, 5);
-        gbc4.fill = GridBagConstraints.HORIZONTAL;
-        gbc4.gridx = 3; gbc4.gridy = row; gbc4.gridwidth = 1;
-        txtPassDoc = new JPasswordField(12);
-        panel.add(txtPassDoc, gbc4);
+        gbc4.insets = new Insets(5, 5, 5, 5); gbc4.fill = GridBagConstraints.HORIZONTAL;
+        gbc4.gridx = 3; gbc4.gridy = row; txtPassDoc = new JPasswordField(12); panel.add(txtPassDoc, gbc4);
 
         row++;
         GridBagConstraints gbc5 = new GridBagConstraints();
-        gbc5.insets = new Insets(5, 5, 5, 5);
-        gbc5.fill = GridBagConstraints.HORIZONTAL;
-        gbc5.gridx = 0; gbc5.gridy = row; gbc5.gridwidth = 1;
-        panel.add(new JLabel("Nombre Docente:"), gbc5);
+        gbc5.insets = new Insets(5, 5, 5, 5); gbc5.fill = GridBagConstraints.HORIZONTAL;
+        gbc5.gridx = 0; gbc5.gridy = row; panel.add(new JLabel("Nombre Docente:"), gbc5);
 
         GridBagConstraints gbc6 = new GridBagConstraints();
-        gbc6.insets = new Insets(5, 5, 5, 5);
-        gbc6.fill = GridBagConstraints.HORIZONTAL;
-        gbc6.gridx = 1; gbc6.gridy = row; gbc6.gridwidth = 1;
-        txtNomDoc = new JTextField(12);
-        panel.add(txtNomDoc, gbc6);
+        gbc6.insets = new Insets(5, 5, 5, 5); gbc6.fill = GridBagConstraints.HORIZONTAL;
+        gbc6.gridx = 1; gbc6.gridy = row; txtNomDoc = new JTextField(12); panel.add(txtNomDoc, gbc6);
 
         GridBagConstraints gbc7 = new GridBagConstraints();
-        gbc7.insets = new Insets(5, 5, 5, 5);
-        gbc7.fill = GridBagConstraints.HORIZONTAL;
-        gbc7.gridx = 2; gbc7.gridy = row; gbc7.gridwidth = 1;
-        panel.add(new JLabel("Apellido Docente:"), gbc7);
+        gbc7.insets = new Insets(5, 5, 5, 5); gbc7.fill = GridBagConstraints.HORIZONTAL;
+        gbc7.gridx = 2; gbc7.gridy = row; panel.add(new JLabel("Apellido Docente:"), gbc7);
 
         GridBagConstraints gbc8 = new GridBagConstraints();
-        gbc8.insets = new Insets(5, 5, 5, 5);
-        gbc8.fill = GridBagConstraints.HORIZONTAL;
-        gbc8.gridx = 3; gbc8.gridy = row; gbc8.gridwidth = 1;
-        txtApeDoc = new JTextField(12);
-        panel.add(txtApeDoc, gbc8);
+        gbc8.insets = new Insets(5, 5, 5, 5); gbc8.fill = GridBagConstraints.HORIZONTAL;
+        gbc8.gridx = 3; gbc8.gridy = row; txtApeDoc = new JTextField(12); panel.add(txtApeDoc, gbc8);
 
         row++;
         GridBagConstraints gbc9 = new GridBagConstraints();
-        gbc9.insets = new Insets(5, 5, 5, 5);
-        gbc9.fill = GridBagConstraints.HORIZONTAL;
-        gbc9.gridx = 0; gbc9.gridy = row; gbc9.gridwidth = 1;
-        panel.add(new JLabel("DNI Docente:"), gbc9);
+        gbc9.insets = new Insets(5, 5, 5, 5); gbc9.fill = GridBagConstraints.HORIZONTAL;
+        gbc9.gridx = 0; gbc9.gridy = row; panel.add(new JLabel("DNI Docente:"), gbc9);
 
         GridBagConstraints gbc10 = new GridBagConstraints();
-        gbc10.insets = new Insets(5, 5, 5, 5);
-        gbc10.fill = GridBagConstraints.HORIZONTAL;
-        gbc10.gridx = 1; gbc10.gridy = row; gbc10.gridwidth = 1;
-        txtDniDoc = new JTextField(12);
-        panel.add(txtDniDoc, gbc10);
+        gbc10.insets = new Insets(5, 5, 5, 5); gbc10.fill = GridBagConstraints.HORIZONTAL;
+        gbc10.gridx = 1; gbc10.gridy = row; txtDniDoc = new JTextField(12); panel.add(txtDniDoc, gbc10);
 
         GridBagConstraints gbc11 = new GridBagConstraints();
-        gbc11.insets = new Insets(5, 5, 5, 5);
-        gbc11.fill = GridBagConstraints.HORIZONTAL;
-        gbc11.gridx = 2; gbc11.gridy = row; gbc11.gridwidth = 1;
-        panel.add(new JLabel("Estado:"), gbc11);
+        gbc11.insets = new Insets(5, 5, 5, 5); gbc11.fill = GridBagConstraints.HORIZONTAL;
+        gbc11.gridx = 2; gbc11.gridy = row; panel.add(new JLabel("Estado:"), gbc11);
 
         GridBagConstraints gbc12 = new GridBagConstraints();
-        gbc12.insets = new Insets(5, 5, 5, 5);
-        gbc12.fill = GridBagConstraints.HORIZONTAL;
-        gbc12.gridx = 3; gbc12.gridy = row; gbc12.gridwidth = 1;
-        cmbEstDoc = new JComboBox<>(new String[]{"Activo", "Inactivo", "Licencia"});
+        gbc12.insets = new Insets(5, 5, 5, 5); gbc12.fill = GridBagConstraints.HORIZONTAL;
+        gbc12.gridx = 3; gbc12.gridy = row; cmbEstDoc = new JComboBox<>(new String[]{"Activo", "Inactivo", "Licencia"});
         panel.add(cmbEstDoc, gbc12);
 
         row++;
         GridBagConstraints gbc13 = new GridBagConstraints();
-        gbc13.insets = new Insets(5, 5, 5, 5);
-        gbc13.fill = GridBagConstraints.HORIZONTAL;
+        gbc13.insets = new Insets(5, 5, 5, 5); gbc13.fill = GridBagConstraints.HORIZONTAL;
         gbc13.gridx = 0; gbc13.gridy = row; gbc13.gridwidth = 4;
         JButton btnGuarDoc = new JButton("Guardar Docente");
         btnGuarDoc.setBackground(new Color(37, 99, 235));
         btnGuarDoc.setForeground(Color.WHITE);
         btnGuarDoc.setFont(new Font("Tahoma", Font.BOLD, 12));
-      //configura el evento del boton para guardar el docente al hacer clic
         btnGuarDoc.addActionListener(e -> {
             try {
-                //recupera el id del admin actual o deja null si no esta logueado
                 Integer idAdmin = usuarioLogueado != null ? usuarioLogueado.getId_usuario() : null;
-                
-                //ejecuta el metodo del servicio pasandole los textos limpios
-                //para crear el usuario, el legajo y el docente en la base de datos
                 adminServicio.registrarDocenteConUsuario(
                     idAdmin,
                     txtUsrDoc.getText().trim(), new String(((JPasswordField)txtPassDoc).getPassword()).trim(),
                     txtNomDoc.getText().trim(), txtApeDoc.getText().trim(), txtDniDoc.getText().trim(), (String)cmbEstDoc.getSelectedItem()
                 );
-                
-                //muestra un cartel indicando que se guardo correctamente
                 JOptionPane.showMessageDialog(this, "Docente registrado con éxito.");
-                
-                //oculta el panel del formulario y recarga los datos de la vista
                 panelFormDocente.setVisible(false);
                 cargarDatosAdmin();
-                
             } catch (Exception ex) {
-                //captura cualquier error y lo muestra en una ventana emergente
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-        
-        //agrega el boton al panel con sus restricciones correspondientes
         panel.add(btnGuarDoc, gbc13);
 
         return panel;
@@ -561,8 +537,139 @@ public class Admin_panel extends JPanel {
         return panelBtn;
     }
 
-   
-  //carga de forma asincrona los contadores de las tarjetas y los registros de la tabla de logs
+    // cargamos la tabla de personas filtrando si selecciono alumnos o docentes
+    private void cargarTablaPersonas() {
+        modeloPersonas.setRowCount(0);
+        String seleccion = (String) cmbTipoPersona.getSelectedItem();
+
+        if ("Alumnos".equalsIgnoreCase(seleccion)) {
+            List<Alumno> alumnos = alumnoDao.obtenerTodos();
+            for (Alumno a : alumnos) {
+                modeloPersonas.addRow(new Object[]{
+                    a.getId_alumno(),
+                    a.getNombre(),
+                    a.getApellido(),
+                    a.getDni(),
+                    a.getMatricula(),
+                    a.getEstado()
+                });
+            }
+        } else if ("Docentes".equalsIgnoreCase(seleccion)) {
+            List<Docente> docentes = docenteDao.obtenerTodos();
+            for (Docente d : docentes) {
+                modeloPersonas.addRow(new Object[]{
+                    d.getId_docente(),
+                    d.getNombre(),
+                    d.getApellido(),
+                    d.getDni(),
+                    d.getLegajo(),
+                    d.getEstado()
+                });
+            }
+        }
+    }
+
+    // modificamos los datos de la persona seleccionada en la tabla
+    private void modificarPersonaSeleccionada() {
+        int fila = tablaPersonas.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccioná un registro de la tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Integer idPersona = (Integer) modeloPersonas.getValueAt(fila, 0);
+        String tipo = (String) cmbTipoPersona.getSelectedItem();
+
+        if ("Alumnos".equalsIgnoreCase(tipo)) {
+            Alumno alu = alumnoDao.obtenerPorId(idPersona);
+            if (alu == null) return;
+
+            JTextField txtNom = new JTextField(alu.getNombre());
+            JTextField txtApe = new JTextField(alu.getApellido());
+            JTextField txtDni = new JTextField(alu.getDni());
+            JComboBox<String> cmbEst = new JComboBox<>(new String[]{"Activo", "Inactivo", "Suspendido"});
+            cmbEst.setSelectedItem(alu.getEstado());
+
+            JPanel form = new JPanel(new GridLayout(4, 2, 8, 8));
+            form.add(new JLabel("Nombre:")); form.add(txtNom);
+            form.add(new JLabel("Apellido:")); form.add(txtApe);
+            form.add(new JLabel("DNI:")); form.add(txtDni);
+            form.add(new JLabel("Estado:")); form.add(cmbEst);
+
+            int res = JOptionPane.showConfirmDialog(this, form, "Modificar Alumno", JOptionPane.OK_CANCEL_OPTION);
+            if (res == JOptionPane.OK_OPTION) {
+                alu.setNombre(txtNom.getText().trim());
+                alu.setApellido(txtApe.getText().trim());
+                alu.setDni(txtDni.getText().trim());
+                alu.setEstado((String) cmbEst.getSelectedItem());
+
+                Integer idAdmin = usuarioLogueado != null ? usuarioLogueado.getId_usuario() : null;
+                adminServicio.modificarAlumno(alu, idAdmin);
+                JOptionPane.showMessageDialog(this, "Alumno modificado con éxito.");
+                cargarTablaPersonas();
+            }
+
+        } else if ("Docentes".equalsIgnoreCase(tipo)) {
+            Docente doc = docenteDao.obtenerPorId(idPersona);
+            if (doc == null) return;
+
+            JTextField txtNom = new JTextField(doc.getNombre());
+            JTextField txtApe = new JTextField(doc.getApellido());
+            JTextField txtDni = new JTextField(doc.getDni());
+            JComboBox<String> cmbEst = new JComboBox<>(new String[]{"Activo", "Inactivo", "Licencia"});
+            cmbEst.setSelectedItem(doc.getEstado());
+
+            JPanel form = new JPanel(new GridLayout(4, 2, 8, 8));
+            form.add(new JLabel("Nombre:")); form.add(txtNom);
+            form.add(new JLabel("Apellido:")); form.add(txtApe);
+            form.add(new JLabel("DNI:")); form.add(txtDni);
+            form.add(new JLabel("Estado:")); form.add(cmbEst);
+
+            int res = JOptionPane.showConfirmDialog(this, form, "Modificar Docente", JOptionPane.OK_CANCEL_OPTION);
+            if (res == JOptionPane.OK_OPTION) {
+                doc.setNombre(txtNom.getText().trim());
+                doc.setApellido(txtApe.getText().trim());
+                doc.setDni(txtDni.getText().trim());
+                doc.setEstado((String) cmbEst.getSelectedItem());
+
+                Integer idAdmin = usuarioLogueado != null ? usuarioLogueado.getId_usuario() : null;
+                adminServicio.modificarDocente(doc, idAdmin);
+                JOptionPane.showMessageDialog(this, "Docente modificado con éxito.");
+                cargarTablaPersonas();
+            }
+        }
+        cargarDatosAdmin();
+    }
+
+    // pasamos el estado del usuario seleccionado a inactivo (dar de baja)
+    private void darDeBajaPersonaSeleccionada() {
+        int fila = tablaPersonas.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccioná un registro de la tabla para dar de baja.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Integer idPersona = (Integer) modeloPersonas.getValueAt(fila, 0);
+        String tipo = (String) cmbTipoPersona.getSelectedItem();
+
+        int confirm = JOptionPane.showConfirmDialog(
+            this, "¿Querés dar de baja a este usuario? Pasará a estado Inactivo.", "Confirmar baja", JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            Integer idAdmin = usuarioLogueado != null ? usuarioLogueado.getId_usuario() : null;
+            if ("Alumnos".equalsIgnoreCase(tipo)) {
+                adminServicio.darDeBajaAlumno(idPersona, idAdmin);
+            } else {
+                adminServicio.darDeBajaDocente(idPersona, idAdmin);
+            }
+            JOptionPane.showMessageDialog(this, "El usuario fue dado de baja correctamente.");
+            cargarTablaPersonas();
+            cargarDatosAdmin();
+        }
+    }
+
+    // cargamos los contadores y las tablas del panel de administracion
     private void cargarDatosAdmin() {
         new SwingWorker<Void, Void>() {
             int alumnos = 0, docentes = 0, cursos = 0, inscripciones = 0, usuariosCount = 0;
@@ -573,14 +680,12 @@ public class Admin_panel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    //obtiene los totales llamando a los metodos contadores del admin servicio
                     alumnos = adminServicio.contarAlumnos();
                     docentes = adminServicio.contarDocentes();
                     cursos = adminServicio.contarCursosActivos();
                     inscripciones = adminServicio.contarInscripciones();
                     usuariosCount = adminServicio.contarUsuarios();
 
-                    //trae las listas completas para despues cruzarlas en la tabla
                     usuarios = usuarioDao.obtenerTodos();
                     listaLogs = logUsuarioDao.obtenerTodos();
                     roles = rolDao.obtenerTodos();
@@ -592,29 +697,26 @@ public class Admin_panel extends JPanel {
 
             @Override
             protected void done() {
-                //pone los valores numericos obtenidos en las etiquetas de las tarjetas superiores
                 lblAlumnosTotales.setText(String.valueOf(alumnos));
                 lblDocentesTotales.setText(String.valueOf(docentes));
                 lblCursosActivos.setText(String.valueOf(cursos));
                 lblInscripciones.setText(String.valueOf(inscripciones));
                 lblCuentasUsuarios.setText(String.valueOf(usuariosCount));
 
-                //limpia la tabla de logs antes de cargar los datos nuevos
+                cargarTablaPersonas();
+
                 modeloLog.setRowCount(0);
                 if (listaLogs != null && !listaLogs.isEmpty()) {
-                    //crea un mapa para traducir el id de usuario a su nombre de usuario
                     java.util.Map<Integer, String> mapUsuarios = new java.util.HashMap<>();
                     if (usuarios != null) {
                         for (Usuario u : usuarios) mapUsuarios.put(u.getId_usuario(), u.getNombre_usuario());
                     }
 
-                    //crea otro mapa para saber el nombre del rol a partir de su id
                     java.util.Map<Integer, String> mapRoles = new java.util.HashMap<>();
                     if (roles != null) {
                         for (Rol r : roles) mapRoles.put(r.getId_rol(), r.getNombre());
                     }
 
-                    //recorre cada log registrado para armar la fila de la tabla
                     for (Log_Usuario log : listaLogs) {
                         String nombreUsuario = mapUsuarios.getOrDefault(log.getId_usuario(), "Desconocido");
                         String rolUsuario = "N/A";
@@ -625,11 +727,9 @@ public class Admin_panel extends JPanel {
                             }
                         }
 
-                        //le da formato legible a la fecha y hora del log
                         String fechaStr = log.getFecha_hora() != null ? 
                             log.getFecha_hora().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "";
 
-                        //agrega la fila armada al modelo de la tabla de auditoria
                         modeloLog.addRow(new Object[]{
                             log.getId_log_usuario(),
                             nombreUsuario,
@@ -644,5 +744,4 @@ public class Admin_panel extends JPanel {
             }
         }.execute();
     }
-    
 }

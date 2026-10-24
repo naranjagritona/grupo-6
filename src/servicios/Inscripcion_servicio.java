@@ -13,6 +13,7 @@ import dao.Resultado_Materia_dao;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.LocalDate;
 
 public class Inscripcion_servicio {
 
@@ -95,7 +96,7 @@ public class Inscripcion_servicio {
         if (curso.getFecha_inicio() != null && curso.getFecha_fin() != null) {
             return !hoy.isBefore(curso.getFecha_inicio()) && !hoy.isAfter(curso.getFecha_fin());
         }
-        return true; // Si no tiene fechas cargadas, permite por defecto
+        return true; 
     }
 
     //junta todas las validaciones anteriores antes de dejar inscribir a alguien
@@ -152,7 +153,7 @@ public class Inscripcion_servicio {
         registrarLog(idUsuario, "MODIFICAR", "Inscripciones", valorAnt, valorNue);
     }
 
-    //cambia el estado de la inscripcion a canceladay guarda el motivo de baja
+    //cambia el estado de la inscripcion a cancelada y guarda el motivo de baja
     public void darDeBaja(Integer idInscripcion, String motivoBaja, Integer idUsuario) {
         Inscripcion ins = inscripcionDao.obtenerPorId(idInscripcion);
         if (ins != null) {
@@ -161,8 +162,43 @@ public class Inscripcion_servicio {
             ins.setMotivo_baja(motivoBaja);
             inscripcionDao.modificar(ins);
             
-            String valorNue = "Estado: Finalizada | Motivo de baja: " + motivoBaja;
+            String valorNue = "Estado: Cancelada | Motivo de baja: " + motivoBaja;
             registrarLog(idUsuario, "DAR DE BAJA", "Inscripciones", valorAnt, valorNue);
+        }
+    }
+
+    //valida las condiciones y ejecuta el cambio de curso para el alumno
+    public void cambiarCurso(Integer idInscripcionActual, Integer idNuevoCurso, String motivoBaja, Integer idUsuario) throws Exception {
+        if (motivoBaja == null || motivoBaja.trim().isEmpty()) {
+            throw new IllegalArgumentException("El motivo del traslado es obligatorio.");
+        }
+
+        Inscripcion actual = inscripcionDao.obtenerPorId(idInscripcionActual);
+        if (actual == null) {
+            throw new IllegalStateException("La inscripción seleccionada no existe.");
+        }
+
+        if (!alumnoActivo(actual.getId_alumno())) {
+            throw new IllegalStateException("El alumno no se encuentra con estado Activo.");
+        }
+
+        if (yaInscripto(actual.getId_alumno(), idNuevoCurso)) {
+            throw new IllegalStateException("El alumno ya posee una inscripción activa en este curso de destino.");
+        }
+
+        if (!hayCupo(idNuevoCurso)) {
+            throw new IllegalStateException("El curso de destino ha alcanzado su cupo máximo de inscripciones.");
+        }
+
+        try {
+            inscripcionDao.cambiarCursoTransaccional(idInscripcionActual, idNuevoCurso, motivoBaja);
+            
+            registrarLog(idUsuario, "CAMBIO DE CURSO", "Inscripciones", 
+                "Inscripción ID: " + idInscripcionActual, 
+                "Traslado a Curso ID: " + idNuevoCurso + " | Motivo: " + motivoBaja);
+                
+        } catch (Exception e) {
+            throw new Exception("Error al procesar el cambio de curso: " + e.getMessage());
         }
     }
 }
