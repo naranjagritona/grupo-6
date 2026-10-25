@@ -145,7 +145,7 @@ public class Calificaciones_panel extends JPanel {
         }
         for (Curso c : cursos) {
             if (usuarioLogueado != null && usuarioLogueado.getId_rol() == 2 && (idDocente == null || !idDocente.equals(c.getId_docente()))) continue;
-            String nombre = "Curso " + c.getId_curso() + " · " + valor(c.getNombre_materia()) + " · " + valor(c.getNombre_periodo()) + " · " + c.getAño() + "° " + valor(c.getDivision());
+            String nombre = "Curso " + c.getId_curso() + " · " + valor(c.getNombre_materia()) + " · " + valor(c.getNombre_periodo()) + " · " + c.getAño() + "°";
             cmbCurso.addItem(new ItemCombo(c.getId_curso(), nombre));
             if (anterior != null && anterior.equals(c.getId_curso())) cmbCurso.setSelectedIndex(cmbCurso.getItemCount() - 1);
         }

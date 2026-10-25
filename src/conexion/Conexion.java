@@ -10,13 +10,14 @@ public class Conexion {
     private static final String PASSWORD = "SGpFfP1KLWxw9Gv=ile+whK=";
 
     public static Connection getConnection() {
-        Connection conexion = null;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            conexion = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (ClassNotFoundException | SQLException error) {
-            error.printStackTrace();
+            return DriverManager.getConnection(URL + "?connectTimeout=10000&socketTimeout=15000", USER, PASSWORD);
+        } catch (ClassNotFoundException error) {
+            // Si falta el conector, avisamos el problema en vez de devolver una conexión vacía.
+            throw new IllegalStateException("No se encontró el conector MySQL. Revisá las bibliotecas del proyecto en Eclipse.", error);
+        } catch (SQLException error) {
+            throw new IllegalStateException("No se pudo conectar con la base de datos. Revisá Internet y la configuración de conexión.", error);
         }
-        return conexion;
     }
 }

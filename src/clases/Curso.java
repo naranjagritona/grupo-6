@@ -2,33 +2,44 @@ package clases;
 
 import java.time.LocalDate;
 
+// Este objeto guarda los datos del curso que usan el panel y las consultas.
 public class Curso {
     private Integer id_curso;
     private Integer id_periodo;
+    // La materia original se conserva para las evaluaciones; las demás van en curso_materia.
     private Integer id_materia;
     private Integer id_docente;
     private Integer año;
-    private String division;
     private String modalidad;
     private String turno;
     private Integer cupo_maximo;
     private LocalDate fecha_inicio;
     private LocalDate fecha_fin;
     private String estado;
+    // Estos nombres se completan al consultar para mostrarlos directamente en la tabla.
     private String nombre_periodo;
     private String nombre_materia;
     private String nombre_docente;
 
-    public Curso() {
-    }
+    public Curso() {}
 
-    public Curso(Integer id_curso, Integer id_periodo, Integer id_materia, Integer id_docente, Integer año, String division, String modalidad, String turno, Integer cupo_maximo, LocalDate fecha_inicio, LocalDate fecha_fin, String estado) {
+    public Curso(
+            Integer id_curso,
+            Integer id_periodo,
+            Integer id_materia,
+            Integer id_docente,
+            Integer año,
+            String modalidad,
+            String turno,
+            Integer cupo_maximo,
+            LocalDate fecha_inicio,
+            LocalDate fecha_fin,
+            String estado) {
         this.id_curso = id_curso;
         this.id_periodo = id_periodo;
         this.id_materia = id_materia;
         this.id_docente = id_docente;
         this.año = año;
-        this.division = division;
         this.modalidad = modalidad;
         this.turno = turno;
         this.cupo_maximo = cupo_maximo;
@@ -75,14 +86,6 @@ public class Curso {
 
     public void setAño(Integer año) {
         this.año = año;
-    }
-
-    public String getDivision() {
-        return division;
-    }
-
-    public void setDivision(String division) {
-        this.division = division;
     }
 
     public String getModalidad() {
@@ -132,7 +135,7 @@ public class Curso {
     public void setEstado(String estado) {
         this.estado = estado;
     }
-    
+
     public String getNombre_periodo() {
         return nombre_periodo;
     }

@@ -110,7 +110,15 @@ public class Login_panel extends JFrame {
             return;
         }
 
-        Usuario usuarioLogueado = loginServicio.autenticarUsuario(nombre_usuario, contraseña);
+        Usuario usuarioLogueado;
+        try {
+            usuarioLogueado = loginServicio.autenticarUsuario(nombre_usuario, contraseña);
+        } catch (IllegalStateException error) {
+            // Mostramos los errores de conexión aparte de los datos de acceso incorrectos.
+            error.printStackTrace();
+            JOptionPane.showMessageDialog(this, error.getMessage(), "Error de conexión", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         if (usuarioLogueado != null) {
             JOptionPane.showMessageDialog(this, "¡Bienvenido, " + usuarioLogueado.getNombre_usuario() + "!", "Éxito", JOptionPane.INFORMATION_MESSAGE);

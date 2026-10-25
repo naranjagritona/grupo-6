@@ -30,6 +30,7 @@ public class Inscripcion_panel extends JFrame {
     private JButton btnCursos;
     private JButton btnMaterias;
     private JButton btnCalificaciones;
+    private JButton btnFacturacion;
     private JButton btnAdmin; 
     private JButton btnCerrarSesion;
     
@@ -130,7 +131,7 @@ public class Inscripcion_panel extends JFrame {
         btnCursos.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnCursos);
 
-        btnMaterias = new JButton("Materias");
+        btnMaterias = new JButton("Materia");
         btnMaterias.setBounds(15, 152, 140, 35);
         btnMaterias.setBackground(new Color(24, 61, 110));
         btnMaterias.setForeground(new Color(203, 213, 225));
@@ -144,6 +145,14 @@ public class Inscripcion_panel extends JFrame {
         btnCalificaciones.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnCalificaciones);
         
+        btnFacturacion = new JButton("Factura");
+        btnFacturacion.setBounds(15, 288, 140, 35);
+        btnFacturacion.setBackground(new Color(24, 61, 110));
+        btnFacturacion.setForeground(new Color(203, 213, 225));
+        btnFacturacion.setFont(new Font("Tahoma", Font.BOLD, 12));
+        panelMenu.add(btnFacturacion);
+        btnFacturacion.addActionListener(e -> mostrarFacturacion());
+
         btnAdmin = new JButton("Admin");
         btnAdmin.setBounds(15, 243, 140, 35);
         btnAdmin.setBackground(new Color(24, 61, 110));
@@ -159,6 +168,7 @@ public class Inscripcion_panel extends JFrame {
             if (confirm == JOptionPane.YES_OPTION) {
                 new dao.Usuario_dao().cerrarSesion(usuarioLogueado);
                 this.dispose(); 
+                servicios.Facturacion_servicio.cerrarSesion();
                 Login_panel login = new Login_panel(); 
                 login.setVisible(true);
             }
@@ -168,7 +178,7 @@ public class Inscripcion_panel extends JFrame {
         btnCursos.addActionListener(_ -> {
             panelContenido.removeAll();
             splitPane.setVisible(false);
-            Cursos_panel panelCursos = new Cursos_panel();
+            Cursos_panel panelCursos = new Cursos_panel(usuarioLogueado);
             panelContenido.add(panelCursos, BorderLayout.CENTER);
             btnCursos.setBackground(new Color(37, 99, 235));
             btnCursos.setForeground(Color.WHITE);
@@ -418,6 +428,7 @@ public class Inscripcion_panel extends JFrame {
         });
 
         aplicarPermisosPorRol();
+        ordenarMenuLateral();
         cargarDatosAsincronos();
     }
 
@@ -426,6 +437,7 @@ public class Inscripcion_panel extends JFrame {
         if (usuarioLogueado == null) return;
 
         int rol = usuarioLogueado.getId_rol();
+        btnFacturacion.setVisible(rol==1 || rol==3);
         if (rol == 1) { // admin
             btnInscripciones.setVisible(true);
             btnCursos.setVisible(true);
@@ -454,17 +466,40 @@ public class Inscripcion_panel extends JFrame {
 
         } else if (rol == 3) { // alumno
             btnAdmin.setVisible(false);
+            btnInscripciones.setVisible(false);
             splitPane.setVisible(false);
-            panelContenido.add(panelTablaInscripcion, BorderLayout.CENTER);
-            cargarInscripcionesPropiasAlumno();
+            mostrarFacturacion();
         }
     }
     
+    private void ordenarMenuLateral() {
+        // Acomodamos solo las opciones visibles para no dejar espacios entre los botones.
+        JButton[] opciones={btnCursos,btnMaterias,btnCalificaciones,btnInscripciones,btnFacturacion,btnAdmin};
+        int posicion=61;
+        Container menu=btnCursos.getParent();
+        for(int i=0;i<opciones.length;i++) {
+            JButton boton=opciones[i];
+            menu.setComponentZOrder(boton,i);
+            if(boton.isVisible()) {
+                boton.setBounds(15,posicion,140,35);
+                posicion+=45;
+            }
+        }
+    }
+
+    private void mostrarFacturacion() {
+        if(usuarioLogueado==null || usuarioLogueado.getId_rol()==2) return;
+        panelContenido.removeAll();
+        panelContenido.add(new Facturacion_panel(usuarioLogueado),BorderLayout.CENTER);
+        panelContenido.revalidate();
+        panelContenido.repaint();
+    }
+
     private void mostrarPanelCursos() {
         panelContenido.removeAll();
         splitPane.setVisible(false);
 
-        Cursos_panel panelCursos = new Cursos_panel();
+        Cursos_panel panelCursos = new Cursos_panel(usuarioLogueado);
         panelContenido.add(panelCursos, BorderLayout.CENTER);
 
         btnCursos.setBackground(new Color(37, 99, 235));
@@ -693,7 +728,7 @@ public class Inscripcion_panel extends JFrame {
         limpiarFormulario();
     }
 
-    // abrimos el dialogo flotante con el filtro inteligente para cambiar de curso o division
+    // abrimos el dialogo flotante con el filtro inteligente para cambiar de curso o pasar al año siguiente
     private void abrirDialogoCambioCurso() {
         if (idInscripcionSeleccionada == null) {
             JOptionPane.showMessageDialog(this, "Seleccioná una inscripción de la tabla para cambiar de curso.", "Advertencia", JOptionPane.WARNING_MESSAGE);
@@ -714,7 +749,7 @@ public class Inscripcion_panel extends JFrame {
         JComboBox<ItemCombo> cmbNuevoCurso = new JComboBox<>();
         JTextField txtMotivo = new JTextField(20);
 
-        Object[] opcionesTipo = {"Cambio de División (Mismo año)", "Promoción al Año Siguiente"};
+        Object[] opcionesTipo = {"Cambio de curso (mismo año)", "Promoción al Año Siguiente"};
         int eleccion = JOptionPane.showOptionDialog(
             this, 
             "¿Qué tipo de cambio deseas realizar para el alumno?", 
@@ -738,7 +773,7 @@ public class Inscripcion_panel extends JFrame {
         for (Curso c : cursos) {
             if ("Activo".equalsIgnoreCase(c.getEstado()) && c.getAño() == añoObjetivo) {
                 String nombreMateria = mapaMaterias.getOrDefault(c.getId_materia(), "Materia");
-                String texto = c.getAño() + "° - " + nombreMateria + " (Div: " + c.getDivision() + " - " + c.getTurno() + ")";
+                String texto = c.getAño() + "° - " + nombreMateria + " (" + c.getTurno() + ")";
                 cmbNuevoCurso.addItem(new ItemCombo(c.getId_curso(), texto));
             }
         }

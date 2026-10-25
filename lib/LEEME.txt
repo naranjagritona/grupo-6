@@ -1,0 +1,8 @@
+Bibliotecas utilizadas para verificar las contraseñas de la base compartida con PHP.
+
+bcrypt 0.10.2 y bytes 1.5.0, de Patrick Favre-Bulle.
+Origen: Maven Central (repo.maven.apache.org).
+Proyecto y licencia Apache 2.0: https://github.com/patrickfav/bcrypt
+Proyecto bytes y licencia Apache 2.0: https://github.com/patrickfav/bytes-java
+
+Las dos bibliotecas ya están agregadas al archivo .classpath de Eclipse.

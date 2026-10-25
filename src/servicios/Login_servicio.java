@@ -21,6 +21,8 @@ public class Login_servicio {
         }
 
       //hace la consulta en la BD 
-        return usuarioDao.autenticar(nombre_usuario.trim(), contraseña);
+        Usuario usuario=usuarioDao.autenticar(nombre_usuario.trim(), contraseña);
+        if(usuario!=null) Facturacion_servicio.prepararSesion(nombre_usuario.trim(),contraseña);
+        return usuario;
     }
 }
