@@ -191,7 +191,7 @@ public class Inscripcion_panel extends JFrame {
             panelContenido.revalidate();
             panelContenido.repaint();
         });
- 
+
         // listener para volver al panel de inscripciones
         btnInscripciones.addActionListener(_ -> {
             panelContenido.removeAll();
