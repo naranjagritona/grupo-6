@@ -92,6 +92,30 @@ public class Curso_dao implements Dao<Curso, Integer> {
         }
     }
 
+    // Traemos las relaciones juntas para no abrir una conexión por cada curso.
+    public Map<Integer, List<Integer>> materiasPorCurso(List<Curso> cursos) {
+        Map<Integer, List<Integer>> resultado = new HashMap<>();
+        if (cursos.isEmpty()) {
+            return resultado;
+        }
+        String espacios = String.join(",", Collections.nCopies(cursos.size(), "?"));
+        String sql = "SELECT id_curso,id_materia FROM curso_materia WHERE id_curso IN ("
+                + espacios + ") ORDER BY id_curso,id_materia";
+        try (Connection db = abrirConexion(); PreparedStatement q = db.prepareStatement(sql)) {
+            for (int i = 0; i < cursos.size(); i++) {
+                q.setInt(i + 1, cursos.get(i).getId_curso());
+            }
+            try (ResultSet rs = q.executeQuery()) {
+                while (rs.next()) {
+                    resultado.computeIfAbsent(rs.getInt(1), id -> new ArrayList<>()).add(rs.getInt(2));
+                }
+            }
+            return resultado;
+        } catch (SQLException e) {
+            throw new IllegalStateException("No se pudieron cargar las relaciones de materias.", e);
+        }
+    }
+
     // Estos identificadores permiten marcar las materias al editar el curso.
     public List<Integer> materiasDelCurso(int id) {
         try (Connection db = abrirConexion();

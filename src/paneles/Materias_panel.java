@@ -203,6 +203,7 @@ public class Materias_panel extends JPanel {
     private CatalogoMaterias cargarCatalogo() {
         List<Materia> listaMaterias = materiaDao.obtenerTodos();
         List<Curso> cursos = cursoDao.listar(usuario);
+        Map<Integer, List<Integer>> materiasDeCursos = cursoDao.materiasPorCurso(cursos);
         Map<Integer, Set<String>> relaciones = new LinkedHashMap<>();
 
         for (Curso curso : cursos) {
@@ -210,7 +211,7 @@ public class Materias_panel extends JPanel {
             if (curso.getId_materia() != null) {
                 idsMaterias.add(curso.getId_materia());
             }
-            idsMaterias.addAll(cursoDao.materiasDelCurso(curso.getId_curso()));
+            idsMaterias.addAll(materiasDeCursos.getOrDefault(curso.getId_curso(), List.of()));
 
             String descripcion = describirCurso(curso);
             for (Integer idMateria : idsMaterias) {
@@ -405,7 +406,7 @@ public class Materias_panel extends JPanel {
                                         + String.join(", ", referencias));
                     }
                     materiaDao.eliminar(materia.getId_materia());
-                    CatalogoMaterias actualizado = cargarCatalogo();
+                    actualizado = cargarCatalogo();
                     boolean sigueExistiendo =
                             actualizado.materias.stream()
                                     .anyMatch(

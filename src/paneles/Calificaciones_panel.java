@@ -51,6 +51,11 @@ public class Calificaciones_panel extends JPanel {
     private final Columna_Notas_dao columnaDao = new Columna_Notas_dao();
     private final Calificacion_dao calificacionDao = new Calificacion_dao();
     private final Usuario usuarioLogueado;
+    private boolean llenandoCursos;
+    private int versionCursos;
+    private int versionTabla;
+    private javax.swing.SwingWorker<?, ?> cargaTabla;
+    private final JLabel estadoCarga = new JLabel(" ");
     private final JComboBox<ItemCombo> cmbCurso = new JComboBox<>();
     private final DefaultTableModel modelo = new DefaultTableModel(
         new String[] {"Alumno", "DNI", "Evaluación", "Tipo", "Nota", "Máximo", "Estado", "Fecha", "Observaciones"}, 0) {
@@ -94,8 +99,13 @@ public class Calificaciones_panel extends JPanel {
             }
         });
         cmbCurso.setPreferredSize(new java.awt.Dimension(330, 28));
-        cmbCurso.addActionListener(e -> cargarTabla());
+        cmbCurso.addActionListener(e -> {
+            if (!llenandoCursos) {
+                cargarTabla();
+            }
+        });
         filtros.add(cmbCurso);
+        filtros.add(estadoCarga);
         JButton actualizar = new JButton("Actualizar");
         actualizar.addActionListener(e -> cargarCursos()); filtros.add(actualizar);
         JPanel superior = new JPanel(new BorderLayout());
@@ -133,59 +143,111 @@ public class Calificaciones_panel extends JPanel {
         cargarCursos();
     }
 
+    // Llenamos el selector una sola vez y consultamos solo los cursos visibles.
     private void cargarCursos() {
-        Integer anterior = cmbCurso.getSelectedItem() instanceof ItemCombo ? ((ItemCombo)cmbCurso.getSelectedItem()).getId() : null;
-        cmbCurso.removeAllItems();
-        List<Curso> cursos = cursoDao.obtenerTodos();
-        Integer idDocente = null;
-        if (usuarioLogueado != null && usuarioLogueado.getId_rol() == 2) {
-            for (Docente d : new Docente_dao().obtenerTodos()) {
-                if (usuarioLogueado.getId_usuario().equals(d.getId_usuario())) { idDocente = d.getId_docente(); break; }
+        Integer anterior = cmbCurso.getSelectedItem() instanceof ItemCombo
+                ? ((ItemCombo) cmbCurso.getSelectedItem()).getId() : null;
+        int version = ++versionCursos;
+        versionTabla++;
+        if (cargaTabla != null) {
+            cargaTabla.cancel(true);
+        }
+        cmbCurso.setEnabled(false);
+        estadoCarga.setText("Cargando cursos…");
+        new javax.swing.SwingWorker<List<Curso>, Void>() {
+            protected List<Curso> doInBackground() {
+                return cursoDao.listar(usuarioLogueado);
             }
-        }
-        for (Curso c : cursos) {
-            if (usuarioLogueado != null && usuarioLogueado.getId_rol() == 2 && (idDocente == null || !idDocente.equals(c.getId_docente()))) continue;
-            String nombre = "Curso " + c.getId_curso() + " · " + valor(c.getNombre_materia()) + " · " + valor(c.getNombre_periodo()) + " · " + c.getAño() + "°";
-            cmbCurso.addItem(new ItemCombo(c.getId_curso(), nombre));
-            if (anterior != null && anterior.equals(c.getId_curso())) cmbCurso.setSelectedIndex(cmbCurso.getItemCount() - 1);
-        }
-        cargarTabla();
+
+            protected void done() {
+                if (version != versionCursos) {
+                    return;
+                }
+                try {
+                    List<Curso> cursos = get();
+                    llenandoCursos = true;
+                    cmbCurso.removeAllItems();
+                    for (Curso c : cursos) {
+                        String nombre = "Curso " + c.getId_curso() + " · "
+                                + valor(c.getNombre_materia()) + " · "
+                                + valor(c.getNombre_periodo()) + " · " + c.getAño() + "°";
+                        cmbCurso.addItem(new ItemCombo(c.getId_curso(), nombre));
+                        if (anterior != null && anterior.equals(c.getId_curso())) {
+                            cmbCurso.setSelectedIndex(cmbCurso.getItemCount() - 1);
+                        }
+                    }
+                    llenandoCursos = false;
+                    cmbCurso.setEnabled(true);
+                    cargarTabla();
+                } catch (Exception e) {
+                    estadoCarga.setText("No se pudieron cargar los cursos.");
+                    aviso(e.getCause() == null ? e.getMessage() : e.getCause().getMessage());
+                } finally {
+                    llenandoCursos = false;
+                    cmbCurso.setEnabled(true);
+                }
+            }
+        }.execute();
     }
 
+    // Consultamos solamente el curso elegido sin detener la ventana.
     private void cargarTabla() {
-        modelo.setRowCount(0); calificacionesPorFila.clear(); columnasPorFila.clear();
-        ItemCombo cursoItem = (ItemCombo)cmbCurso.getSelectedItem();
-        if (cursoItem == null) {
-            modelo.addRow(new Object[] {"No hay cursos asignados o disponibles para consultar.", "", "", "", "", "", "", "", ""});
+        if (llenandoCursos) {
             return;
         }
-        List<Columna_Notas> columnas = columnaDao.obtenerTodos();
-        List<Calificacion> notas = calificacionDao.obtenerTodos();
-        List<Inscripcion> inscripciones = inscripcionDao.obtenerTodos();
-        Map<Integer, Alumno> alumnos = new HashMap<>();
-        for (Alumno a : alumnoDao.obtenerTodos()) alumnos.put(a.getId_alumno(), a);
-        Map<Integer, Inscripcion> inscripcionesCurso = new HashMap<>();
-        for (Inscripcion i : inscripciones) {
-            if (cursoItem.getId().equals(i.getId_curso()) && !"Cancelada".equalsIgnoreCase(i.getEstado()) && !"Finalizada".equalsIgnoreCase(i.getEstado()))
-                inscripcionesCurso.put(i.getId_inscripcion(), i);
+        int version = ++versionTabla;
+        if (cargaTabla != null) {
+            cargaTabla.cancel(true);
         }
-        for (Columna_Notas col : columnas) {
-            if (!cursoItem.getId().equals(col.getId_curso())) continue;
-            for (Inscripcion ins : inscripcionesCurso.values()) {
-                Alumno a = alumnos.get(ins.getId_alumno());
-                if (a == null) continue;
-                Calificacion nota = buscarNota(notas, ins.getId_inscripcion(), col.getId_columna_notas());
-                String estado = nota == null ? "Pendiente" : (nota.getNota() >= col.getNota_aprobacion() ? "Aprobado" : "Desaprobado");
-                int fila = modelo.getRowCount();
-                modelo.addRow(new Object[] {a.getNombre() + " " + a.getApellido(), a.getDni(), col.getTitulo(), col.getTipo(),
-                    nota == null ? "—" : nota.getNota(), col.getNota_maxima(), estado,
-                    nota == null || nota.getFecha_carga() == null ? "—" : nota.getFecha_carga().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                    nota == null ? "" : nota.getObservaciones()});
-                if (nota != null) calificacionesPorFila.put(fila, nota);
-                columnasPorFila.put(fila, col);
+        modelo.setRowCount(0);
+        calificacionesPorFila.clear();
+        columnasPorFila.clear();
+        ItemCombo cursoItem = (ItemCombo) cmbCurso.getSelectedItem();
+        if (cursoItem == null) {
+            estadoCarga.setText("No hay cursos disponibles.");
+            return;
+        }
+        estadoCarga.setText("Cargando calificaciones…");
+        cargaTabla = new javax.swing.SwingWorker<List<dao.ConsultaCalificaciones_dao.Fila>, Void>() {
+            protected List<dao.ConsultaCalificaciones_dao.Fila> doInBackground() {
+                return new dao.ConsultaCalificaciones_dao().listar(cursoItem.getId());
             }
-        }
-        if (modelo.getRowCount() == 0) modelo.addRow(new Object[] {"Sin inscripciones activas o evaluaciones para este curso", "", "", "", "", "", "", "", ""});
+
+            protected void done() {
+                // Una consulta anterior no debe reemplazar el curso que elegimos después.
+                if (isCancelled() || version != versionTabla) {
+                    return;
+                }
+                try {
+                    List<dao.ConsultaCalificaciones_dao.Fila> filas = get();
+                    for (dao.ConsultaCalificaciones_dao.Fila dato : filas) {
+                        Columna_Notas col = dato.columna();
+                        Calificacion nota = dato.nota();
+                        String estado = nota == null ? "Pendiente"
+                                : nota.getNota() >= col.getNota_aprobacion() ? "Aprobado" : "Desaprobado";
+                        int fila = modelo.getRowCount();
+                        modelo.addRow(new Object[] {dato.alumno(), dato.dni(), col.getTitulo(), col.getTipo(),
+                                nota == null ? "—" : nota.getNota(), col.getNota_maxima(), estado,
+                                nota == null || nota.getFecha_carga() == null ? "—"
+                                        : nota.getFecha_carga().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                                nota == null ? "" : nota.getObservaciones()});
+                        if (nota != null) {
+                            calificacionesPorFila.put(fila, nota);
+                        }
+                        columnasPorFila.put(fila, col);
+                    }
+                    estadoCarga.setText(filas.size() + " registros");
+                    if (filas.isEmpty()) {
+                        modelo.addRow(new Object[] {"Sin inscripciones activas o evaluaciones para este curso",
+                                "", "", "", "", "", "", "", ""});
+                    }
+                } catch (Exception e) {
+                    estadoCarga.setText("No se pudieron cargar las calificaciones.");
+                    aviso(e.getCause() == null ? e.getMessage() : e.getCause().getMessage());
+                }
+            }
+        };
+        cargaTabla.execute();
     }
 
     private Calificacion buscarNota(List<Calificacion> notas, Integer idInscripcion, Integer idColumna) {

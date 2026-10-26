@@ -35,6 +35,12 @@ public class Admin_panel extends JPanel {
     private JTable tablaPersonas;
     private DefaultTableModel modeloPersonas;
     private JComboBox<String> cmbTipoPersona;
+    private JTextField txtBuscarUsuarios;
+    private javax.swing.table.TableRowSorter<DefaultTableModel> filtroUsuarios;
+    private List<Object[]> alumnosCargados = List.of();
+    private List<Object[]> docentesCargados = List.of();
+    private final JLabel estadoCarga = new JLabel("Cargando datos…");
+    private int versionCarga;
 
     private Admin_servicio adminServicio;
     private Log_Usuario_dao logUsuarioDao;
@@ -91,6 +97,14 @@ public class Admin_panel extends JPanel {
         textosTitulo.add(subtitulo);
 
         panelTitulo.add(textosTitulo, BorderLayout.WEST);
+        JPanel actualizarDatos = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actualizarDatos.setOpaque(false);
+        estadoCarga.setForeground(Color.WHITE);
+        actualizarDatos.add(estadoCarga);
+        JButton actualizar = new JButton("Actualizar");
+        actualizar.addActionListener(e -> cargarDatosAdmin());
+        actualizarDatos.add(actualizar);
+        panelTitulo.add(actualizarDatos, BorderLayout.EAST);
         add(panelTitulo, BorderLayout.NORTH);
 
         JPanel panelCentral = new JPanel();
@@ -183,13 +197,45 @@ public class Admin_panel extends JPanel {
         panelGFilter.add(cmbTipoPersona);
         panelGHeader.add(panelGFilter, BorderLayout.EAST);
 
-        panelGestionPersonas.add(panelGHeader, BorderLayout.NORTH);
+        // La búsqueda filtra lo cargado sin volver a consultar la base en cada letra.
+        JPanel buscador = new JPanel(new BorderLayout(8, 0));
+        buscador.setBackground(Color.WHITE);
+        buscador.add(new JLabel("Buscar usuario:"), BorderLayout.WEST);
+        txtBuscarUsuarios = new JTextField();
+        txtBuscarUsuarios.setToolTipText("Buscar por usuario, nombre, apellido, DNI, matrícula o legajo");
+        buscador.add(txtBuscarUsuarios, BorderLayout.CENTER);
+        JPanel cabeceraPersonas = new JPanel(new BorderLayout(0, 10));
+        cabeceraPersonas.setBackground(Color.WHITE);
+        cabeceraPersonas.add(panelGHeader, BorderLayout.NORTH);
+        cabeceraPersonas.add(buscador, BorderLayout.SOUTH);
+        panelGestionPersonas.add(cabeceraPersonas, BorderLayout.NORTH);
 
-        modeloPersonas = new DefaultTableModel(new String[] {"ID", "Nombre", "Apellido", "DNI", "Matrícula / Legajo", "Estado"}, 0) {
+        modeloPersonas = new DefaultTableModel(new String[] {"ID", "Nombre", "Apellido", "DNI", "Matrícula / Legajo", "Estado", "Usuario"}, 0) {
             private static final long serialVersionUID = 1L;
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         tablaPersonas = new JTable(modeloPersonas);
+        filtroUsuarios = new javax.swing.table.TableRowSorter<>(modeloPersonas);
+        tablaPersonas.setRowSorter(filtroUsuarios);
+        txtBuscarUsuarios.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            private void filtrar() {
+                String texto = txtBuscarUsuarios.getText().trim();
+                filtroUsuarios.setRowFilter(texto.isEmpty() ? null
+                        : RowFilter.regexFilter("(?iu)" + java.util.regex.Pattern.quote(texto)));
+            }
+
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filtrar();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filtrar();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filtrar();
+            }
+        });
         tablaPersonas.setRowHeight(26);
         tablaPersonas.setFont(new Font("Tahoma", Font.PLAIN, 12));
         tablaPersonas.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 11));
@@ -197,8 +243,10 @@ public class Admin_panel extends JPanel {
         tablaPersonas.getTableHeader().setForeground(new Color(24, 61, 110));
         
         JScrollPane scrollPersonas = new JScrollPane(tablaPersonas);
+        scrollPersonas.setColumnHeaderView(tablaPersonas.getTableHeader());
         scrollPersonas.setPreferredSize(new Dimension(0, 160));
         panelGestionPersonas.add(scrollPersonas, BorderLayout.CENTER);
+        panelGestionPersonas.setMinimumSize(new Dimension(0, 285));
 
         JPanel panelGButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         panelGButtons.setBackground(Color.WHITE);
@@ -231,7 +279,7 @@ public class Admin_panel extends JPanel {
         lblLogTitulo.setFont(new Font("Tahoma", Font.BOLD, 15));
         lblLogTitulo.setForeground(new Color(24, 61, 110));
 
-        JLabel lblLogSub = new JLabel("Auditoría en tiempo real de acciones y modificaciones.");
+        JLabel lblLogSub = new JLabel("Actividades más recientes primero. Doble clic para ver el detalle completo.");
         lblLogSub.setFont(new Font("Tahoma", Font.PLAIN, 12));
         lblLogSub.setForeground(new Color(100, 110, 120));
 
@@ -251,19 +299,54 @@ public class Admin_panel extends JPanel {
         };
 
         tablaLog = new JTable(modeloLog);
-        tablaLog.setRowHeight(26);
+        tablaLog.setRowHeight(36);
+        tablaLog.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        tablaLog.setFillsViewportHeight(true);
+        tablaLog.getTableHeader().setReorderingAllowed(false);
+        int[] anchosLog = {75, 170, 125, 155, 170, 390, 175};
+        for (int i = 0; i < anchosLog.length; i++) {
+            tablaLog.getColumnModel().getColumn(i).setPreferredWidth(anchosLog[i]);
+            tablaLog.getColumnModel().getColumn(i).setMinWidth(i == 0 ? 65 : 100);
+        }
+        tablaLog.getColumnModel().getColumn(5).setCellRenderer(new DetalleLogRenderer());
+        tablaLog.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                int fila = tablaLog.rowAtPoint(e.getPoint());
+                if (e.getClickCount() == 2 && fila >= 0) {
+                    StringBuilder detalle = new StringBuilder();
+                    for (int i = 0; i < modeloLog.getColumnCount(); i++) {
+                        Object valor = tablaLog.getValueAt(fila, i);
+                        detalle.append(modeloLog.getColumnName(i)).append(": ")
+                                .append(valor == null ? "" : valor).append("\n\n");
+                    }
+                    JTextArea texto = new JTextArea(detalle.toString(), 16, 65);
+                    texto.setEditable(false);
+                    texto.setLineWrap(true);
+                    texto.setWrapStyleWord(true);
+                    texto.setCaretPosition(0);
+                    JOptionPane.showMessageDialog(Admin_panel.this, new JScrollPane(texto),
+                            "Detalle de actividad", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
         tablaLog.setFont(new Font("Tahoma", Font.PLAIN, 12));
         tablaLog.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 11));
         tablaLog.getTableHeader().setBackground(new Color(240, 244, 248));
         tablaLog.getTableHeader().setForeground(new Color(24, 61, 110));
 
         JScrollPane scrollLog = new JScrollPane(tablaLog);
-        scrollLog.setPreferredSize(new Dimension(0, 180));
+        scrollLog.setColumnHeaderView(tablaLog.getTableHeader());
+        scrollLog.setPreferredSize(new Dimension(0, 280));
+        scrollLog.setMinimumSize(new Dimension(0, 230));
+        scrollLog.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        panelLogContainer.setMinimumSize(new Dimension(0, 330));
         panelLogContainer.add(scrollLog, BorderLayout.CENTER);
 
         panelCentral.add(panelLogContainer);
 
-        add(new JScrollPane(panelCentral), BorderLayout.CENTER);
+        JScrollPane contenido = new JScrollPane(panelCentral);
+        contenido.getVerticalScrollBar().setUnitIncrement(20);
+        add(contenido, BorderLayout.CENTER);
 
         cargarDatosAdmin();
     }
@@ -537,35 +620,13 @@ public class Admin_panel extends JPanel {
         return panelBtn;
     }
 
-    // cargamos la tabla de personas filtrando si selecciono alumnos o docentes
+    // Cambiar el tipo de persona aprovecha los datos de la última carga.
     private void cargarTablaPersonas() {
         modeloPersonas.setRowCount(0);
-        String seleccion = (String) cmbTipoPersona.getSelectedItem();
-
-        if ("Alumnos".equalsIgnoreCase(seleccion)) {
-            List<Alumno> alumnos = alumnoDao.obtenerTodos();
-            for (Alumno a : alumnos) {
-                modeloPersonas.addRow(new Object[]{
-                    a.getId_alumno(),
-                    a.getNombre(),
-                    a.getApellido(),
-                    a.getDni(),
-                    a.getMatricula(),
-                    a.getEstado()
-                });
-            }
-        } else if ("Docentes".equalsIgnoreCase(seleccion)) {
-            List<Docente> docentes = docenteDao.obtenerTodos();
-            for (Docente d : docentes) {
-                modeloPersonas.addRow(new Object[]{
-                    d.getId_docente(),
-                    d.getNombre(),
-                    d.getApellido(),
-                    d.getDni(),
-                    d.getLegajo(),
-                    d.getEstado()
-                });
-            }
+        List<Object[]> personas = "Docentes".equals(cmbTipoPersona.getSelectedItem())
+                ? docentesCargados : alumnosCargados;
+        for (Object[] persona : personas) {
+            modeloPersonas.addRow(persona);
         }
     }
 
@@ -577,7 +638,7 @@ public class Admin_panel extends JPanel {
             return;
         }
 
-        Integer idPersona = (Integer) modeloPersonas.getValueAt(fila, 0);
+        Integer idPersona = (Integer) modeloPersonas.getValueAt(tablaPersonas.convertRowIndexToModel(fila), 0);
         String tipo = (String) cmbTipoPersona.getSelectedItem();
 
         if ("Alumnos".equalsIgnoreCase(tipo)) {
@@ -649,7 +710,7 @@ public class Admin_panel extends JPanel {
             return;
         }
 
-        Integer idPersona = (Integer) modeloPersonas.getValueAt(fila, 0);
+        Integer idPersona = (Integer) modeloPersonas.getValueAt(tablaPersonas.convertRowIndexToModel(fila), 0);
         String tipo = (String) cmbTipoPersona.getSelectedItem();
 
         int confirm = JOptionPane.showConfirmDialog(
@@ -669,79 +730,68 @@ public class Admin_panel extends JPanel {
         }
     }
 
-    // cargamos los contadores y las tablas del panel de administracion
+    // Cargamos todo en segundo plano, con tres consultas y una sola conexión.
     private void cargarDatosAdmin() {
-        new SwingWorker<Void, Void>() {
-            int alumnos = 0, docentes = 0, cursos = 0, inscripciones = 0, usuariosCount = 0;
-            List<Log_Usuario> listaLogs;
-            List<Usuario> usuarios;
-            List<Rol> roles;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    alumnos = adminServicio.contarAlumnos();
-                    docentes = adminServicio.contarDocentes();
-                    cursos = adminServicio.contarCursosActivos();
-                    inscripciones = adminServicio.contarInscripciones();
-                    usuariosCount = adminServicio.contarUsuarios();
-
-                    usuarios = usuarioDao.obtenerTodos();
-                    listaLogs = logUsuarioDao.obtenerTodos();
-                    roles = rolDao.obtenerTodos();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return null;
+        int version = ++versionCarga;
+        estadoCarga.setText("Cargando datos…");
+        new SwingWorker<ConsultaAdmin_dao.Datos, Void>() {
+            protected ConsultaAdmin_dao.Datos doInBackground() {
+                return new ConsultaAdmin_dao().cargar();
             }
 
-            @Override
             protected void done() {
-                lblAlumnosTotales.setText(String.valueOf(alumnos));
-                lblDocentesTotales.setText(String.valueOf(docentes));
-                lblCursosActivos.setText(String.valueOf(cursos));
-                lblInscripciones.setText(String.valueOf(inscripciones));
-                lblCuentasUsuarios.setText(String.valueOf(usuariosCount));
-
-                cargarTablaPersonas();
-
-                modeloLog.setRowCount(0);
-                if (listaLogs != null && !listaLogs.isEmpty()) {
-                    java.util.Map<Integer, String> mapUsuarios = new java.util.HashMap<>();
-                    if (usuarios != null) {
-                        for (Usuario u : usuarios) mapUsuarios.put(u.getId_usuario(), u.getNombre_usuario());
+                if (version != versionCarga) {
+                    return;
+                }
+                try {
+                    ConsultaAdmin_dao.Datos datos = get();
+                    int[] totales = datos.totales();
+                    lblAlumnosTotales.setText(String.valueOf(totales[0]));
+                    lblDocentesTotales.setText(String.valueOf(totales[1]));
+                    lblCursosActivos.setText(String.valueOf(totales[2]));
+                    lblInscripciones.setText(String.valueOf(totales[3]));
+                    lblCuentasUsuarios.setText(String.valueOf(totales[4]));
+                    alumnosCargados = datos.alumnos();
+                    docentesCargados = datos.docentes();
+                    cargarTablaPersonas();
+                    modeloLog.setRowCount(0);
+                    for (Object[] log : datos.logs()) {
+                        modeloLog.addRow(log);
                     }
-
-                    java.util.Map<Integer, String> mapRoles = new java.util.HashMap<>();
-                    if (roles != null) {
-                        for (Rol r : roles) mapRoles.put(r.getId_rol(), r.getNombre());
-                    }
-
-                    for (Log_Usuario log : listaLogs) {
-                        String nombreUsuario = mapUsuarios.getOrDefault(log.getId_usuario(), "Desconocido");
-                        String rolUsuario = "N/A";
-                        if (log.getId_usuario() != null) {
-                            Usuario u = usuarios.stream().filter(x -> x.getId_usuario().equals(log.getId_usuario())).findFirst().orElse(null);
-                            if (u != null) {
-                                rolUsuario = mapRoles.getOrDefault(u.getId_rol(), "Rol " + u.getId_rol());
-                            }
-                        }
-
-                        String fechaStr = log.getFecha_hora() != null ? 
-                            log.getFecha_hora().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "";
-
-                        modeloLog.addRow(new Object[]{
-                            log.getId_log_usuario(),
-                            nombreUsuario,
-                            rolUsuario,
-                            log.getAccion(),
-                            log.getCampo_modificado(),
-                            log.getValor_nuevo() != null ? log.getValor_nuevo() : log.getValor_anterior(),
-                            fechaStr
-                        });
-                    }
+                    estadoCarga.setText("Datos actualizados");
+                } catch (Exception e) {
+                    estadoCarga.setText("No se pudo actualizar");
+                    Throwable causa = e.getCause() == null ? e : e.getCause();
+                    JOptionPane.showMessageDialog(Admin_panel.this, causa.getMessage(),
+                            "Administración", JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();
+    }
+
+    // El detalle usa varias líneas en lugar de apretar todo en una sola.
+    private static class DetalleLogRenderer extends JTextArea
+            implements javax.swing.table.TableCellRenderer {
+        private static final long serialVersionUID = 1L;
+
+        DetalleLogRenderer() {
+            setLineWrap(true);
+            setWrapStyleWord(true);
+            setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
+        }
+
+        public Component getTableCellRendererComponent(JTable tabla, Object valor,
+                boolean seleccionado, boolean foco, int fila, int columna) {
+            setText(valor == null ? "" : valor.toString());
+            setFont(tabla.getFont());
+            setBackground(seleccionado ? tabla.getSelectionBackground() : tabla.getBackground());
+            setForeground(seleccionado ? tabla.getSelectionForeground() : tabla.getForeground());
+            setSize(tabla.getColumnModel().getColumn(columna).getWidth(), Short.MAX_VALUE);
+            int alto = Math.max(36, Math.min(120, getPreferredSize().height));
+            if (tabla.getRowHeight(fila) != alto) {
+                tabla.setRowHeight(fila, alto);
+            }
+            return this;
+        }
     }
 }
