@@ -131,7 +131,7 @@ public class Inscripcion_panel extends JFrame {
         btnCursos.setFont(new Font("Tahoma", Font.BOLD, 12));
         panelMenu.add(btnCursos);
 
-        btnMaterias = new JButton("Materia");
+        btnMaterias = new JButton("Materias");
         btnMaterias.setBounds(15, 152, 140, 35);
         btnMaterias.setBackground(new Color(24, 61, 110));
         btnMaterias.setForeground(new Color(203, 213, 225));
@@ -192,6 +192,9 @@ public class Inscripcion_panel extends JFrame {
             panelContenido.repaint();
         });
 
+        // Abrimos el catálogo de materias como una vista independiente, igual que Cursos.
+        btnMaterias.addActionListener(_ -> mostrarPanelMaterias());
+
         // listener para volver al panel de inscripciones
         btnInscripciones.addActionListener(_ -> {
             panelContenido.removeAll();
@@ -201,6 +204,8 @@ public class Inscripcion_panel extends JFrame {
             btnInscripciones.setForeground(Color.WHITE);
             btnCursos.setBackground(new Color(24, 61, 110));
             btnCursos.setForeground(new Color(203, 213, 225));
+            btnMaterias.setBackground(new Color(24, 61, 110));
+            btnMaterias.setForeground(new Color(203, 213, 225));
             panelContenido.revalidate();
             panelContenido.repaint();
         });
@@ -504,6 +509,30 @@ public class Inscripcion_panel extends JFrame {
 
         btnCursos.setBackground(new Color(37, 99, 235));
         btnCursos.setForeground(Color.WHITE);
+        btnMaterias.setBackground(new Color(24, 61, 110));
+        btnMaterias.setForeground(new Color(203, 213, 225));
+
+        panelContenido.revalidate();
+        panelContenido.repaint();
+    }
+
+    private void mostrarPanelMaterias() {
+        panelContenido.removeAll();
+        splitPane.setVisible(false);
+        panelContenido.add(new Materias_panel(usuarioLogueado), BorderLayout.CENTER);
+
+        btnMaterias.setBackground(new Color(37, 99, 235));
+        btnMaterias.setForeground(Color.WHITE);
+        btnInscripciones.setBackground(new Color(24, 61, 110));
+        btnInscripciones.setForeground(new Color(203, 213, 225));
+        btnCursos.setBackground(new Color(24, 61, 110));
+        btnCursos.setForeground(new Color(203, 213, 225));
+        btnCalificaciones.setBackground(new Color(24, 61, 110));
+        btnCalificaciones.setForeground(new Color(203, 213, 225));
+        if (btnAdmin != null) {
+            btnAdmin.setBackground(new Color(24, 61, 110));
+            btnAdmin.setForeground(new Color(203, 213, 225));
+        }
 
         panelContenido.revalidate();
         panelContenido.repaint();
