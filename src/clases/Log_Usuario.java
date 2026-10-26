@@ -1,6 +1,8 @@
 package clases;
+
 import java.time.LocalDateTime;
 
+// guardamos quién realizó la acción, cuándo y qué valores cambiaron
 public class Log_Usuario {
     private Integer id_log_usuario;
     private Integer id_usuario;
@@ -10,10 +12,16 @@ public class Log_Usuario {
     private String valor_nuevo;
     private LocalDateTime fecha_hora;
 
-    public Log_Usuario() {
-    }
+    public Log_Usuario() {}
 
-    public Log_Usuario(Integer id_log_usuario, Integer id_usuario, String accion, String campo_modificado, String valor_anterior, String valor_nuevo, LocalDateTime fecha_hora) {
+    public Log_Usuario(
+            Integer id_log_usuario,
+            Integer id_usuario,
+            String accion,
+            String campo_modificado,
+            String valor_anterior,
+            String valor_nuevo,
+            LocalDateTime fecha_hora) {
         this.id_log_usuario = id_log_usuario;
         this.id_usuario = id_usuario;
         this.accion = accion;
@@ -23,6 +31,7 @@ public class Log_Usuario {
         this.fecha_hora = fecha_hora;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_log_usuario() {
         return id_log_usuario;
     }

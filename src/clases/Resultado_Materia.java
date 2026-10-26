@@ -1,6 +1,8 @@
 package clases;
+
 import java.time.LocalDate;
 
+// guardamos el resultado final de la materia para una inscripción
 public class Resultado_Materia {
     private Integer id_resultado;
     private Integer id_inscripcion;
@@ -8,10 +10,14 @@ public class Resultado_Materia {
     private String resultado;
     private LocalDate fecha_calculo;
 
-    public Resultado_Materia() {
-    }
+    public Resultado_Materia() {}
 
-    public Resultado_Materia(Integer id_resultado, Integer id_inscripcion, Double promedio, String resultado, LocalDate fecha_calculo) {
+    public Resultado_Materia(
+            Integer id_resultado,
+            Integer id_inscripcion,
+            Double promedio,
+            String resultado,
+            LocalDate fecha_calculo) {
         this.id_resultado = id_resultado;
         this.id_inscripcion = id_inscripcion;
         this.promedio = promedio;
@@ -19,6 +25,7 @@ public class Resultado_Materia {
         this.fecha_calculo = fecha_calculo;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_resultado() {
         return id_resultado;
     }

@@ -1,14 +1,16 @@
 package paneles;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.nio.file.Files;
-import javax.swing.*;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
-// Mostramos la factura que ya generó la web y damos la opción de guardarla.
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.nio.file.Files;
+
+import javax.swing.*;
+
+// mostramos las páginas del PDF y permitimos guardar el comprobante
 public final class FacturaPDF_panel {
     private FacturaPDF_panel() {}
 
@@ -56,6 +58,8 @@ public final class FacturaPDF_panel {
                                                     JOptionPane.YES_NO_OPTION)
                                             != JOptionPane.YES_OPTION) return;
                             Files.write(destino, pdf);
+                            servicios.Auditoria_servicio.registrar(
+                                    "GUARDAR PDF", "Facturación", "Comprobante guardado");
                         } catch (Exception error) {
                             JOptionPane.showMessageDialog(ventana, "No se pudo guardar el PDF.");
                         }

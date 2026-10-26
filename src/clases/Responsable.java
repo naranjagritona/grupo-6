@@ -1,5 +1,6 @@
 package clases;
 
+// guardamos los datos de la persona responsable del alumno
 public class Responsable {
     private Integer id_responsable;
     private String nombre;
@@ -7,10 +8,14 @@ public class Responsable {
     private String dni;
     private String tipo_relacion;
 
-    public Responsable() {
-    }
+    public Responsable() {}
 
-    public Responsable(Integer id_responsable, String nombre, String apellido, String dni, String tipo_relacion) {
+    public Responsable(
+            Integer id_responsable,
+            String nombre,
+            String apellido,
+            String dni,
+            String tipo_relacion) {
         this.id_responsable = id_responsable;
         this.nombre = nombre;
         this.apellido = apellido;
@@ -18,6 +23,7 @@ public class Responsable {
         this.tipo_relacion = tipo_relacion;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_responsable() {
         return id_responsable;
     }

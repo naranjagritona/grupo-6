@@ -1,13 +1,14 @@
 package servicios;
 
 import com.google.gson.*;
+
 import java.net.*;
 import java.net.http.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 
-// Esta clase comunica la aplicación con la facturación de la web.
+// enviamos las consultas de facturación a la web para usar los mismos pagos y facturas
 public final class Facturacion_servicio {
     private static final String URL =
             "https://academiaintegral.cavernservices.org/modulos/api_facturacion.php";
@@ -37,15 +38,13 @@ public final class Facturacion_servicio {
         cookies.getCookieStore().removeAll();
         csrf = null;
         usuario = null;
-        if (clave != null)
-            Arrays.fill(clave, '\0');
+        if (clave != null) Arrays.fill(clave, '\0');
         clave = null;
     }
 
     // Abrimos la sesión web solo la primera vez que se usa Facturación.
     private static synchronized void asegurarSesion() throws Exception {
-        if (csrf != null)
-            return;
+        if (csrf != null) return;
         if (clave == null)
             throw new IllegalStateException("Volvé a iniciar sesión para usar Facturación.");
         JsonObject datos = new JsonObject();
@@ -68,12 +67,10 @@ public final class Facturacion_servicio {
                         .header("Accept", "application/json");
         if (metodo.equals("POST")) {
             peticion.header("Content-Type", "application/json; charset=UTF-8");
-            if (token != null)
-                peticion.header("X-CSRF-Token", token);
+            if (token != null) peticion.header("X-CSRF-Token", token);
             peticion.POST(
                     HttpRequest.BodyPublishers.ofString(datos.toString(), StandardCharsets.UTF_8));
-        } else
-            peticion.GET();
+        } else peticion.GET();
         HttpResponse<byte[]> respuesta =
                 cliente.send(peticion.build(), HttpResponse.BodyHandlers.ofByteArray());
         if (respuesta.statusCode() < 200 || respuesta.statusCode() >= 300) {

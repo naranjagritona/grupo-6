@@ -2,7 +2,7 @@ package clases;
 
 import java.time.LocalDate;
 
-// Este objeto guarda los datos del curso que usan el panel y las consultas.
+// guardamos el año, el docente y los datos que identifican al curso
 public class Curso {
     private Integer id_curso;
     private Integer id_periodo;
@@ -48,6 +48,7 @@ public class Curso {
         this.estado = estado;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_curso() {
         return id_curso;
     }

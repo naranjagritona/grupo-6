@@ -3,7 +3,7 @@ package clases;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-// Guardamos los datos de un pago. Por ahora esta clase no se usa en las pantallas.
+// guardamos los datos de un pago sin conectarlos a las pantallas
 public class Pago {
     private Integer id_pago;
     private Integer id_inscripcion;
@@ -16,9 +16,9 @@ public class Pago {
     private String dni;
     private String tramitante;
 
-    public Pago() {
-    }
+    public Pago() {}
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_pago() {
         return id_pago;
     }

@@ -1,7 +1,9 @@
 package clases;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+// relacionamos al alumno con el curso y conservamos el estado de su inscripción
 public class Inscripcion {
     private Integer id_inscripcion;
     private Integer id_alumno;
@@ -9,25 +11,32 @@ public class Inscripcion {
     private LocalDate fecha_inscripcion;
     private String estado;
     private String motivo_baja;
-    private Double importe_cuota;
+    private Integer año_curso;
     private LocalDateTime fecha_creacion;
     private LocalDateTime fecha_modificacion;
 
-    public Inscripcion() {
-    }
+    public Inscripcion() {}
 
-    public Inscripcion(Integer id_inscripcion, Integer id_alumno, Integer id_curso, LocalDate fecha_inscripcion, String estado, String motivo_baja, Double importe_cuota, LocalDateTime fecha_creacion, LocalDateTime fecha_modificacion) {
+    public Inscripcion(
+            Integer id_inscripcion,
+            Integer id_alumno,
+            Integer id_curso,
+            LocalDate fecha_inscripcion,
+            String estado,
+            String motivo_baja,
+            LocalDateTime fecha_creacion,
+            LocalDateTime fecha_modificacion) {
         this.id_inscripcion = id_inscripcion;
         this.id_alumno = id_alumno;
         this.id_curso = id_curso;
         this.fecha_inscripcion = fecha_inscripcion;
         this.estado = estado;
         this.motivo_baja = motivo_baja;
-        this.importe_cuota = importe_cuota;
         this.fecha_creacion = fecha_creacion;
         this.fecha_modificacion = fecha_modificacion;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_inscripcion() {
         return id_inscripcion;
     }
@@ -76,12 +85,13 @@ public class Inscripcion {
         this.motivo_baja = motivo_baja;
     }
 
-    public Double getImporte_cuota() {
-        return importe_cuota;
+    // devuelve el año del curso para mostrarlo sin usar su identificador
+    public Integer getAño_curso() {
+        return año_curso;
     }
 
-    public void setImporte_cuota(Double importe_cuota) {
-        this.importe_cuota = importe_cuota;
+    public void setAño_curso(Integer año_curso) {
+        this.año_curso = año_curso;
     }
 
     public LocalDateTime getFecha_creacion() {

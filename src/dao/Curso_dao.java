@@ -2,11 +2,13 @@ package dao;
 
 import clases.Curso;
 import clases.Usuario;
+
 import conexion.Conexion;
+
 import java.sql.*;
 import java.util.*;
 
-// Acá dejamos las consultas y los cambios de cursos en la base de datos.
+// consultamos y modificamos los registros de curso en la base de datos
 public class Curso_dao implements Dao<Curso, Integer> {
     protected Connection abrirConexion() {
         return Conexion.getConnection();
@@ -41,6 +43,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
         return c;
     }
 
+    // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Curso> obtenerTodos() {
         return listar(null);
@@ -53,25 +56,23 @@ public class Curso_dao implements Dao<Curso, Integer> {
         if (usuario != null && usuario.getId_rol() == 2) {
             sql +=
                     " WHERE EXISTS(SELECT 1 FROM docente d2 WHERE d2.id_docente=c.id_docente AND"
-                        + " d2.id_usuario=?)";
+                            + " d2.id_usuario=?)";
             parametros.add(usuario.getId_usuario());
         }
         if (usuario != null && usuario.getId_rol() == 3) {
             sql +=
                     " WHERE EXISTS(SELECT 1 FROM inscripcion i JOIN alumno a ON"
-                        + " a.id_alumno=i.id_alumno WHERE i.id_curso=c.id_curso AND"
-                        + " a.id_usuario=?)";
+                            + " a.id_alumno=i.id_alumno WHERE i.id_curso=c.id_curso AND"
+                            + " a.id_usuario=?)";
             parametros.add(usuario.getId_usuario());
         }
         sql += " ORDER BY CAST(c.año AS UNSIGNED),c.id_curso";
         try (Connection db = abrirConexion();
                 PreparedStatement q = db.prepareStatement(sql)) {
-            for (int i = 0; i < parametros.size(); i++)
-                q.setInt(i + 1, parametros.get(i));
+            for (int i = 0; i < parametros.size(); i++) q.setInt(i + 1, parametros.get(i));
             List<Curso> lista = new ArrayList<>();
             try (ResultSet rs = q.executeQuery()) {
-                while (rs.next())
-                    lista.add(leer(rs));
+                while (rs.next()) lista.add(leer(rs));
             }
             return lista;
         } catch (SQLException e) {
@@ -79,6 +80,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
         }
     }
 
+    // consulta un registro usando su identificador
     @Override
     public Curso obtenerPorId(Integer id) {
         try (Connection db = abrirConexion();
@@ -99,15 +101,20 @@ public class Curso_dao implements Dao<Curso, Integer> {
             return resultado;
         }
         String espacios = String.join(",", Collections.nCopies(cursos.size(), "?"));
-        String sql = "SELECT id_curso,id_materia FROM curso_materia WHERE id_curso IN ("
-                + espacios + ") ORDER BY id_curso,id_materia";
-        try (Connection db = abrirConexion(); PreparedStatement q = db.prepareStatement(sql)) {
+        String sql =
+                "SELECT id_curso,id_materia FROM curso_materia WHERE id_curso IN ("
+                        + espacios
+                        + ") ORDER BY id_curso,id_materia";
+        try (Connection db = abrirConexion();
+                PreparedStatement q = db.prepareStatement(sql)) {
             for (int i = 0; i < cursos.size(); i++) {
                 q.setInt(i + 1, cursos.get(i).getId_curso());
             }
             try (ResultSet rs = q.executeQuery()) {
                 while (rs.next()) {
-                    resultado.computeIfAbsent(rs.getInt(1), id -> new ArrayList<>()).add(rs.getInt(2));
+                    resultado
+                            .computeIfAbsent(rs.getInt(1), id -> new ArrayList<>())
+                            .add(rs.getInt(2));
                 }
             }
             return resultado;
@@ -122,12 +129,11 @@ public class Curso_dao implements Dao<Curso, Integer> {
                 PreparedStatement q =
                         db.prepareStatement(
                                 "SELECT id_materia FROM curso_materia WHERE id_curso=? ORDER BY"
-                                    + " id_materia")) {
+                                        + " id_materia")) {
             q.setInt(1, id);
             List<Integer> lista = new ArrayList<>();
             try (ResultSet rs = q.executeQuery()) {
-                while (rs.next())
-                    lista.add(rs.getInt(1));
+                while (rs.next()) lista.add(rs.getInt(1));
             }
             return lista;
         } catch (SQLException e) {
@@ -135,16 +141,17 @@ public class Curso_dao implements Dao<Curso, Integer> {
         }
     }
 
+    // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Curso c) {
         guardar(c, List.of(c.getId_materia()));
     }
 
+    // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Curso c) {
         List<Integer> materias = materiasDelCurso(c.getId_curso());
-        if (materias.isEmpty())
-            materias = List.of(c.getId_materia());
+        if (materias.isEmpty()) materias = List.of(c.getId_materia());
         guardar(c, materias);
     }
 
@@ -174,17 +181,16 @@ public class Curso_dao implements Dao<Curso, Integer> {
                 try (PreparedStatement q =
                         db.prepareStatement(
                                 "SELECT id_periodo_lectivo FROM periodo_lectivo WHERE"
-                                    + " id_periodo_lectivo=? FOR UPDATE")) {
+                                        + " id_periodo_lectivo=? FOR UPDATE")) {
                     q.setInt(1, c.getId_periodo());
                     try (ResultSet rs = q.executeQuery()) {
-                        if (!rs.next())
-                            throw new IllegalArgumentException("El período no existe.");
+                        if (!rs.next()) throw new IllegalArgumentException("El período no existe.");
                     }
                 }
                 try (PreparedStatement q =
                         db.prepareStatement(
                                 "SELECT COUNT(*) FROM curso WHERE id_periodo=? AND año=? AND"
-                                    + " id_curso<>?")) {
+                                        + " id_curso<>?")) {
                     q.setInt(1, c.getId_periodo());
                     q.setInt(2, c.getAño());
                     q.setInt(3, id);
@@ -207,20 +213,19 @@ public class Curso_dao implements Dao<Curso, Integer> {
                             if (!rs.next())
                                 throw new IllegalArgumentException("El curso no existe.");
                             int anterior = rs.getInt(1);
-                            if (materias.contains(anterior))
-                                principal = anterior;
+                            if (materias.contains(anterior)) principal = anterior;
                             else
                                 try (PreparedStatement notas =
                                         db.prepareStatement(
                                                 "SELECT COUNT(*) FROM columna_notas WHERE"
-                                                    + " id_curso=?")) {
+                                                        + " id_curso=?")) {
                                     notas.setInt(1, id);
                                     try (ResultSet n = notas.executeQuery()) {
                                         n.next();
                                         if (n.getInt(1) > 0)
                                             throw new IllegalArgumentException(
                                                     "Conservá la materia original porque ya tiene"
-                                                        + " evaluaciones registradas.");
+                                                            + " evaluaciones registradas.");
                                     }
                                 }
                         }
@@ -228,7 +233,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
                     try (PreparedStatement q =
                             db.prepareStatement(
                                     "SELECT COUNT(*) FROM inscripcion WHERE id_curso=? AND"
-                                        + " estado='Confirmada'")) {
+                                            + " estado='Confirmada'")) {
                         q.setInt(1, id);
                         try (ResultSet rs = q.executeQuery()) {
                             rs.next();
@@ -258,8 +263,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
                     q.setObject(8, c.getFecha_inicio());
                     q.setObject(9, c.getFecha_fin());
                     q.setString(10, c.getEstado());
-                    if (!nuevo)
-                        q.setInt(11, id);
+                    if (!nuevo) q.setInt(11, id);
                     q.executeUpdate();
                     if (nuevo)
                         try (ResultSet keys = q.getGeneratedKeys()) {
@@ -290,8 +294,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
                 // Si algo falla, deshacemos todo para conservar el curso y sus materias anteriores.
             } catch (Exception e) {
                 db.rollback();
-                if (e instanceof IllegalArgumentException x)
-                    throw x;
+                if (e instanceof IllegalArgumentException x) throw x;
                 throw new IllegalStateException("No se pudo guardar el curso.", e);
             }
         } catch (SQLException e) {

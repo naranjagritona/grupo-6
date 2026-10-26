@@ -1,6 +1,8 @@
 package clases;
+
 import java.time.LocalDate;
 
+// guardamos la nota de un alumno para una evaluación
 public class Calificacion {
     private Integer id_calificacion;
     private Integer id_inscripcion;
@@ -9,10 +11,15 @@ public class Calificacion {
     private LocalDate fecha_carga;
     private String observaciones;
 
-    public Calificacion() {
-    }
+    public Calificacion() {}
 
-    public Calificacion(Integer id_calificacion, Integer id_inscripcion, Integer id_columna_notas, Double nota, LocalDate fecha_carga, String observaciones) {
+    public Calificacion(
+            Integer id_calificacion,
+            Integer id_inscripcion,
+            Integer id_columna_notas,
+            Double nota,
+            LocalDate fecha_carga,
+            String observaciones) {
         this.id_calificacion = id_calificacion;
         this.id_inscripcion = id_inscripcion;
         this.id_columna_notas = id_columna_notas;
@@ -21,6 +28,7 @@ public class Calificacion {
         this.observaciones = observaciones;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_calificacion() {
         return id_calificacion;
     }

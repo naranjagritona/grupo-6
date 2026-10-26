@@ -1,6 +1,7 @@
 package dao;
 
 import clases.Columna_Notas;
+
 import conexion.Conexion;
 
 import java.sql.Connection;
@@ -11,12 +12,16 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+// consultamos y modificamos los registros de columna notas en la base de datos
 public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
 
     public void insertarVerificando(Columna_Notas objeto) throws SQLException {
-        String sql = "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion, fecha_evaluacion, fecha_cierre, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql =
+                "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion,"
+                    + " fecha_evaluacion, fecha_cierre, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conexion = Conexion.getConnection()) {
-            if (conexion == null) throw new SQLException("No se pudo establecer conexión con la base de datos.");
+            if (conexion == null)
+                throw new SQLException("No se pudo establecer conexión con la base de datos.");
             try (PreparedStatement ps = conexion.prepareStatement(sql)) {
                 ps.setInt(1, objeto.getId_curso());
                 ps.setString(2, objeto.getTitulo());
@@ -31,12 +36,15 @@ public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
         }
     }
 
+    // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Columna_Notas objeto) {
-        String consulta = "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion, fecha_evaluacion, fecha_cierre, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String consulta =
+                "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion,"
+                    + " fecha_evaluacion, fecha_cierre, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, objeto.getId_curso());
             ps.setString(2, objeto.getTitulo());
@@ -55,13 +63,14 @@ public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
         }
     }
 
+    // consulta un registro usando su identificador
     @Override
     public Columna_Notas obtenerPorId(Integer id) {
         Columna_Notas columna = null;
         String consulta = "SELECT * FROM columna_notas WHERE id_columna_notas = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -74,33 +83,35 @@ public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
                     columna.setTipo(rs.getString("tipo"));
                     columna.setNota_maxima(rs.getDouble("nota_maxima"));
                     columna.setNota_aprobacion(rs.getDouble("nota_aprobacion"));
-                    
+
                     Date fEval = rs.getDate("fecha_evaluacion");
                     columna.setFecha_evaluacion(fEval != null ? fEval.toLocalDate() : null);
-                    
+
                     Date fCierre = rs.getDate("fecha_cierre");
                     columna.setFecha_cierre(fCierre != null ? fCierre.toLocalDate() : null);
-                    
+
                     columna.setEstado(rs.getString("estado"));
                 }
             }
 
         } catch (SQLException error) {
-            System.err.println("Error al obtener la columna de notas por ID: " + error.getMessage());
+            System.err.println(
+                    "Error al obtener la columna de notas por ID: " + error.getMessage());
             error.printStackTrace();
         }
 
         return columna;
     }
 
+    // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Columna_Notas> obtenerTodos() {
         List<Columna_Notas> lista = new ArrayList<>();
         String consulta = "SELECT * FROM columna_notas";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conexion.prepareStatement(consulta);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Columna_Notas columna = new Columna_Notas();
@@ -111,32 +122,37 @@ public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
                 columna.setTipo(rs.getString("tipo"));
                 columna.setNota_maxima(rs.getDouble("nota_maxima"));
                 columna.setNota_aprobacion(rs.getDouble("nota_aprobacion"));
-                
+
                 Date fEval = rs.getDate("fecha_evaluacion");
                 columna.setFecha_evaluacion(fEval != null ? fEval.toLocalDate() : null);
-                
+
                 Date fCierre = rs.getDate("fecha_cierre");
                 columna.setFecha_cierre(fCierre != null ? fCierre.toLocalDate() : null);
-                
+
                 columna.setEstado(rs.getString("estado"));
 
                 lista.add(columna);
             }
 
         } catch (SQLException error) {
-            System.err.println("Error al obtener la lista de columnas de notas: " + error.getMessage());
+            System.err.println(
+                    "Error al obtener la lista de columnas de notas: " + error.getMessage());
             error.printStackTrace();
         }
 
         return lista;
     }
 
+    // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Columna_Notas objeto) {
-        String consulta = "UPDATE columna_notas SET id_curso = ?, titulo = ?, tipo = ?, nota_maxima = ?, nota_aprobacion = ?, fecha_evaluacion = ?, fecha_cierre = ?, estado = ? WHERE id_columna_notas = ?";
+        String consulta =
+                "UPDATE columna_notas SET id_curso = ?, titulo = ?, tipo = ?, nota_maxima = ?,"
+                        + " nota_aprobacion = ?, fecha_evaluacion = ?, fecha_cierre = ?, estado = ?"
+                        + " WHERE id_columna_notas = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, objeto.getId_curso());
             ps.setString(2, objeto.getTitulo());
@@ -156,12 +172,13 @@ public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
         }
     }
 
+    // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
         String consulta = "DELETE FROM columna_notas WHERE id_columna_notas = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             ps.executeUpdate();

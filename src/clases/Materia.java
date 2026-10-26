@@ -1,17 +1,18 @@
 package clases;
 
+// guardamos el identificador y el nombre de una materia
 public class Materia {
     private Integer id_materia;
     private String nombre_materia;
 
-    public Materia() {
-    }
+    public Materia() {}
 
     public Materia(Integer id_materia, String nombre_materia) {
         this.id_materia = id_materia;
         this.nombre_materia = nombre_materia;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_materia() {
         return id_materia;
     }

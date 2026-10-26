@@ -1,18 +1,22 @@
 package paneles;
 
 import clases.Usuario;
+
 import com.google.gson.*;
+
 import servicios.Facturacion_servicio;
+
 import java.awt.*;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
-// Desde este panel consultamos cuotas, registramos pagos y abrimos las facturas.
+// consultamos las cuotas y preparamos las operaciones de pago y sus comprobantes
 public class Facturacion_panel extends JPanel {
     private static final long serialVersionUID = 1L;
     private final Usuario usuario;
@@ -33,6 +37,8 @@ public class Facturacion_panel extends JPanel {
     // Preparamos las tablas y mostramos la verificación de efectivo solo al administrador.
     public Facturacion_panel(Usuario usuario) {
         this.usuario = usuario;
+        servicios.Auditoria_servicio.registrar(
+                "ABRIR MODULO", "Facturación", "Consulta del módulo");
         setLayout(new BorderLayout(12, 12));
         setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
         setBackground(Color.WHITE);
@@ -76,9 +82,11 @@ public class Facturacion_panel extends JPanel {
         tc.getSelectionModel()
                 .addListSelectionListener(
                         e -> {
-                            if (!e.getValueIsAdjusting())
-                                cargarHistorial();
+                            if (!e.getValueIsAdjusting()) cargarHistorial();
                         });
+        if (usuario != null && usuario.getId_rol() == 1) {
+            boton("Modificar cuota", this::modificarCuota);
+        }
         boton("Pagar cuota", this::pagar);
         boton("Ver factura PDF", this::verFactura);
         boton("Reenviar correo", this::reenviar);
@@ -118,10 +126,15 @@ public class Facturacion_panel extends JPanel {
 
     private void boton(String titulo, Runnable accion) {
         JButton b = new JButton(titulo);
-        b.addActionListener(e -> accion.run());
+        b.addActionListener(
+                e -> {
+                    servicios.Auditoria_servicio.registrar("ACCION", "Facturación", titulo);
+                    accion.run();
+                });
         botones.add(b);
     }
 
+    // muestra el motivo por el que no se pudo completar la operación
     private void error(Throwable e) {
         Throwable causa = e.getCause() != null ? e.getCause() : e;
         String mensaje = causa.getMessage();
@@ -133,8 +146,7 @@ public class Facturacion_panel extends JPanel {
     // Esperamos la respuesta de la web sin bloquear la ventana y avisamos si hay un error.
     private <T> void ejecutar(Callable<T> tarea, Consumer<T> listo) {
         estado.setText("Procesando…");
-        for (Component c : botones.getComponents())
-            c.setEnabled(false);
+        for (Component c : botones.getComponents()) c.setEnabled(false);
         new SwingWorker<T, Void>() {
             protected T doInBackground() throws Exception {
                 return tarea.call();
@@ -148,8 +160,7 @@ public class Facturacion_panel extends JPanel {
                     estado.setText("No se pudo completar la operación.");
                     error(e);
                 } finally {
-                    for (Component c : botones.getComponents())
-                        c.setEnabled(true);
+                    for (Component c : botones.getComponents()) c.setEnabled(true);
                 }
             }
         }.execute();
@@ -158,6 +169,8 @@ public class Facturacion_panel extends JPanel {
     // La web nos devuelve el mes, el importe y las cuotas que puede ver esta cuenta.
     private void cargar() {
         String q = buscar.getText().trim();
+        servicios.Auditoria_servicio.registrar(
+                "CONSULTAR", "Facturación", q.isEmpty() ? "Actualizar listado" : "Buscar: " + q);
         ejecutar(
                 () -> Facturacion_servicio.listar(q),
                 r -> {
@@ -191,8 +204,7 @@ public class Facturacion_panel extends JPanel {
                                     texto(p, "tramitante")
                                 });
                     }
-                    if (mc.getRowCount() > 0)
-                        tc.setRowSelectionInterval(0, 0);
+                    if (mc.getRowCount() > 0) tc.setRowSelectionInterval(0, 0);
                 });
     }
 
@@ -218,7 +230,7 @@ public class Facturacion_panel extends JPanel {
             JOptionPane.showMessageDialog(
                     this,
                     "El efectivo está pendiente de recepción. La factura estará disponible después"
-                        + " de confirmar.");
+                            + " de confirmar.");
             return null;
         }
         return p;
@@ -240,8 +252,7 @@ public class Facturacion_panel extends JPanel {
         ejecutar(
                 () -> Facturacion_servicio.historial(id),
                 lista -> {
-                    if (version != consultaHistorial)
-                        return;
+                    if (version != consultaHistorial) return;
                     pagos = lista;
                     mh.setRowCount(0);
                     for (JsonElement e : lista) {
@@ -255,16 +266,34 @@ public class Facturacion_panel extends JPanel {
                                     texto(p, "correo_estado")
                                 });
                     }
-                    if (mh.getRowCount() > 0)
-                        th.setRowSelectionInterval(0, 0);
+                    if (mh.getRowCount() > 0) th.setRowSelectionInterval(0, 0);
                 });
     }
 
     // El nombre y el mes vienen de la base; el formulario no permite modificarlos.
+    private void modificarCuota() {
+        if (usuario == null || usuario.getId_rol() != 1) {
+            return;
+        }
+        String valor = JOptionPane.showInputDialog(this, "Importe general de la cuota:", importe);
+        if (valor == null) {
+            return;
+        }
+        valor = valor.trim().replace(',', '.');
+        if (!valor.matches("[0-9]{1,8}(\\.[0-9]{1,2})?") || new BigDecimal(valor).signum() <= 0) {
+            JOptionPane.showMessageDialog(
+                    this, "Ingresá un importe mayor que cero, con hasta dos decimales.");
+            return;
+        }
+        JsonObject datos = new JsonObject();
+        datos.addProperty("importe", valor);
+        operar("guardar_importe", datos);
+    }
+
+    // prepara y envía los datos de la cuota mensual seleccionada
     private void pagar() {
         JsonObject c = cuota();
-        if (c == null)
-            return;
+        if (c == null) return;
         String actual = texto(c, "estado_pago");
         if (!actual.isEmpty()) {
             JOptionPane.showMessageDialog(
@@ -326,6 +355,8 @@ public class Facturacion_panel extends JPanel {
         ejecutar(
                 () -> Facturacion_servicio.operar(accion, datos),
                 r -> {
+                    servicios.Auditoria_servicio.registrar(
+                            "FACTURACION", "Facturación", "Operación: " + accion);
                     JOptionPane.showMessageDialog(this, texto(r, "mensaje"));
                     cargar();
                 });
@@ -333,8 +364,7 @@ public class Facturacion_panel extends JPanel {
 
     // Quien recibe el dinero escribe su nombre y confirma que el efectivo fue entregado.
     private void confirmarEfectivo() {
-        if (usuario == null || usuario.getId_rol() != 1)
-            return;
+        if (usuario == null || usuario.getId_rol() != 1) return;
         int fila = tp.getSelectedRow();
         if (fila < 0) {
             JOptionPane.showMessageDialog(this, "Seleccioná el efectivo pendiente.");
@@ -376,22 +406,24 @@ public class Facturacion_panel extends JPanel {
     // Descargamos el PDF generado por la web y lo mostramos dentro de la aplicación.
     private void verFactura() {
         JsonObject p = pago();
-        if (p == null)
-            return;
+        if (p == null) return;
         int id = p.get("id_factura").getAsInt();
         ejecutar(
                 () -> {
                     byte[] pdf = Facturacion_servicio.factura(id);
                     return new Object[] {pdf, FacturaPDF_panel.renderizar(pdf)};
                 },
-                r -> FacturaPDF_panel.mostrar(this, (byte[]) r[0], (JPanel) r[1]));
+                r -> {
+                    FacturaPDF_panel.mostrar(this, (byte[]) r[0], (JPanel) r[1]);
+                    servicios.Auditoria_servicio.registrar(
+                            "VER PDF", "Facturación", "Factura " + id);
+                });
     }
 
     // El correo se reenvía a la dirección que quedó registrada al pagar.
     private void reenviar() {
         JsonObject p = pago();
-        if (p == null)
-            return;
+        if (p == null) return;
         JsonObject datos = new JsonObject();
         datos.addProperty("id_factura", p.get("id_factura").getAsInt());
         operar("reenviar", datos);

@@ -1,5 +1,6 @@
 package clases;
 
+// guardamos los datos personales y el legajo del docente
 public class Docente {
     private Integer id_docente;
     private Integer id_usuario;
@@ -9,10 +10,16 @@ public class Docente {
     private String legajo;
     private String estado;
 
-    public Docente() {
-    }
+    public Docente() {}
 
-    public Docente(Integer id_docente, Integer id_usuario, String nombre, String apellido, String dni, String legajo, String estado) {
+    public Docente(
+            Integer id_docente,
+            Integer id_usuario,
+            String nombre,
+            String apellido,
+            String dni,
+            String legajo,
+            String estado) {
         this.id_docente = id_docente;
         this.id_usuario = id_usuario;
         this.nombre = nombre;
@@ -22,6 +29,7 @@ public class Docente {
         this.estado = estado;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_docente() {
         return id_docente;
     }

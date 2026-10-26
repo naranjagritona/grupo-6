@@ -1,7 +1,9 @@
 package dao;
 
-import clases.Usuario; 
+import clases.Usuario;
+
 import conexion.Conexion;
+
 import seguridad.Contrasenas;
 
 import java.sql.Connection;
@@ -11,6 +13,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+// consultamos y modificamos los registros de usuario en la base de datos
 public class Usuario_dao implements Dao<Usuario, Integer> {
 
     public Usuario autenticar(String nombreUsuario, String contraseña) {
@@ -18,7 +21,7 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
         String consulta = "SELECT * FROM usuario WHERE nombre_usuario = ? ORDER BY id_usuario";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setString(1, nombreUsuario);
 
@@ -36,24 +39,32 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
             }
 
         } catch (SQLException error) {
-            throw new IllegalStateException("No se pudo consultar el usuario en la base de datos.", error);
+            throw new IllegalStateException(
+                    "No se pudo consultar el usuario en la base de datos.", error);
         }
 
         return usuario;
     }
 
+    // limpia los datos de la sesión al salir de la cuenta
     public void cerrarSesion(Usuario usuario) {
         if (usuario != null) {
-            System.out.println("el usuario " + usuario.getNombre_usuario() + " ha cerrado sesión correctamente.");
+            servicios.Auditoria_servicio.cerrar();
+            System.out.println(
+                    "el usuario "
+                            + usuario.getNombre_usuario()
+                            + " ha cerrado sesión correctamente.");
         }
     }
 
+    // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Usuario objeto) {
-        String consulta = "INSERT INTO usuario (id_rol, nombre_usuario, contraseña) VALUES (?, ?, ?)";
+        String consulta =
+                "INSERT INTO usuario (id_rol, nombre_usuario, contraseña) VALUES (?, ?, ?)";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, objeto.getId_rol());
             ps.setString(2, objeto.getNombre_usuario());
@@ -67,13 +78,14 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
         }
     }
 
+    // consulta un registro usando su identificador
     @Override
     public Usuario obtenerPorId(Integer id) {
         Usuario usuario = null;
         String consulta = "SELECT * FROM usuario WHERE id_usuario = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -94,14 +106,15 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
         return usuario;
     }
 
+    // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Usuario> obtenerTodos() {
         List<Usuario> listaUsuarios = new ArrayList<>();
         String consulta = "SELECT * FROM usuario";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conexion.prepareStatement(consulta);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Usuario usuario = new Usuario();
@@ -120,12 +133,15 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
         return listaUsuarios;
     }
 
+    // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Usuario objeto) {
-        String consulta = "UPDATE usuario SET id_rol = ?, nombre_usuario = ?, contraseña = ? WHERE id_usuario = ?";
+        String consulta =
+                "UPDATE usuario SET id_rol = ?, nombre_usuario = ?, contraseña = ? WHERE id_usuario"
+                        + " = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, objeto.getId_rol());
             ps.setString(2, objeto.getNombre_usuario());
@@ -140,12 +156,13 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
         }
     }
 
+    // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
         String consulta = "DELETE FROM usuario WHERE id_usuario = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             ps.executeUpdate();

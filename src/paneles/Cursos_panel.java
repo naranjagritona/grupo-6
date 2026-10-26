@@ -1,12 +1,15 @@
 package paneles;
 
 import clases.*;
+
 import dao.*;
+
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -104,8 +107,7 @@ public class Cursos_panel extends JPanel {
                     "Editar",
                     () -> {
                         Curso c = seleccion();
-                        if (c != null)
-                            formulario(c);
+                        if (c != null) formulario(c);
                     });
             boton(
                     acciones,
@@ -240,8 +242,7 @@ public class Cursos_panel extends JPanel {
                     public Component getListCellRendererComponent(
                             JList<?> l, Object v, int i, boolean s, boolean f) {
                         super.getListCellRendererComponent(l, v, i, s, f);
-                        if (v instanceof Periodo_Lectivo p)
-                            setText(p.getNombre());
+                        if (v instanceof Periodo_Lectivo p) setText(p.getNombre());
                         return this;
                     }
                 });
@@ -251,8 +252,7 @@ public class Cursos_panel extends JPanel {
                     public Component getListCellRendererComponent(
                             JList<?> l, Object v, int i, boolean s, boolean f) {
                         super.getListCellRendererComponent(l, v, i, s, f);
-                        if (v instanceof Docente d)
-                            setText(d.getApellido() + ", " + d.getNombre());
+                        if (v instanceof Docente d) setText(d.getApellido() + ", " + d.getNombre());
                         return this;
                     }
                 });
@@ -291,11 +291,9 @@ public class Cursos_panel extends JPanel {
             turno.setSelectedItem(original.getTurno());
             situacion.setSelectedItem(original.getEstado());
             for (Periodo_Lectivo p : periodos)
-                if (p.getId_periodo().equals(original.getId_periodo()))
-                    periodo.setSelectedItem(p);
+                if (p.getId_periodo().equals(original.getId_periodo())) periodo.setSelectedItem(p);
             for (Docente d : docentes)
-                if (d.getId_docente().equals(original.getId_docente()))
-                    docente.setSelectedItem(d);
+                if (d.getId_docente().equals(original.getId_docente())) docente.setSelectedItem(d);
         }
         JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
         Object[][] campos = {
@@ -314,10 +312,17 @@ public class Cursos_panel extends JPanel {
             form.add(new JLabel((String) par[0]));
             form.add((Component) par[1]);
         }
+        JScrollPane formularioVisible = new JScrollPane(form);
+        formularioVisible.getVerticalScrollBar().setUnitIncrement(18);
+        Rectangle pantalla = getGraphicsConfiguration().getBounds();
+        Insets margenes = Toolkit.getDefaultToolkit().getScreenInsets(getGraphicsConfiguration());
+        int altoDisponible = pantalla.height - margenes.top - margenes.bottom;
+        int anchoDisponible = pantalla.width - margenes.left - margenes.right;
+        formularioVisible.setPreferredSize(medidaFormulario(anchoDisponible, altoDisponible));
         // El formulario queda abierto si falta completar un dato o las fechas no son válidas.
         while (JOptionPane.showConfirmDialog(
                         this,
-                        form,
+                        formularioVisible,
                         original == null ? "Nuevo curso" : "Editar curso",
                         JOptionPane.OK_CANCEL_OPTION,
                         JOptionPane.PLAIN_MESSAGE)
@@ -325,8 +330,7 @@ public class Cursos_panel extends JPanel {
             try {
                 List<Integer> ids = new ArrayList<>();
                 for (int i = 0; i < casillas.size(); i++)
-                    if (casillas.get(i).isSelected())
-                        ids.add(materias.get(i).getId_materia());
+                    if (casillas.get(i).isSelected()) ids.add(materias.get(i).getId_materia());
                 if (ids.isEmpty())
                     throw new IllegalArgumentException("Seleccioná al menos una materia.");
                 Curso c = new Curso();
@@ -352,5 +356,12 @@ public class Cursos_panel extends JPanel {
                 error(e);
             }
         }
+    }
+
+    // dejamos espacio para los botones aunque la pantalla tenga poca altura
+    private static Dimension medidaFormulario(int anchoDisponible, int altoDisponible) {
+        return new Dimension(
+                Math.min(660, Math.max(280, anchoDisponible - 100)),
+                Math.min(500, Math.max(150, altoDisponible - 180)));
     }
 }

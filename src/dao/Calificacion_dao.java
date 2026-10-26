@@ -1,6 +1,7 @@
 package dao;
 
 import clases.Calificacion;
+
 import conexion.Conexion;
 
 import java.sql.Connection;
@@ -13,12 +14,16 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+// consultamos y modificamos los registros de calificacion en la base de datos
 public class Calificacion_dao implements Dao<Calificacion, Integer> {
 
     public void insertarVerificando(Calificacion objeto) throws SQLException {
-        String sql = "INSERT INTO calificacion (id_inscripcion, id_columna_notas, nota, observaciones) VALUES (?, ?, ?, ?)";
+        String sql =
+                "INSERT INTO calificacion (id_inscripcion, id_columna_notas, nota, observaciones)"
+                        + " VALUES (?, ?, ?, ?)";
         try (Connection conexion = Conexion.getConnection()) {
-            if (conexion == null) throw new SQLException("No se pudo establecer conexión con la base de datos.");
+            if (conexion == null)
+                throw new SQLException("No se pudo establecer conexión con la base de datos.");
             try (PreparedStatement ps = conexion.prepareStatement(sql)) {
                 ps.setInt(1, objeto.getId_inscripcion());
                 ps.setInt(2, objeto.getId_columna_notas());
@@ -30,20 +35,27 @@ public class Calificacion_dao implements Dao<Calificacion, Integer> {
     }
 
     /** Actualiza la nota y registra su auditoría en una única transacción. */
-    public void modificarConHistorial(Calificacion objeto, Double notaAnterior, String motivo) throws SQLException {
-        String actualizar = "UPDATE calificacion SET nota = ?, fecha_carga = ?, observaciones = ? WHERE id_calificacion = ?";
-        String historial = "INSERT INTO calificacion_historial (id_calificacion, nota_anterior, nota_nueva, fecha_modificacion, motivo) VALUES (?, ?, ?, ?, ?)";
+    public void modificarConHistorial(Calificacion objeto, Double notaAnterior, String motivo)
+            throws SQLException {
+        String actualizar =
+                "UPDATE calificacion SET nota = ?, fecha_carga = ?, observaciones = ? WHERE"
+                        + " id_calificacion = ?";
+        String historial =
+                "INSERT INTO calificacion_historial (id_calificacion, nota_anterior, nota_nueva,"
+                        + " fecha_modificacion, motivo) VALUES (?, ?, ?, ?, ?)";
         try (Connection conexion = Conexion.getConnection()) {
-            if (conexion == null) throw new SQLException("No se pudo establecer conexión con la base de datos.");
+            if (conexion == null)
+                throw new SQLException("No se pudo establecer conexión con la base de datos.");
             boolean autoCommit = conexion.getAutoCommit();
             conexion.setAutoCommit(false);
             try (PreparedStatement psNota = conexion.prepareStatement(actualizar);
-                 PreparedStatement psHistorial = conexion.prepareStatement(historial)) {
+                    PreparedStatement psHistorial = conexion.prepareStatement(historial)) {
                 psNota.setDouble(1, objeto.getNota());
                 psNota.setObject(2, objeto.getFecha_carga());
                 psNota.setString(3, objeto.getObservaciones());
                 psNota.setInt(4, objeto.getId_calificacion());
-                if (psNota.executeUpdate() != 1) throw new SQLException("La calificación ya no existe.");
+                if (psNota.executeUpdate() != 1)
+                    throw new SQLException("La calificación ya no existe.");
 
                 psHistorial.setInt(1, objeto.getId_calificacion());
                 psHistorial.setDouble(2, notaAnterior);
@@ -61,12 +73,15 @@ public class Calificacion_dao implements Dao<Calificacion, Integer> {
         }
     }
 
+    // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Calificacion objeto) {
-        String consulta = "INSERT INTO calificacion (id_inscripcion, id_columna_notas, nota, observaciones) VALUES (?, ?, ?, ?)";
+        String consulta =
+                "INSERT INTO calificacion (id_inscripcion, id_columna_notas, nota, observaciones)"
+                        + " VALUES (?, ?, ?, ?)";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, objeto.getId_inscripcion());
             ps.setInt(2, objeto.getId_columna_notas());
@@ -81,13 +96,14 @@ public class Calificacion_dao implements Dao<Calificacion, Integer> {
         }
     }
 
+    // consulta un registro usando su identificador
     @Override
     public Calificacion obtenerPorId(Integer id) {
         Calificacion calificacion = null;
         String consulta = "SELECT * FROM calificacion WHERE id_calificacion = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -111,14 +127,15 @@ public class Calificacion_dao implements Dao<Calificacion, Integer> {
         return calificacion;
     }
 
+    // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Calificacion> obtenerTodos() {
         List<Calificacion> listaCalificaciones = new ArrayList<>();
         String consulta = "SELECT * FROM calificacion";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conexion.prepareStatement(consulta);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Calificacion calificacion = new Calificacion();
@@ -135,19 +152,23 @@ public class Calificacion_dao implements Dao<Calificacion, Integer> {
             }
 
         } catch (SQLException error) {
-            System.err.println("Error al obtener la lista de calificaciones: " + error.getMessage());
+            System.err.println(
+                    "Error al obtener la lista de calificaciones: " + error.getMessage());
             error.printStackTrace();
         }
 
         return listaCalificaciones;
     }
 
+    // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Calificacion objeto) {
-        String consulta = "UPDATE calificacion SET id_inscripcion = ?, id_columna_notas = ?, nota = ?, observaciones = ? WHERE id_calificacion = ?";
+        String consulta =
+                "UPDATE calificacion SET id_inscripcion = ?, id_columna_notas = ?, nota = ?,"
+                        + " observaciones = ? WHERE id_calificacion = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, objeto.getId_inscripcion());
             ps.setInt(2, objeto.getId_columna_notas());
@@ -164,12 +185,13 @@ public class Calificacion_dao implements Dao<Calificacion, Integer> {
         }
     }
 
+    // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
         String consulta = "DELETE FROM calificacion WHERE id_calificacion = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             ps.executeUpdate();

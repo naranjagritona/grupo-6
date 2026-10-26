@@ -1,6 +1,7 @@
 package dao;
 
 import clases.Docente;
+
 import conexion.Conexion;
 
 import java.sql.Connection;
@@ -10,14 +11,18 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+// consultamos y modificamos los registros de docente en la base de datos
 public class Docente_dao implements Dao<Docente, Integer> {
 
+    // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Docente objeto) {
-        String consulta = "INSERT INTO docente (id_usuario, nombre, apellido, dni, legajo, estado) VALUES (?, ?, ?, ?, ?, ?)";
+        String consulta =
+                "INSERT INTO docente (id_usuario, nombre, apellido, dni, legajo, estado) VALUES (?,"
+                        + " ?, ?, ?, ?, ?)";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setObject(1, objeto.getId_usuario());
             ps.setString(2, objeto.getNombre());
@@ -34,13 +39,14 @@ public class Docente_dao implements Dao<Docente, Integer> {
         }
     }
 
+    // consulta un registro usando su identificador
     @Override
     public Docente obtenerPorId(Integer id) {
         Docente docente = null;
         String consulta = "SELECT * FROM docente WHERE id_docente = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -65,14 +71,15 @@ public class Docente_dao implements Dao<Docente, Integer> {
         return docente;
     }
 
+    // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Docente> obtenerTodos() {
         List<Docente> listaDocentes = new ArrayList<>();
         String consulta = "SELECT * FROM docente";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conexion.prepareStatement(consulta);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Docente docente = new Docente();
@@ -96,12 +103,15 @@ public class Docente_dao implements Dao<Docente, Integer> {
         return listaDocentes;
     }
 
+    // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Docente objeto) {
-        String consulta = "UPDATE docente SET id_usuario = ?, nombre = ?, apellido = ?, dni = ?, legajo = ?, estado = ? WHERE id_docente = ?";
+        String consulta =
+                "UPDATE docente SET id_usuario = ?, nombre = ?, apellido = ?, dni = ?, legajo = ?,"
+                        + " estado = ? WHERE id_docente = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setObject(1, objeto.getId_usuario());
             ps.setString(2, objeto.getNombre());
@@ -119,12 +129,13 @@ public class Docente_dao implements Dao<Docente, Integer> {
         }
     }
 
+    // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
         String consulta = "DELETE FROM docente WHERE id_docente = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             ps.executeUpdate();

@@ -1,5 +1,6 @@
 package clases;
 
+// guardamos los datos del alumno y su relación con la cuenta y el responsable
 public class Alumno {
     private Integer id_alumno;
     private Integer id_usuario;
@@ -10,10 +11,17 @@ public class Alumno {
     private String matricula;
     private String estado;
 
-    public Alumno() {
-    }
+    public Alumno() {}
 
-    public Alumno(Integer id_alumno, Integer id_usuario, Integer id_responsable, String nombre, String apellido, String dni, String matricula, String estado) {
+    public Alumno(
+            Integer id_alumno,
+            Integer id_usuario,
+            Integer id_responsable,
+            String nombre,
+            String apellido,
+            String dni,
+            String matricula,
+            String estado) {
         this.id_alumno = id_alumno;
         this.id_usuario = id_usuario;
         this.id_responsable = id_responsable;
@@ -24,6 +32,7 @@ public class Alumno {
         this.estado = estado;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_alumno() {
         return id_alumno;
     }

@@ -1,12 +1,12 @@
 package clases;
 
+// identificamos el tipo de cuenta y sus permisos dentro del sistema
 public class Rol {
     private Integer id_rol;
     private String nombre;
     private String descripcion_rol;
 
-    public Rol() {
-    }
+    public Rol() {}
 
     public Rol(Integer id_rol, String nombre, String descripcion_rol) {
         this.id_rol = id_rol;
@@ -14,6 +14,7 @@ public class Rol {
         this.descripcion_rol = descripcion_rol;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_rol() {
         return id_rol;
     }

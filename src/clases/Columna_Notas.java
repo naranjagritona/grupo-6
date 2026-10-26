@@ -2,10 +2,11 @@ package clases;
 
 import java.time.LocalDate;
 
+// representamos una evaluación con su fecha, escala y estado
 public class Columna_Notas {
     private Integer id_columna_notas;
     private Integer id_curso;
-    private String titulo;  
+    private String titulo;
     private String tipo;
     private Double nota_maxima;
     private Double nota_aprobacion;
@@ -13,10 +14,18 @@ public class Columna_Notas {
     private LocalDate fecha_cierre;
     private String estado;
 
-    public Columna_Notas() {
-    }
+    public Columna_Notas() {}
 
-    public Columna_Notas(Integer id_columna_notas, Integer id_curso, String titulo, String tipo, Double nota_maxima, Double nota_aprobacion, LocalDate fecha_evaluacion, LocalDate fecha_cierre, String estado) {
+    public Columna_Notas(
+            Integer id_columna_notas,
+            Integer id_curso,
+            String titulo,
+            String tipo,
+            Double nota_maxima,
+            Double nota_aprobacion,
+            LocalDate fecha_evaluacion,
+            LocalDate fecha_cierre,
+            String estado) {
         this.id_columna_notas = id_columna_notas;
         this.id_curso = id_curso;
         this.titulo = titulo;
@@ -28,6 +37,7 @@ public class Columna_Notas {
         this.estado = estado;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId_columna_notas() {
         return id_columna_notas;
     }

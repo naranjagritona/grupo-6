@@ -1,6 +1,6 @@
-
 package clases;
 
+// mostramos un texto en el selector y conservamos el identificador para las consultas
 public class ItemCombo {
 
     private Integer id;
@@ -11,6 +11,7 @@ public class ItemCombo {
         this.texto = texto;
     }
 
+    // consultamos y modificamos los datos del objeto con sus métodos de acceso
     public Integer getId() {
         return id;
     }

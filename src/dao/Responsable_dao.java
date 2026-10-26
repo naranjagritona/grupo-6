@@ -1,6 +1,7 @@
 package dao;
 
 import clases.Responsable;
+
 import conexion.Conexion;
 
 import java.sql.Connection;
@@ -10,14 +11,18 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+// consultamos y modificamos los registros de responsable en la base de datos
 public class Responsable_dao implements Dao<Responsable, Integer> {
 
+    // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Responsable objeto) {
-        String consulta = "INSERT INTO responsable (nombre, apellido, dni, tipo_relacion) VALUES (?, ?, ?, ?)";
+        String consulta =
+                "INSERT INTO responsable (nombre, apellido, dni, tipo_relacion) VALUES (?, ?, ?,"
+                        + " ?)";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setString(1, objeto.getNombre());
             ps.setString(2, objeto.getApellido());
@@ -32,13 +37,14 @@ public class Responsable_dao implements Dao<Responsable, Integer> {
         }
     }
 
+    // consulta un registro usando su identificador
     @Override
     public Responsable obtenerPorId(Integer id) {
         Responsable responsable = null;
         String consulta = "SELECT * FROM responsable WHERE id_responsable = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -61,14 +67,15 @@ public class Responsable_dao implements Dao<Responsable, Integer> {
         return responsable;
     }
 
+    // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Responsable> obtenerTodos() {
         List<Responsable> listaResponsables = new ArrayList<>();
         String consulta = "SELECT * FROM responsable";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conexion.prepareStatement(consulta);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Responsable responsable = new Responsable();
@@ -90,12 +97,15 @@ public class Responsable_dao implements Dao<Responsable, Integer> {
         return listaResponsables;
     }
 
+    // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Responsable objeto) {
-        String consulta = "UPDATE responsable SET nombre = ?, apellido = ?, dni = ?, tipo_relacion = ? WHERE id_responsable = ?";
+        String consulta =
+                "UPDATE responsable SET nombre = ?, apellido = ?, dni = ?, tipo_relacion = ? WHERE"
+                        + " id_responsable = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setString(1, objeto.getNombre());
             ps.setString(2, objeto.getApellido());
@@ -111,12 +121,13 @@ public class Responsable_dao implements Dao<Responsable, Integer> {
         }
     }
 
+    // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
         String consulta = "DELETE FROM responsable WHERE id_responsable = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             ps.executeUpdate();

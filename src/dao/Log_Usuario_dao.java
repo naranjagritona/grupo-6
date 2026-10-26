@@ -1,6 +1,7 @@
 package dao;
 
 import clases.Log_Usuario;
+
 import conexion.Conexion;
 
 import java.sql.Connection;
@@ -11,20 +12,24 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
+// consultamos y modificamos los registros de log usuario en la base de datos
 public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
 
+    // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Log_Usuario objeto) {
-        String consulta = "INSERT INTO log_usuario (id_usuario, accion, campo_modificado, valor_anterior, valor_nuevo) VALUES (?, ?, ?, ?, ?)";
+        String consulta =
+                "INSERT INTO log_usuario (id_usuario, accion, campo_modificado, valor_anterior,"
+                        + " valor_nuevo) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, objeto.getId_usuario());
             ps.setString(2, objeto.getAccion());
             ps.setString(3, objeto.getCampo_modificado());
-            ps.setString(4, objeto.getValor_anterior());
-            ps.setString(5, objeto.getValor_nuevo());
+            ps.setString(4, objeto.getValor_anterior() == null ? "" : objeto.getValor_anterior());
+            ps.setString(5, objeto.getValor_nuevo() == null ? "" : objeto.getValor_nuevo());
 
             ps.executeUpdate();
 
@@ -34,13 +39,14 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
         }
     }
 
+    // consulta un registro usando su identificador
     @Override
     public Log_Usuario obtenerPorId(Integer id) {
         Log_Usuario log = null;
         String consulta = "SELECT * FROM log_usuario WHERE id_log_usuario = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -66,14 +72,15 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
         return log;
     }
 
+    // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Log_Usuario> obtenerTodos() {
         List<Log_Usuario> listaLogs = new ArrayList<>();
         String consulta = "SELECT * FROM log_usuario";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conexion.prepareStatement(consulta);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Log_Usuario log = new Log_Usuario();
@@ -98,18 +105,21 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
         return listaLogs;
     }
 
+    // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Log_Usuario objeto) {
-        String consulta = "UPDATE log_usuario SET id_usuario = ?, accion = ?, campo_modificado = ?, valor_anterior = ?, valor_nuevo = ? WHERE id_log_usuario = ?";
+        String consulta =
+                "UPDATE log_usuario SET id_usuario = ?, accion = ?, campo_modificado = ?,"
+                        + " valor_anterior = ?, valor_nuevo = ? WHERE id_log_usuario = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, objeto.getId_usuario());
             ps.setString(2, objeto.getAccion());
             ps.setString(3, objeto.getCampo_modificado());
-            ps.setString(4, objeto.getValor_anterior());
-            ps.setString(5, objeto.getValor_nuevo());
+            ps.setString(4, objeto.getValor_anterior() == null ? "" : objeto.getValor_anterior());
+            ps.setString(5, objeto.getValor_nuevo() == null ? "" : objeto.getValor_nuevo());
             ps.setInt(6, objeto.getId_log_usuario());
 
             ps.executeUpdate();
@@ -120,12 +130,13 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
         }
     }
 
+    // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
         String consulta = "DELETE FROM log_usuario WHERE id_log_usuario = ?";
 
         try (Connection conexion = Conexion.getConnection();
-             PreparedStatement ps = conexion.prepareStatement(consulta)) {
+                PreparedStatement ps = conexion.prepareStatement(consulta)) {
 
             ps.setInt(1, id);
             ps.executeUpdate();

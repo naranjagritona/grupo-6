@@ -3,8 +3,10 @@ package paneles;
 import clases.Curso;
 import clases.Materia;
 import clases.Usuario;
+
 import dao.Curso_dao;
 import dao.Materia_dao;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
@@ -18,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
+
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -35,6 +38,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
+// mostramos las materias y los cursos con los que están relacionadas
 public class Materias_panel extends JPanel {
     private static final long serialVersionUID = 1L;
 
@@ -63,6 +67,7 @@ public class Materias_panel extends JPanel {
 
     public Materias_panel(Usuario usuario) {
         this.usuario = usuario;
+        servicios.Auditoria_servicio.registrar("ABRIR MODULO", "Materias", "Consulta del módulo");
         setLayout(new BorderLayout(12, 12));
         setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
         setBackground(Color.WHITE);
@@ -106,6 +111,8 @@ public class Materias_panel extends JPanel {
                 .addDocumentListener(
                         new DocumentListener() {
                             private void filtrar() {
+                                servicios.Auditoria_servicio.buscar(
+                                        "Materias", buscar.getText().trim());
                                 filtro.setRowFilter(
                                         RowFilter.regexFilter(
                                                 "(?iu)" + Pattern.quote(buscar.getText().trim())));
@@ -156,10 +163,15 @@ public class Materias_panel extends JPanel {
 
     private void boton(JPanel panel, String texto, Runnable accion) {
         JButton boton = new JButton(texto);
-        boton.addActionListener(e -> accion.run());
+        boton.addActionListener(
+                e -> {
+                    servicios.Auditoria_servicio.registrar("ACCION", "Materias", texto);
+                    accion.run();
+                });
         panel.add(boton);
     }
 
+    // devuelve el registro que corresponde a la fila seleccionada
     private Materia seleccion() {
         int fila = tabla.getSelectedRow();
         if (fila < 0) {
@@ -179,11 +191,12 @@ public class Materias_panel extends JPanel {
             return;
         }
         Materia materia = materias.get(tabla.convertRowIndexToModel(fila));
-        List<String> cursos =
-                cursosPorMateria.getOrDefault(materia.getId_materia(), List.of());
+        List<String> cursos = cursosPorMateria.getOrDefault(materia.getId_materia(), List.of());
         if (cursos.isEmpty()) {
             detalleRelaciones.setText(
-                    "“" + materia.getNombre_materia() + "” todavía no está vinculada a ningún curso.");
+                    "“"
+                            + materia.getNombre_materia()
+                            + "” todavía no está vinculada a ningún curso.");
             return;
         }
         detalleRelaciones.setText(
@@ -200,6 +213,7 @@ public class Materias_panel extends JPanel {
         trabajar(this::cargarCatalogo);
     }
 
+    // consulta las materias y agrupa sus cursos relacionados
     private CatalogoMaterias cargarCatalogo() {
         List<Materia> listaMaterias = materiaDao.obtenerTodos();
         List<Curso> cursos = cursoDao.listar(usuario);
@@ -242,6 +256,7 @@ public class Materias_panel extends JPanel {
                 + curso.getEstado();
     }
 
+    // ejecuta la consulta en segundo plano y actualiza la pantalla al terminar
     private void trabajar(Callable<CatalogoMaterias> tarea) {
         estado.setText("Cargando…");
         new SwingWorker<CatalogoMaterias, Void>() {
@@ -279,6 +294,7 @@ public class Materias_panel extends JPanel {
         }.execute();
     }
 
+    // prepara los campos que se completan en el formulario
     private void formulario(Materia original) {
         JTextField nombre =
                 new JTextField(original == null ? "" : original.getNombre_materia(), 24);
@@ -334,9 +350,9 @@ public class Materias_panel extends JPanel {
                                                                                         materia
                                                                                                 .getNombre_materia()))
                                                                 : original.getId_materia()
-                                                                        .equals(
-                                                                                existente
-                                                                                        .getId_materia())
+                                                                                .equals(
+                                                                                        existente
+                                                                                                .getId_materia())
                                                                         && normalizarNombre(
                                                                                         existente
                                                                                                 .getNombre_materia())
@@ -346,7 +362,8 @@ public class Materias_panel extends JPanel {
                                                                                                         .getNombre_materia())));
                         if (!guardada) {
                             throw new IllegalStateException(
-                                    "No se pudo guardar la materia. Revisá la conexión y volvé a intentar.");
+                                    "No se pudo guardar la materia. Revisá la conexión y volvé a"
+                                            + " intentar.");
                         }
                         return actualizado;
                     });
@@ -366,19 +383,17 @@ public class Materias_panel extends JPanel {
     }
 
     private String normalizarNombre(String nombre) {
-        return nombre == null
-                ? ""
-                : nombre.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+        return nombre == null ? "" : nombre.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 
+    // comprueba las relaciones antes de eliminar la materia
     private void eliminarSeleccionada() {
         Materia materia = seleccion();
         if (materia == null) {
             return;
         }
 
-        List<String> cursos =
-                cursosPorMateria.getOrDefault(materia.getId_materia(), List.of());
+        List<String> cursos = cursosPorMateria.getOrDefault(materia.getId_materia(), List.of());
         if (!cursos.isEmpty()) {
             mostrarBloqueoPorCursos(materia, cursos);
             return;
@@ -415,7 +430,8 @@ public class Materias_panel extends JPanel {
                                                             .equals(existente.getId_materia()));
                     if (sigueExistiendo) {
                         throw new IllegalStateException(
-                                "No se pudo eliminar la materia. Revisá sus relaciones y volvé a intentar.");
+                                "No se pudo eliminar la materia. Revisá sus relaciones y volvé a"
+                                        + " intentar.");
                     }
                     return actualizado;
                 });
@@ -426,13 +442,14 @@ public class Materias_panel extends JPanel {
                 this,
                 "No se puede eliminar “"
                         + materia.getNombre_materia()
-                        + "” porque está vinculada a cursos. "
-                        + "La relación se conserva para proteger las inscripciones y evaluaciones.\n\n"
+                        + "” porque está vinculada a cursos. La relación se conserva para proteger"
+                        + " las inscripciones y evaluaciones.\n\n"
                         + String.join("\n", cursos),
                 "Materia en uso",
                 JOptionPane.WARNING_MESSAGE);
     }
 
+    // muestra el motivo por el que no se pudo completar la operación
     private void error(Exception e) {
         Throwable causa = e.getCause() != null ? e.getCause() : e;
         JOptionPane.showMessageDialog(
