@@ -62,7 +62,7 @@ public class Calificaciones_panel extends JPanel {
                     new String[] {
                         "Alumno",
                         "DNI",
-                        "Evaluación",
+                        "Materia / Evaluación",
                         "Tipo",
                         "Nota",
                         "Máximo",
@@ -162,11 +162,21 @@ public class Calificaciones_panel extends JPanel {
         modificar.addActionListener(e -> modificarNota());
         historial.addActionListener(e -> mostrarHistorial());
         borrar.addActionListener(e -> eliminarNota());
-        boolean edita = usuario != null && (usuario.getId_rol() == 1 || usuario.getId_rol() == 2);
+        boolean edita = usuario != null && usuario.getId_rol() == 2;
         nuevaEvaluacion.setVisible(edita);
         cargarNota.setVisible(edita);
         modificar.setVisible(edita);
         borrar.setVisible(edita);
+        JButton cerrarEvaluacion = new JButton("Cerrar evaluación"); cerrarEvaluacion.setVisible(edita);
+        cerrarEvaluacion.addActionListener(e -> {
+            JComboBox<ItemCombo> opciones = new JComboBox<>(); java.util.Set<Integer> ids = new java.util.HashSet<>();
+            for (var fila : filasActuales) if ("Abierta".equals(fila.columna().getEstado()) && ids.add(fila.columna().getId_columna_notas())) opciones.addItem(new ItemCombo(fila.columna().getId_columna_notas(), fila.columna().getNombre_materia() + " · " + fila.columna().getTitulo()));
+            if (opciones.getItemCount() == 0) { aviso("No hay evaluaciones abiertas."); return; }
+            if (JOptionPane.showConfirmDialog(this, opciones, "Cerrar evaluación", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) ejecutar(() -> { servicio.cerrarEvaluacion(((ItemCombo) opciones.getSelectedItem()).getId()); return true; }, resultado -> cargarTabla());
+        });
+        acciones.add(cerrarEvaluacion);
+        JButton resultadoMateria = new JButton("Resultado de materia"); resultadoMateria.setVisible(edita);
+        resultadoMateria.addActionListener(e -> cerrarMateria()); acciones.add(resultadoMateria);
         acciones.add(nuevaEvaluacion);
         acciones.add(cargarNota);
         acciones.add(modificar);
@@ -176,7 +186,7 @@ public class Calificaciones_panel extends JPanel {
         cargarCursos();
     }
 
-    // Llenamos el selector una sola vez y consultamos solo los cursos visibles.
+    // llenamos el selector una sola vez y consultamos solo los cursos visibles.
     private void cargarCursos() {
         servicios.Auditoria_servicio.registrar("CONSULTAR", "Calificaciones", "Actualizar cursos");
         Integer anterior =
@@ -208,7 +218,7 @@ public class Calificaciones_panel extends JPanel {
                                 "Curso "
                                         + c.getId_curso()
                                         + " · "
-                                        + valor(c.getNombre_materia())
+                                        + c.getDivision() + " · " + c.getTurno()
                                         + " · "
                                         + valor(c.getNombre_periodo())
                                         + " · "
@@ -233,7 +243,7 @@ public class Calificaciones_panel extends JPanel {
         }.execute();
     }
 
-    // Consultamos solamente el curso elegido sin detener la ventana.
+    // consultamos solamente el curso elegido sin detener la ventana.
     private void cargarTabla() {
         if (llenandoCursos) {
             return;
@@ -262,7 +272,7 @@ public class Calificaciones_panel extends JPanel {
                     }
 
                     protected void done() {
-                        // Una consulta anterior no debe reemplazar el curso que elegimos después.
+                        // una consulta anterior no debe reemplazar el curso que elegimos después.
                         if (isCancelled() || version != versionTabla) {
                             return;
                         }
@@ -283,7 +293,7 @@ public class Calificaciones_panel extends JPanel {
                                         new Object[] {
                                             dato.alumno(),
                                             dato.dni(),
-                                            col.getTitulo(),
+                                            col.getNombre_materia() + " · " + col.getTitulo(),
                                             col.getTipo(),
                                             nota == null ? "—" : nota.getNota(),
                                             col.getNota_maxima(),
@@ -364,6 +374,11 @@ public class Calificaciones_panel extends JPanel {
             aviso("Primero seleccioná un curso.");
             return;
         }
+        JComboBox<ItemCombo> materia = new JComboBox<>();
+        try {
+            for (var m : new servicios.Resultado_Academico_servicio().materias(curso.getId(), usuarioLogueado.getId_usuario())) materia.addItem(new ItemCombo(((Number) m.get("id_materia")).intValue(), m.get("nombre_materia").toString()));
+        } catch (Exception error) { aviso(error.getMessage()); return; }
+        if (materia.getItemCount() == 0) { aviso("El curso no tiene materias asignadas."); return; }
         JTextField titulo = new JTextField();
         JComboBox<String> tipo =
                 new JComboBox<>(
@@ -374,13 +389,14 @@ public class Calificaciones_panel extends JPanel {
         JPanel form =
                 formulario(
                         new String[] {
+                            "Materia:",
                             "Título:",
                             "Tipo:",
                             "Nota máxima:",
                             "Nota de aprobación:",
                             "Fecha (AAAA-MM-DD):"
                         },
-                        new Component[] {titulo, tipo, maximo, aprobacion, fecha});
+                        new Component[] {materia, titulo, tipo, maximo, aprobacion, fecha});
         if (JOptionPane.showConfirmDialog(
                         this, form, "Nueva evaluación", JOptionPane.OK_CANCEL_OPTION)
                 != JOptionPane.OK_OPTION) return;
@@ -388,13 +404,28 @@ public class Calificaciones_panel extends JPanel {
         String max = maximo.getText(), apr = aprobacion.getText(), dia = fecha.getText();
         ejecutar(
                 () -> {
-                    servicio.crearEvaluacion(curso.getId(), nombre, tipoElegido, max, apr, dia);
+                    servicio.crearEvaluacion(curso.getId(), ((ItemCombo) materia.getSelectedItem()).getId(), nombre, tipoElegido, max, apr, dia);
                     return true;
                 },
                 resultado -> {
                     cargarTabla();
                     JOptionPane.showMessageDialog(this, "Evaluación registrada.");
                 });
+    }
+
+    // pedimos la materia y el alumno para calcular el resultado con las evaluaciones cerradas
+    private void cerrarMateria() {
+        if (ocupado || !(cmbCurso.getSelectedItem() instanceof ItemCombo curso)) return;
+        JComboBox<ItemCombo> materias = new JComboBox<>(), alumnos = new JComboBox<>();
+        java.util.Set<Integer> ids = new java.util.HashSet<>();
+        for (var fila : filasActuales) if (ids.add(fila.idInscripcion())) alumnos.addItem(new ItemCombo(fila.idInscripcion(), fila.alumno()));
+        ejecutar(() -> new servicios.Resultado_Academico_servicio().materias(curso.getId(), usuarioLogueado.getId_usuario()), lista -> {
+            for (var materia : lista) materias.addItem(new ItemCombo(((Number) materia.get("id_materia")).intValue(), materia.get("nombre_materia").toString()));
+            if (materias.getItemCount() == 0 || alumnos.getItemCount() == 0) { aviso("El curso necesita materias y alumnos inscriptos."); return; }
+            JTextField motivo = new JTextField();
+            Object[] campos = {"Alumno", alumnos, "Materia", materias, "Observación del resultado", motivo};
+            if (JOptionPane.showConfirmDialog(this, campos, "Resultado final por materia", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) ejecutar(() -> new servicios.Resultado_Academico_servicio().cerrar(((ItemCombo) alumnos.getSelectedItem()).getId(), ((ItemCombo) materias.getSelectedItem()).getId(), motivo.getText(), usuarioLogueado.getId_usuario()), resultado -> { JOptionPane.showMessageDialog(this, resultado); cargarTabla(); });
+        });
     }
 
     // prepara la inscripción y la evaluación para registrar una nota

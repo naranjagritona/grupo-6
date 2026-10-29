@@ -30,7 +30,9 @@ public class Calificaciones_servicio {
 
     // comprueba el rol de la cuenta y su relación con el curso
     private void permitir(Connection db, int curso, boolean requiereActivo) throws SQLException {
-        if (usuario == null || (usuario.getId_rol() != 1 && usuario.getId_rol() != 2)) {
+        try { servicios.Permisos_servicio.verificar(db, new dao.Consulta_academica_dao(), usuario == null ? null : usuario.getId_usuario(), 2); }
+        catch (Exception error) { throw new IllegalArgumentException(error.getMessage(), error); }
+        if (usuario == null || usuario.getId_rol() != 2) {
             throw new IllegalArgumentException("No tenés permisos para modificar calificaciones.");
         }
         try (PreparedStatement q =
@@ -72,6 +74,13 @@ public class Calificaciones_servicio {
     public void crearEvaluacion(
             int curso, String titulo, String tipo, String maximo, String aprobacion, String fecha)
             throws Exception {
+        clases.Curso seleccionado = new dao.Curso_dao().obtenerPorId(curso);
+        if (seleccionado == null) throw new IllegalArgumentException("El curso no existe.");
+        crearEvaluacion(curso, seleccionado.getId_materia(), titulo, tipo, maximo, aprobacion, fecha);
+    }
+
+    // verificamos la materia y los datos de la evaluación antes de guardarla en el curso
+    public void crearEvaluacion(int curso, int materia, String titulo, String tipo, String maximo, String aprobacion, String fecha) throws Exception {
         String nombre = texto(titulo, 200, "el título");
         BigDecimal max = numero(maximo), apr = numero(aprobacion);
         if (max.signum() <= 0
@@ -86,11 +95,15 @@ public class Calificaciones_servicio {
             db.setAutoCommit(false);
             try {
                 permitir(db, curso);
+                try (PreparedStatement consulta = db.prepareStatement("SELECT id_materia FROM curso_materia WHERE id_curso=? AND id_materia=?")) {
+                    consulta.setInt(1, curso); consulta.setInt(2, materia);
+                    try (ResultSet registros = consulta.executeQuery()) { if (!registros.next()) throw new IllegalArgumentException("La materia no pertenece al curso."); }
+                }
                 try (PreparedStatement q =
                         db.prepareStatement(
                                 "INSERT INTO"
-                                    + " columna_notas(id_curso,titulo,tipo,nota_maxima,nota_aprobacion,fecha_evaluacion,fecha_cierre,estado)"
-                                    + " VALUES(?,?,?,?,?,?,?,'Abierta')")) {
+                                    + " columna_notas(id_curso,titulo,tipo,nota_maxima,nota_aprobacion,fecha_evaluacion,fecha_cierre,estado,id_materia)"
+                                    + " VALUES(?,?,?,?,?,?,?,'Abierta',?)")) {
                     q.setInt(1, curso);
                     q.setString(2, nombre);
                     q.setString(3, tipo);
@@ -98,13 +111,34 @@ public class Calificaciones_servicio {
                     q.setBigDecimal(5, apr);
                     q.setObject(6, dia);
                     q.setObject(7, dia);
+                    q.setInt(8, materia);
                     q.executeUpdate();
                 }
+                new dao.Resultado_Academico_dao().invalidarCurso(db, curso, materia);
                 db.commit();
             } catch (Exception e) {
                 db.rollback();
                 throw e;
             }
+        }
+    }
+
+    // cerramos la evaluación para que el docente pueda calcular el resultado final de la materia
+    public void cerrarEvaluacion(int id) throws Exception {
+        try (Connection conexion = abrirConexion()) {
+            conexion.setAutoCommit(false);
+            try {
+                int curso;
+                try (PreparedStatement consulta = conexion.prepareStatement("SELECT id_curso FROM columna_notas WHERE id_columna_notas=? FOR UPDATE")) {
+                    consulta.setInt(1, id);
+                    try (ResultSet registros = consulta.executeQuery()) { if (!registros.next()) throw new IllegalArgumentException("La evaluación no existe."); curso = registros.getInt(1); }
+                }
+                permitir(conexion, curso);
+                try (PreparedStatement consulta = conexion.prepareStatement("UPDATE columna_notas SET estado='Cerrada',fecha_cierre=CURRENT_DATE WHERE id_columna_notas=?")) {
+                    consulta.setInt(1, id); consulta.executeUpdate();
+                }
+                conexion.commit();
+            } catch (Exception error) { conexion.rollback(); throw error; }
         }
     }
 
@@ -117,7 +151,7 @@ public class Calificaciones_servicio {
                 db.prepareStatement(
                         "SELECT i.id_curso,c.nota_maxima,c.estado FROM inscripcion i JOIN"
                             + " columna_notas c ON c.id_curso=i.id_curso WHERE i.id_inscripcion=?"
-                            + " AND c.id_columna_notas=? AND i.estado IN ('Pendiente','Confirmada')"
+                            + " AND c.id_columna_notas=? AND i.estado IN ('Confirmada','Recuperacion')"
                             + " FOR UPDATE")) {
             q.setInt(1, inscripcion);
             q.setInt(2, columna);
@@ -156,6 +190,7 @@ public class Calificaciones_servicio {
                     q.setString(4, observaciones.trim());
                     q.executeUpdate();
                 }
+                new dao.Resultado_Academico_dao().invalidar(db, inscripcion, columna);
                 db.commit();
             } catch (Exception e) {
                 db.rollback();
@@ -210,6 +245,7 @@ public class Calificaciones_servicio {
                     q.setString(4, razon);
                     q.executeUpdate();
                 }
+                new dao.Resultado_Academico_dao().invalidar(db, inscripcion, columna);
                 db.commit();
             } catch (Exception e) {
                 db.rollback();
@@ -243,6 +279,7 @@ public class Calificaciones_servicio {
                     q.setInt(1, id);
                     q.executeUpdate();
                 }
+                new dao.Resultado_Academico_dao().invalidar(db, inscripcion, columna);
                 db.commit();
             } catch (Exception e) {
                 db.rollback();
@@ -270,7 +307,14 @@ public class Calificaciones_servicio {
                                     "Esta nota no corresponde a tu cuenta.");
                         }
                     } else {
-                        permitir(db, rs.getInt(1), false);
+                        if (usuario != null && (usuario.getId_rol() == 1 || usuario.getId_rol() == 5)) {
+                            // permitimos la consulta de auditoría sin habilitar la modificación de notas
+                        } else if (usuario != null && usuario.getId_rol() == 4) {
+                            try (PreparedStatement consulta = db.prepareStatement("SELECT id_usuario FROM preceptor_curso WHERE id_usuario=? AND id_curso=?")) {
+                                consulta.setInt(1, usuario.getId_usuario()); consulta.setInt(2, rs.getInt(1));
+                                try (ResultSet registros = consulta.executeQuery()) { if (!registros.next()) throw new IllegalArgumentException("El curso no corresponde al preceptor."); }
+                            }
+                        } else permitir(db, rs.getInt(1), false);
                     }
                 }
             }

@@ -13,6 +13,7 @@ public class ConsultaAdmin_dao {
             int[] totales, List<Object[]> alumnos, List<Object[]> docentes, List<Object[]> logs) {}
 
     public Datos cargar() {
+        if (!servicios.Permisos_servicio.gestion(servicios.Permisos_servicio.actual())) throw new IllegalArgumentException("No tenés acceso a administración.");
         try (Connection db = Conexion.getConnection()) {
             int[] totales = new int[5];
             String sql =
@@ -62,7 +63,7 @@ public class ConsultaAdmin_dao {
                 }
             }
             List<Object[]> logs = new ArrayList<>();
-            // La base trae los nombres relacionados sin buscar usuario por usuario en Java.
+            // la base trae los nombres relacionados sin buscar usuario por usuario en Java.
             sql =
                     """
                     SELECT l.id_log_usuario,COALESCE(u.nombre_usuario,'Desconocido') usuario,
@@ -74,7 +75,7 @@ public class ConsultaAdmin_dao {
                     LEFT JOIN rol r ON r.id_rol=u.id_rol
                     ORDER BY l.fecha_hora DESC,l.id_log_usuario DESC
                     """;
-            try (PreparedStatement q = db.prepareStatement(sql);
+            try (PreparedStatement q = db.prepareStatement(sql + (servicios.Permisos_servicio.directivo(servicios.Permisos_servicio.actual()) ? "" : " LIMIT 0"));
                     ResultSet rs = q.executeQuery()) {
                 DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
                 while (rs.next()) {

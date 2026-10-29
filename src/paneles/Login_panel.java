@@ -121,7 +121,7 @@ public class Login_panel extends JFrame {
         try {
             usuarioLogueado = loginServicio.autenticarUsuario(nombre_usuario, contraseña);
         } catch (IllegalStateException error) {
-            // Mostramos los errores de conexión aparte de los datos de acceso incorrectos.
+            // mostramos los errores de conexión aparte de los datos de acceso incorrectos.
             error.printStackTrace();
             JOptionPane.showMessageDialog(
                     this, error.getMessage(), "Error de conexión", JOptionPane.ERROR_MESSAGE);
@@ -135,7 +135,7 @@ public class Login_panel extends JFrame {
                     "Éxito",
                     JOptionPane.INFORMATION_MESSAGE);
 
-            // Pasamos el usuario autenticado a la ventana principal
+            // pasamos el usuario autenticado a la ventana principal
             Inscripcion_panel inscripcionPanel = new Inscripcion_panel(usuarioLogueado);
             inscripcionPanel.setVisible(true);
 

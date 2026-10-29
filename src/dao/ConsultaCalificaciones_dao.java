@@ -26,27 +26,30 @@ public class ConsultaCalificaciones_dao {
     public List<Fila> listar(int idCurso, clases.Usuario usuario) {
         String sql =
                 """
-                SELECT a.nombre,a.apellido,a.dni,i.id_inscripcion,
+                SELECT a.nombre,a.apellido,a.dni,i.id_inscripcion,m.nombre_materia,
                        c.id_columna_notas,c.id_curso,c.titulo,c.tipo,c.nota_maxima,
                        c.nota_aprobacion,c.fecha_evaluacion,c.fecha_cierre,c.estado estado_columna,
                        n.id_calificacion,n.nota,n.fecha_carga,n.observaciones
                 FROM columna_notas c
+                JOIN materia m ON m.id_materia=c.id_materia
                 JOIN inscripcion i ON i.id_curso=c.id_curso
                 JOIN alumno a ON a.id_alumno=i.id_alumno
                 LEFT JOIN calificacion n ON n.id_inscripcion=i.id_inscripcion
                     AND n.id_columna_notas=c.id_columna_notas
-                WHERE c.id_curso=? AND i.estado NOT IN ('Cancelada','Finalizada')
+                WHERE c.id_curso=? AND 1=1
                 ORDER BY c.id_columna_notas,i.id_inscripcion
                 """;
         if (usuario != null) {
             String permiso;
-            if (usuario.getId_rol() == 1) {
+            if ((usuario.getId_rol() == 1 || usuario.getId_rol() == 5)) {
                 permiso = "";
             } else if (usuario.getId_rol() == 2) {
                 permiso =
                         " AND EXISTS(SELECT 1 FROM curso cu JOIN docente d ON"
                                 + " d.id_docente=cu.id_docente WHERE cu.id_curso=c.id_curso AND"
                                 + " d.id_usuario=?) ";
+            } else if (usuario.getId_rol() == 4) {
+                permiso = " AND EXISTS(SELECT 1 FROM preceptor_curso pc WHERE pc.id_curso=c.id_curso AND pc.id_usuario=?) ";
             } else if (usuario.getId_rol() == 3) {
                 permiso = " AND a.id_usuario=? ";
             } else {
@@ -57,7 +60,7 @@ public class ConsultaCalificaciones_dao {
         try (Connection db = Conexion.getConnection();
                 PreparedStatement q = db.prepareStatement(sql)) {
             q.setInt(1, idCurso);
-            if (usuario != null && usuario.getId_rol() != 1) {
+            if (usuario != null && usuario.getId_rol() != 1 && usuario.getId_rol() != 5) {
                 q.setInt(2, usuario.getId_usuario());
             }
             List<Fila> filas = new ArrayList<>();
@@ -74,6 +77,7 @@ public class ConsultaCalificaciones_dao {
                                     fecha(rs, "fecha_evaluacion"),
                                     fecha(rs, "fecha_cierre"),
                                     rs.getString("estado_columna"));
+                    c.setNombre_materia(rs.getString("nombre_materia"));
                     Calificacion n = null;
                     if (rs.getObject("id_calificacion") != null) {
                         n =

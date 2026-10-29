@@ -7,7 +7,7 @@ import dao.Usuario_dao;
 // validamos los datos de acceso y preparamos la sesión de la cuenta autenticada
 public class Login_servicio {
 
-    // Instanciamos la clase para que después se haga
+    // instanciamos la clase para que después se haga
     // la consulta en la bd
     private Usuario_dao usuarioDao;
 
@@ -16,7 +16,7 @@ public class Login_servicio {
     }
 
     public Usuario autenticarUsuario(String nombre_usuario, String contraseña) {
-        // Verifica que los campos de usuario no esten vacios
+        // verifica que los campos de usuario no esten vacios
         if (nombre_usuario == null
                 || nombre_usuario.trim().isEmpty()
                 || contraseña == null

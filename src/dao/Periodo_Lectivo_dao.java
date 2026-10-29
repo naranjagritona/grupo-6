@@ -88,7 +88,7 @@ public class Periodo_Lectivo_dao implements Dao<Periodo_Lectivo, Integer> {
             while (rs.next()) {
                 Periodo_Lectivo periodo = new Periodo_Lectivo();
 
-                // La columna real en la base de datos es id_periodo_lectivo
+                // la columna real en la base de datos es id_periodo_lectivo
                 periodo.setId_periodo(rs.getInt("id_periodo_lectivo"));
                 periodo.setNombre(rs.getString("nombre"));
                 periodo.setTipo(rs.getString("tipo"));

@@ -36,6 +36,7 @@ public class Inscripcion_panel extends JFrame {
     private JButton btnCalificaciones;
     private JButton btnFacturacion;
     private JButton btnAdmin;
+    private JButton btnAsistencia;
     private JButton btnCerrarSesion;
 
     private JPanel contentPane;
@@ -59,6 +60,15 @@ public class Inscripcion_panel extends JFrame {
     private Materia_dao materiaDao;
 
     private Integer idInscripcionSeleccionada = null;
+    // conservamos los datos cargados para filtrar por año, división y alumno sin repetir consultas
+    private JComboBox<Integer> cmbAnio;
+    private JComboBox<ItemCombo> cmbDivision;
+    private List<Curso> cursosCargados = java.util.List.of();
+    private List<Inscripcion> inscripcionesCargadas = java.util.List.of();
+    private java.util.Map<Integer, String> nombresAlumnos = new java.util.HashMap<>();
+    private java.util.Map<Integer, String> documentosAlumnos = new java.util.HashMap<>();
+    private boolean cargandoFiltros;
+
 
     // constructor por defecto
     public Inscripcion_panel() {
@@ -201,7 +211,7 @@ public class Inscripcion_panel extends JFrame {
                     panelContenido.repaint();
                 });
 
-        // Abrimos el catálogo de materias como una vista independiente, igual que Cursos.
+        // abrimos el catálogo de materias como una vista independiente, igual que Cursos.
         btnMaterias.addActionListener(_ -> mostrarPanelMaterias());
 
         // listener para volver al panel de inscripciones
@@ -284,7 +294,7 @@ public class Inscripcion_panel extends JFrame {
         lblAlumno.setBounds(10, 60, 110, 14);
         panelGestionInscripcion.add(lblAlumno);
 
-        JLabel lblCurso = new JLabel("Curso / Materia:");
+        JLabel lblCurso = new JLabel("Año / División:");
         lblCurso.setFont(new Font("Tahoma", Font.PLAIN, 13));
         lblCurso.setBounds(10, 98, 110, 14);
         panelGestionInscripcion.add(lblCurso);
@@ -334,6 +344,8 @@ public class Inscripcion_panel extends JFrame {
         cmbEstado.addItem("Confirmada");
         cmbEstado.addItem("Cancelada");
         cmbEstado.addItem("Finalizada");
+        cmbEstado.addItem("Trasladado");
+        cmbEstado.addItem("Recuperacion");
         cmbEstado.setBounds(150, 172, 260, 22);
         panelGestionInscripcion.add(cmbEstado);
 
@@ -362,13 +374,28 @@ public class Inscripcion_panel extends JFrame {
         panelGestionInscripcion.add(btnDarDeBaja);
         btnDarDeBaja.addActionListener(_ -> darDeBajaInscripcion());
 
-        JButton btnCambiarCurso = new JButton("Cambiar curso");
+        JButton btnCambiarCurso = new JButton("Traslado");
         btnCambiarCurso.setForeground(Color.WHITE);
         btnCambiarCurso.setFont(new Font("Arial", Font.BOLD, 11));
         btnCambiarCurso.setBackground(new Color(13, 148, 136));
         btnCambiarCurso.setBounds(312, 325, 105, 32);
         panelGestionInscripcion.add(btnCambiarCurso);
         btnCambiarCurso.addActionListener(_ -> abrirDialogoCambioCurso());
+
+        // abrimos la revisión de alumnos del año y división elegidos antes de promocionarlos
+        JButton btnPromocion = Ficha_Inscripcion_dialog.boton("Promoción de año");
+        btnPromocion.setBounds(15, 375, 180, 32);
+        btnPromocion.addActionListener(e -> {
+            ItemCombo division = (ItemCombo) cmbDivision.getSelectedItem();
+            new Promocion_dialog(this, usuarioLogueado, cursosCargados,
+                    division == null ? null : division.getId(), this::cargarDatosAsincronos).setVisible(true);
+        });
+        panelGestionInscripcion.add(btnPromocion);
+        JButton btnSolicitudes = Ficha_Inscripcion_dialog.boton("Solicitudes a Dirección");
+        btnSolicitudes.setBounds(205, 375, 210, 32);
+        btnSolicitudes.addActionListener(e -> new Solicitudes_Cambio_dialog(this, usuarioLogueado, this::cargarDatosAsincronos).setVisible(true));
+        panelGestionInscripcion.add(btnSolicitudes);
+
 
         // panel derecho para la tabla y filtros
         panelTablaInscripcion = new JPanel();
@@ -377,7 +404,7 @@ public class Inscripcion_panel extends JFrame {
 
         JPanel panelFiltros = new JPanel();
         panelFiltros.setBackground(Color.WHITE);
-        panelFiltros.setPreferredSize(new Dimension(10, 55));
+        panelFiltros.setPreferredSize(new Dimension(10, 105));
         panelTablaInscripcion.add(panelFiltros, BorderLayout.NORTH);
         panelFiltros.setLayout(null);
 
@@ -424,6 +451,8 @@ public class Inscripcion_panel extends JFrame {
         cmbFiltrarEstado.addItem("Confirmada");
         cmbFiltrarEstado.addItem("Cancelada");
         cmbFiltrarEstado.addItem("Finalizada");
+        cmbFiltrarEstado.addItem("Trasladado");
+        cmbFiltrarEstado.addItem("Recuperacion");
         cmbFiltrarEstado.setBounds(275, 18, 110, 22);
         panelFiltros.add(cmbFiltrarEstado);
 
@@ -433,6 +462,26 @@ public class Inscripcion_panel extends JFrame {
         btnFiltrar.setBackground(new Color(30, 58, 138));
         btnFiltrar.setBounds(395, 17, 85, 25);
         panelFiltros.add(btnFiltrar);
+
+        // elegimos el año y después mostramos las divisiones que pertenecen a ese año
+        JLabel lblAnio = new JLabel("Año:");
+        lblAnio.setFont(new Font("Tahoma", Font.PLAIN, 13));
+        lblAnio.setBounds(10, 65, 45, 22);
+        panelFiltros.add(lblAnio);
+        cmbAnio = new JComboBox<>();
+        cmbAnio.setBounds(60, 65, 100, 22);
+        panelFiltros.add(cmbAnio);
+        JLabel lblDivision = new JLabel("División:");
+        lblDivision.setFont(new Font("Tahoma", Font.PLAIN, 13));
+        lblDivision.setBounds(180, 65, 65, 22);
+        panelFiltros.add(lblDivision);
+        cmbDivision = new JComboBox<>();
+        cmbDivision.setBounds(245, 65, 235, 22);
+        panelFiltros.add(cmbDivision);
+        cmbAnio.addActionListener(e -> cargarDivisiones());
+        cmbDivision.addActionListener(e -> { if (!cargandoFiltros) filtrarListado(); });
+        cmbFiltrarEstado.addActionListener(e -> filtrarListado());
+
         btnFiltrar.addActionListener(_ -> filtrarInscripciones());
 
         JScrollPane scrollPane = new JScrollPane();
@@ -445,59 +494,56 @@ public class Inscripcion_panel extends JFrame {
                 new MouseAdapter() {
                     @Override
                     public void mouseClicked(MouseEvent e) {
+                        if (table.rowAtPoint(e.getPoint()) < 0) return;
                         cargarSeleccionDeTabla();
+                        if (e.getClickCount() == 2 && idInscripcionSeleccionada != null) {
+                            int id = idInscripcionSeleccionada;
+                            Ficha_Inscripcion_dialog.ejecutar(Inscripcion_panel.this,
+                                    () -> inscripcionServicio.ficha(id, usuarioLogueado.getId_usuario()),
+                                    ficha -> new Ficha_Inscripcion_dialog(Inscripcion_panel.this, ficha).setVisible(true));
+                        }
                     }
                 });
 
+        btnAsistencia = new JButton("Asistencia");
+        btnAsistencia.setBackground(new Color(24, 61, 110));
+        btnAsistencia.setForeground(new Color(203, 213, 225));
+        btnAsistencia.setFont(new Font("Tahoma", Font.BOLD, 12));
+        panelMenu.add(btnAsistencia);
+        btnAsistencia.addActionListener(e -> {
+            panelContenido.removeAll(); splitPane.setVisible(false);
+            panelContenido.add(new Asistencia_panel(usuarioLogueado), BorderLayout.CENTER);
+            panelContenido.revalidate(); panelContenido.repaint();
+        });
         aplicarPermisosPorRol();
+        boolean secretario = servicios.Permisos_servicio.secretario(usuarioLogueado);
+        btnRegistrar.setVisible(secretario);
+        btnModificar.setVisible(secretario);
+        btnDarDeBaja.setVisible(secretario);
+        if (!secretario) { cmbAlumno.setEnabled(false); cmbCurso.setEnabled(false); cmbEstado.setEnabled(false); textFecha.setEditable(false); }
+
         ordenarMenuLateral();
         cargarDatosAsincronos();
     }
 
-    // aplicamos los permisos segun el rol del usuario que ingreso
+    // mostramos solamente los módulos que corresponden al rol del usuario que ingresó
     private void aplicarPermisosPorRol() {
         if (usuarioLogueado == null) return;
-
+        boolean gestion = servicios.Permisos_servicio.gestion(usuarioLogueado);
         int rol = usuarioLogueado.getId_rol();
-        btnFacturacion.setVisible(rol == 1 || rol == 3);
-        if (rol == 1) { // admin
-            btnInscripciones.setVisible(true);
-            btnCursos.setVisible(true);
-            btnMaterias.setVisible(true);
-            btnCalificaciones.setVisible(true);
-            btnAdmin.setVisible(true);
-
-            btnInscripciones.setBounds(15, 61, 140, 35);
-            btnCursos.setBounds(15, 107, 140, 35);
-            btnMaterias.setBounds(15, 152, 140, 35);
-            btnCalificaciones.setBounds(15, 197, 140, 35);
-            btnAdmin.setBounds(15, 243, 140, 35);
-
-        } else if (rol == 2) { // docente
-            btnInscripciones.setVisible(false);
-            btnCursos.setVisible(true);
-            btnMaterias.setVisible(true);
-            btnCalificaciones.setVisible(true);
-            btnAdmin.setVisible(false);
-
-            btnCursos.setBounds(15, 61, 140, 35);
-            btnMaterias.setBounds(15, 107, 140, 35);
-            btnCalificaciones.setBounds(15, 152, 140, 35);
-
+        btnInscripciones.setVisible(gestion);
+        btnAdmin.setVisible(gestion);
+        btnFacturacion.setVisible(gestion || rol == 3);
+        btnAsistencia.setVisible(true);
+        if (!gestion) {
             mostrarPanelCursos();
-
-        } else if (rol == 3) { // alumno
-            btnAdmin.setVisible(false);
-            btnInscripciones.setVisible(false);
-            splitPane.setVisible(false);
-            mostrarFacturacion();
         }
     }
 
     private void ordenarMenuLateral() {
-        // Acomodamos solo las opciones visibles para no dejar espacios entre los botones.
+        // acomodamos solo las opciones visibles para no dejar espacios entre los botones.
         JButton[] opciones = {
-            btnCursos, btnMaterias, btnCalificaciones, btnInscripciones, btnFacturacion, btnAdmin
+            btnCursos, btnMaterias, btnCalificaciones, btnInscripciones, btnFacturacion, btnAsistencia, btnAdmin
         };
         int posicion = 61;
         Container menu = btnCursos.getParent();
@@ -512,7 +558,7 @@ public class Inscripcion_panel extends JFrame {
     }
 
     private void mostrarFacturacion() {
-        if (usuarioLogueado == null || usuarioLogueado.getId_rol() == 2) return;
+        if (usuarioLogueado == null || (!servicios.Permisos_servicio.gestion(usuarioLogueado) && usuarioLogueado.getId_rol() != 3)) return;
         panelContenido.removeAll();
         panelContenido.add(new Facturacion_panel(usuarioLogueado), BorderLayout.CENTER);
         panelContenido.revalidate();
@@ -596,89 +642,101 @@ public class Inscripcion_panel extends JFrame {
         }.execute();
     }
 
-    // cargamos los combos y la tabla de forma asincrona para que no se trabe la pantalla
+    // cargamos los cursos y los alumnos en segundo plano para mantener la pantalla disponible
     private void cargarDatosAsincronos() {
-        if (usuarioLogueado != null && usuarioLogueado.getId_rol() == 3) {
-            return;
-        }
-
-        new SwingWorker<Void, Void>() {
-            List<Alumno> alumnos;
-            List<Curso> cursos;
-            List<Materia> materias;
-            List<Inscripcion> inscripciones;
-
-            @Override
-            protected Void doInBackground() {
-                alumnos = alumnoDao.obtenerTodos();
-                cursos = cursoDao.obtenerTodos();
-                materias = materiaDao.obtenerTodos();
-                inscripciones = inscripcionServicio.buscarCampo("");
-                return null;
+        if (!servicios.Permisos_servicio.gestion(usuarioLogueado)) return;
+        Integer anioAnterior = (Integer) cmbAnio.getSelectedItem();
+        ItemCombo divisionAnterior = (ItemCombo) cmbDivision.getSelectedItem();
+        new SwingWorker<Object[], Void>() {
+            protected Object[] doInBackground() {
+                return new Object[] {alumnoDao.obtenerTodos(), cursoDao.obtenerTodos(), inscripcionServicio.buscarCampo("")};
             }
 
-            @Override
+            @SuppressWarnings("unchecked")
             protected void done() {
-                cmbAlumno.removeAllItems();
-                for (Alumno a : alumnos) {
-                    String texto = a.getNombre() + ", " + a.getApellido() + " - " + a.getDni();
-                    cmbAlumno.addItem(new ItemCombo(a.getId_alumno(), texto));
+                try {
+                    Object[] datos = get();
+                    List<Alumno> alumnos = (List<Alumno>) datos[0];
+                    cursosCargados = (List<Curso>) datos[1];
+                    inscripcionesCargadas = (List<Inscripcion>) datos[2];
+                    cargandoFiltros = true;
+                    cmbAlumno.removeAllItems(); cmbCurso.removeAllItems(); cmbAnio.removeAllItems();
+                    nombresAlumnos.clear(); documentosAlumnos.clear();
+                    for (Alumno alumno : alumnos) {
+                        String nombre = alumno.getApellido() + ", " + alumno.getNombre();
+                        nombresAlumnos.put(alumno.getId_alumno(), nombre);
+                        documentosAlumnos.put(alumno.getId_alumno(), alumno.getDni());
+                        cmbAlumno.addItem(new ItemCombo(alumno.getId_alumno(), nombre + " - " + alumno.getDni()));
+                    }
+                    java.util.Set<Integer> anios = new java.util.TreeSet<>();
+                    for (Curso curso : cursosCargados) {
+                        anios.add(curso.getAño());
+                        cmbCurso.addItem(new ItemCombo(curso.getId_curso(), curso.getAño() + "° " + curso.getDivision()));
+                    }
+                    for (int anio : anios) cmbAnio.addItem(anio);
+                    if (anioAnterior != null && anios.contains(anioAnterior)) cmbAnio.setSelectedItem(anioAnterior);
+                    cargandoFiltros = false;
+                    cargarDivisiones();
+                    if (divisionAnterior != null) for (int i = 0; i < cmbDivision.getItemCount(); i++) {
+                        if (cmbDivision.getItemAt(i).getId().equals(divisionAnterior.getId())) cmbDivision.setSelectedIndex(i);
+                    }
+                    filtrarListado();
+                } catch (Exception error) {
+                    cargandoFiltros = false;
+                    JOptionPane.showMessageDialog(Inscripcion_panel.this,
+                            error.getCause() == null ? error.getMessage() : error.getCause().getMessage());
                 }
-
-                cmbCurso.removeAllItems();
-                java.util.Map<Integer, String> mapaMaterias = new java.util.HashMap<>();
-                for (Materia m : materias) {
-                    mapaMaterias.put(m.getId_materia(), m.getNombre_materia());
-                }
-
-                for (Curso c : cursos) {
-                    String nombreMateria =
-                            mapaMaterias.getOrDefault(c.getId_materia(), "Materia desconocida");
-                    String texto = c.getAño() + "° - " + nombreMateria + " (" + c.getTurno() + ")";
-                    cmbCurso.addItem(new ItemCombo(c.getId_curso(), texto));
-                }
-
-                actualizarTabla(inscripciones);
             }
         }.execute();
     }
 
-    // actualizamos la tabla con los datos que le pasemos
-    private void actualizarTabla(List<Inscripcion> lista) {
-        DefaultTableModel modelo =
-                new DefaultTableModel() {
-                    private static final long serialVersionUID = 1L;
-
-                    @Override
-                    public boolean isCellEditable(int row, int column) {
-                        return false;
-                    }
-                };
-
-        modelo.addColumn("ID");
-        modelo.addColumn("Alumno");
-        modelo.addColumn("Año del curso");
-        modelo.addColumn("Fecha");
-        modelo.addColumn("Estado");
-
-        List<Alumno> alumnos = alumnoDao.obtenerTodos();
-        java.util.Map<Integer, String> mapaAlumnos = new java.util.HashMap<>();
-        for (Alumno a : alumnos) {
-            mapaAlumnos.put(a.getId_alumno(), a.getNombre() + " " + a.getApellido());
+    // mostramos las divisiones del año seleccionado con el turno y el período para distinguirlas
+    private void cargarDivisiones() {
+        if (cargandoFiltros) return;
+        cargandoFiltros = true;
+        cmbDivision.removeAllItems();
+        Integer anio = (Integer) cmbAnio.getSelectedItem();
+        for (Curso curso : cursosCargados) if (curso.getAño().equals(anio)) {
+            cmbDivision.addItem(new ItemCombo(curso.getId_curso(), curso.getDivision() + " · " + curso.getTurno() + " · " + curso.getNombre_periodo()));
         }
+        cargandoFiltros = false;
+        filtrarListado();
+    }
 
-        for (Inscripcion ins : lista) {
-            String nombreAlumno = mapaAlumnos.getOrDefault(ins.getId_alumno(), "Desconocido");
-            modelo.addRow(
-                    new Object[] {
-                        ins.getId_inscripcion(),
-                        nombreAlumno,
-                        ins.getAño_curso() + "°",
-                        ins.getFecha_inscripcion(),
-                        ins.getEstado()
-                    });
+    // combinamos el año, la división, el estado y el texto de búsqueda en un mismo listado
+    private void filtrarListado() {
+        if (cargandoFiltros || table == null || cmbDivision == null) return;
+        ItemCombo division = (ItemCombo) cmbDivision.getSelectedItem();
+        String busqueda = txtBuscar.getText().trim().toLowerCase(java.util.Locale.ROOT);
+        String estado = (String) cmbFiltrarEstado.getSelectedItem();
+        List<Inscripcion> lista = new java.util.ArrayList<>();
+        if (division != null) for (Inscripcion inscripcion : inscripcionesCargadas) {
+            String alumno = nombresAlumnos.getOrDefault(inscripcion.getId_alumno(), "");
+            String documento = documentosAlumnos.getOrDefault(inscripcion.getId_alumno(), "");
+            if (inscripcion.getId_curso().equals(division.getId())
+                    && ("Todos".equals(estado) || inscripcion.getEstado().equals(estado))
+                    && (alumno + " " + documento).toLowerCase(java.util.Locale.ROOT).contains(busqueda)) lista.add(inscripcion);
+        }
+        actualizarTabla(lista);
+    }
+
+    // completamos la tabla de alumnos de la división sin incluir los nombres de las materias
+    private void actualizarTabla(List<Inscripcion> lista) {
+        DefaultTableModel modelo = new DefaultTableModel(new String[] {"ID", "Alumno", "DNI", "Año / División", "Fecha", "Estado"}, 0) {
+            public boolean isCellEditable(int fila, int columna) { return false; }
+        };
+        for (Inscripcion inscripcion : lista) {
+            Curso curso = cursosCargados.stream().filter(c -> c.getId_curso().equals(inscripcion.getId_curso())).findFirst().orElse(null);
+            modelo.addRow(new Object[] {inscripcion.getId_inscripcion(), nombresAlumnos.get(inscripcion.getId_alumno()), documentosAlumnos.get(inscripcion.getId_alumno()),
+                    curso == null ? "" : curso.getAño() + "° " + curso.getDivision(), inscripcion.getFecha_inscripcion(), inscripcion.getEstado()});
         }
         table.setModel(modelo);
+        table.setAutoCreateRowSorter(true);
+        table.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        table.setRowHeight(28);
+        table.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 12));
+        table.getTableHeader().setBackground(new Color(235, 240, 247));
+        table.getTableHeader().setForeground(new Color(24, 61, 110));
     }
 
     // validamos las reglas y registramos la inscripcion
@@ -726,13 +784,13 @@ public class Inscripcion_panel extends JFrame {
                     "Inscripción registrada con éxito.",
                     "Éxito",
                     JOptionPane.INFORMATION_MESSAGE);
-            actualizarTabla(inscripcionServicio.buscarCampo(""));
+            cargarDatosAsincronos();
             limpiarFormulario();
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Revise los datos ingresados (Formato de fecha DD/MM/YYYY).",
+                    ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
         }
@@ -774,13 +832,13 @@ public class Inscripcion_panel extends JFrame {
                     "Inscripción modificada con éxito.",
                     "Éxito",
                     JOptionPane.INFORMATION_MESSAGE);
-            actualizarTabla(inscripcionServicio.buscarCampo(""));
+            cargarDatosAsincronos();
             limpiarFormulario();
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Error al modificar. Verifique los campos.",
+                    ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
         }
@@ -821,144 +879,51 @@ public class Inscripcion_panel extends JFrame {
                 "La inscripción ha sido dada de baja.",
                 "Éxito",
                 JOptionPane.INFORMATION_MESSAGE);
-        actualizarTabla(inscripcionServicio.buscarCampo(""));
+        cargarDatosAsincronos();
         limpiarFormulario();
     }
 
-    // abrimos el dialogo flotante con el filtro inteligente para cambiar de curso o pasar al año
-    // siguiente
+    // pedimos el destino y el motivo para trasladar de división o enviar una solicitud excepcional
     private void abrirDialogoCambioCurso() {
-        if (idInscripcionSeleccionada == null) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Seleccioná una inscripción de la tabla para cambiar de curso.",
-                    "Advertencia",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        Inscripcion inscripcionActual =
-                inscripcionServicio.buscarCampo("").stream()
-                        .filter(i -> i.getId_inscripcion().equals(idInscripcionSeleccionada))
-                        .findFirst()
-                        .orElse(null);
-
-        if (inscripcionActual == null) return;
-
-        Curso cursoActual = cursoDao.obtenerPorId(inscripcionActual.getId_curso());
-        if (cursoActual == null) return;
-
-        int añoActualDelAlumno = cursoActual.getAño();
-
-        JComboBox<ItemCombo> cmbNuevoCurso = new JComboBox<>();
-        JTextField txtMotivo = new JTextField(20);
-
-        Object[] opcionesTipo = {"Cambio de curso (mismo año)", "Promoción al Año Siguiente"};
-        int eleccion =
-                JOptionPane.showOptionDialog(
-                        this,
-                        "¿Qué tipo de cambio deseas realizar para el alumno?",
-                        "Tipo de Traslado",
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.QUESTION_MESSAGE,
-                        null,
-                        opcionesTipo,
-                        opcionesTipo[0]);
-
-        if (eleccion == JOptionPane.CLOSED_OPTION) return;
-
-        int añoObjetivo = (eleccion == 0) ? añoActualDelAlumno : (añoActualDelAlumno + 1);
-
-        List<Curso> cursos = cursoDao.obtenerTodos();
-        List<Materia> materias = materiaDao.obtenerTodos();
-        java.util.Map<Integer, String> mapaMaterias = new java.util.HashMap<>();
-        for (Materia m : materias) {
-            mapaMaterias.put(m.getId_materia(), m.getNombre_materia());
-        }
-
-        for (Curso c : cursos) {
-            if ("Activo".equalsIgnoreCase(c.getEstado()) && c.getAño() == añoObjetivo) {
-                String nombreMateria = mapaMaterias.getOrDefault(c.getId_materia(), "Materia");
-                String texto = c.getAño() + "° - " + nombreMateria + " (" + c.getTurno() + ")";
-                cmbNuevoCurso.addItem(new ItemCombo(c.getId_curso(), texto));
+        if (idInscripcionSeleccionada == null) { JOptionPane.showMessageDialog(this, "Seleccioná una inscripción de la tabla."); return; }
+        Inscripcion actual = inscripcionesCargadas.stream().filter(i -> i.getId_inscripcion().equals(idInscripcionSeleccionada)).findFirst().orElse(null);
+        if (actual == null) return;
+        Curso origen = cursosCargados.stream().filter(c -> c.getId_curso().equals(actual.getId_curso())).findFirst().orElse(null);
+        if (origen == null) return;
+        Object[] opciones = servicios.Permisos_servicio.secretario(usuarioLogueado)
+                ? new Object[] {"Cambio de división", "Solicitud excepcional a Dirección"}
+                : new Object[] {"Solicitud excepcional a Dirección"};
+        int opcion = JOptionPane.showOptionDialog(this, "Elegí el tipo de cambio", "Cambio de curso o división", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]);
+        if (opcion < 0) return;
+        boolean excepcional = opciones.length == 1 || opcion == 1;
+        JComboBox<ItemCombo> destino = new JComboBox<>();
+        for (Curso curso : cursosCargados) {
+            if (!curso.getId_curso().equals(origen.getId_curso()) && "Activo".equals(curso.getEstado())
+                    && (excepcional || (curso.getAño().equals(origen.getAño()) && curso.getId_periodo().equals(origen.getId_periodo())))) {
+                destino.addItem(new ItemCombo(curso.getId_curso(), curso.getAño() + "° " + curso.getDivision() + " · " + curso.getTurno() + " · " + curso.getNombre_periodo()));
             }
         }
-
-        if (cmbNuevoCurso.getItemCount() == 0) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "No hay cursos activos disponibles para el " + añoObjetivo + "° año.",
-                    "Sin Cursos",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        JPanel panelForm = new JPanel(new GridLayout(2, 2, 8, 8));
-        panelForm.add(new JLabel("Curso de Destino (" + añoObjetivo + "° Año):"));
-        panelForm.add(cmbNuevoCurso);
-        panelForm.add(new JLabel("Motivo del traslado:"));
-        panelForm.add(txtMotivo);
-
-        int resultado =
-                JOptionPane.showConfirmDialog(
-                        this,
-                        panelForm,
-                        "Confirmar Cambio de Curso",
-                        JOptionPane.OK_CANCEL_OPTION,
-                        JOptionPane.PLAIN_MESSAGE);
-
-        if (resultado == JOptionPane.OK_OPTION) {
-            String motivo = txtMotivo.getText().trim();
-            if (motivo.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "El motivo del traslado es obligatorio.",
-                        "Validación",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            ItemCombo cursoSeleccionado = (ItemCombo) cmbNuevoCurso.getSelectedItem();
-            if (cursoSeleccionado == null) return;
-
-            try {
-                Integer idUsuarioActual =
-                        usuarioLogueado != null ? usuarioLogueado.getId_usuario() : null;
-                inscripcionServicio.cambiarCurso(
-                        idInscripcionSeleccionada,
-                        cursoSeleccionado.getId(),
-                        motivo,
-                        idUsuarioActual);
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "¡Cambio de curso realizado con éxito!",
-                        "Éxito",
-                        JOptionPane.INFORMATION_MESSAGE);
-                actualizarTabla(inscripcionServicio.buscarCampo(""));
-                limpiarFormulario();
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "No se pudo completar el cambio: " + ex.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-        }
+        if (destino.getItemCount() == 0) { JOptionPane.showMessageDialog(this, "No hay divisiones de destino disponibles. Dirección puede crearlas desde Cursos."); return; }
+        JTextArea motivo = new JTextArea(4, 30); motivo.setLineWrap(true); motivo.setWrapStyleWord(true);
+        Object[] campos = {"Año y división de destino", destino, excepcional ? "Explicación de la solicitud" : "Motivo del traslado", new JScrollPane(motivo)};
+        if (JOptionPane.showConfirmDialog(this, campos, excepcional ? "Solicitud a Dirección" : "Cambio de división", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) return;
+        int id = actual.getId_inscripcion(), curso = ((ItemCombo) destino.getSelectedItem()).getId();
+        Ficha_Inscripcion_dialog.ejecutar(this, () -> {
+            if (excepcional) new servicios.Solicitud_Cambio_servicio().solicitar(id, curso, motivo.getText(), usuarioLogueado.getId_usuario());
+            else inscripcionServicio.cambiarCurso(id, curso, motivo.getText(), usuarioLogueado.getId_usuario());
+            return true;
+        }, resultado -> { JOptionPane.showMessageDialog(this, excepcional ? "Solicitud enviada a la bandeja de Dirección." : "Traslado realizado. Las notas permanecen en la inscripción anterior."); cargarDatosAsincronos(); limpiarFormulario(); });
     }
 
+    // filtramos el listado cargado mientras se escribe el nombre o el dni
     private void buscarInscripciones() {
-        String texto = txtBuscar.getText().trim();
-        servicios.Auditoria_servicio.buscar("Inscripciones", texto);
-        actualizarTabla(inscripcionServicio.buscarCampo(texto));
+        servicios.Auditoria_servicio.buscar("Inscripciones", txtBuscar.getText());
+        filtrarListado();
     }
 
+    // aplicamos el estado junto al año y la división que están seleccionados
     private void filtrarInscripciones() {
-        String estadoSeleccionado = (String) cmbFiltrarEstado.getSelectedItem();
-        servicios.Auditoria_servicio.registrar(
-                "FILTRAR", "Inscripciones", "Estado: " + estadoSeleccionado);
-        actualizarTabla(inscripcionServicio.filtrarEstadoInscrip(estadoSeleccionado));
+        filtrarListado();
     }
 
     // cargamos los datos seleccionados de la tabla al formulario e incluimos el motivo de baja
@@ -966,9 +931,10 @@ public class Inscripcion_panel extends JFrame {
         int fila = table.getSelectedRow();
         if (fila >= 0) {
             idInscripcionSeleccionada = (Integer) table.getValueAt(fila, 0);
+            textFecha.setEditable(false);
 
             Inscripcion ins =
-                    inscripcionServicio.buscarCampo("").stream()
+                    inscripcionesCargadas.stream()
                             .filter(i -> i.getId_inscripcion().equals(idInscripcionSeleccionada))
                             .findFirst()
                             .orElse(null);
@@ -1007,6 +973,7 @@ public class Inscripcion_panel extends JFrame {
 
     private void limpiarFormulario() {
         idInscripcionSeleccionada = null;
+        textFecha.setEditable(servicios.Permisos_servicio.secretario(usuarioLogueado));
         txtMotivoBaja.setText("");
         textFecha.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         if (cmbAlumno.getItemCount() > 0) cmbAlumno.setSelectedIndex(0);

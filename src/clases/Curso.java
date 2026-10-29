@@ -6,17 +6,31 @@ import java.time.LocalDate;
 public class Curso {
     private Integer id_curso;
     private Integer id_periodo;
-    // La materia original se conserva para las evaluaciones; las demás van en curso_materia.
+    // la materia original se conserva para las evaluaciones; las demás van en curso_materia.
     private Integer id_materia;
     private Integer id_docente;
     private Integer año;
+    // guardamos la división y las condiciones de aprobación del curso
+    private String division = "Sin asignar";
+    private Double nota_aprobacion_materia;
+    private Double promedio_promocion;
+    private String criterio_recuperatorio;
+
+    public String getDivision() { return division; }
+    public void setDivision(String division) { this.division = division; }
+    public Double getNota_aprobacion_materia() { return nota_aprobacion_materia; }
+    public void setNota_aprobacion_materia(Double nota) { this.nota_aprobacion_materia = nota; }
+    public Double getPromedio_promocion() { return promedio_promocion; }
+    public void setPromedio_promocion(Double promedio) { this.promedio_promocion = promedio; }
+    public String getCriterio_recuperatorio() { return criterio_recuperatorio; }
+    public void setCriterio_recuperatorio(String criterio) { this.criterio_recuperatorio = criterio; }
     private String modalidad;
     private String turno;
     private Integer cupo_maximo;
     private LocalDate fecha_inicio;
     private LocalDate fecha_fin;
     private String estado;
-    // Estos nombres se completan al consultar para mostrarlos directamente en la tabla.
+    // estos nombres se completan al consultar para mostrarlos directamente en la tabla.
     private String nombre_periodo;
     private String nombre_materia;
     private String nombre_docente;

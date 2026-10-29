@@ -158,7 +158,7 @@ public class Materias_panel extends JPanel {
     }
 
     private boolean esAdministrador() {
-        return usuario != null && usuario.getId_rol() == 1;
+        return servicios.Permisos_servicio.directivo(usuario);
     }
 
     private void boton(JPanel panel, String texto, Runnable accion) {
@@ -238,7 +238,7 @@ public class Materias_panel extends JPanel {
             relacionesVisibles.put(relacion.getKey(), new ArrayList<>(relacion.getValue()));
         }
 
-        if (usuario != null && !esAdministrador()) {
+        if (usuario != null && (usuario.getId_rol() == 2 || usuario.getId_rol() == 3)) {
             listaMaterias.removeIf(
                     materia -> !relacionesVisibles.containsKey(materia.getId_materia()));
         }

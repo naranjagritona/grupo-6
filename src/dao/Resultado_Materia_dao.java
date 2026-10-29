@@ -18,31 +18,14 @@ public class Resultado_Materia_dao implements Dao<Resultado_Materia, Integer> {
     // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Resultado_Materia objeto) {
-        String consulta =
-                "INSERT INTO resultado_materia (id_inscripcion, promedio, resultado, fecha_calculo)"
-                        + " VALUES (?, ?, ?, ?)";
-
-        try (Connection conexion = Conexion.getConnection();
-                PreparedStatement ps = conexion.prepareStatement(consulta)) {
-
-            ps.setInt(1, objeto.getId_inscripcion());
-            ps.setObject(2, objeto.getPromedio());
-            ps.setString(3, objeto.getResultado());
-            ps.setObject(4, objeto.getFecha_calculo());
-
-            ps.executeUpdate();
-
-        } catch (SQLException error) {
-            System.err.println("Error al insertar el resultado de materia: " + error.getMessage());
-            error.printStackTrace();
-        }
+        throw new IllegalStateException("El resultado final se calcula desde Calificaciones para conservar la relación con la materia.");
     }
 
     // consulta un registro usando su identificador
     @Override
     public Resultado_Materia obtenerPorId(Integer id) {
         Resultado_Materia resultado = null;
-        String consulta = "SELECT * FROM resultado_materia WHERE id_resultado = ?";
+        String consulta = "SELECT * FROM resultado_materia WHERE id_resultado_materia = ?";
 
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta)) {
@@ -52,7 +35,7 @@ public class Resultado_Materia_dao implements Dao<Resultado_Materia, Integer> {
                 if (rs.next()) {
                     resultado = new Resultado_Materia();
 
-                    resultado.setId_resultado(rs.getInt("id_resultado"));
+                    resultado.setId_resultado(rs.getInt("id_resultado_materia"));
                     resultado.setId_inscripcion(rs.getInt("id_inscripcion"));
                     resultado.setPromedio(rs.getDouble("promedio"));
                     resultado.setResultado(rs.getString("resultado"));
@@ -84,7 +67,7 @@ public class Resultado_Materia_dao implements Dao<Resultado_Materia, Integer> {
             while (rs.next()) {
                 Resultado_Materia resultado = new Resultado_Materia();
 
-                resultado.setId_resultado(rs.getInt("id_resultado"));
+                resultado.setId_resultado(rs.getInt("id_resultado_materia"));
                 resultado.setId_inscripcion(rs.getInt("id_inscripcion"));
                 resultado.setPromedio(rs.getDouble("promedio"));
                 resultado.setResultado(rs.getString("resultado"));
@@ -107,41 +90,12 @@ public class Resultado_Materia_dao implements Dao<Resultado_Materia, Integer> {
     // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Resultado_Materia objeto) {
-        String consulta =
-                "UPDATE resultado_materia SET id_inscripcion = ?, promedio = ?, resultado = ?,"
-                        + " fecha_calculo = ? WHERE id_resultado = ?";
-
-        try (Connection conexion = Conexion.getConnection();
-                PreparedStatement ps = conexion.prepareStatement(consulta)) {
-
-            ps.setInt(1, objeto.getId_inscripcion());
-            ps.setObject(2, objeto.getPromedio());
-            ps.setString(3, objeto.getResultado());
-            ps.setObject(4, objeto.getFecha_calculo());
-            ps.setInt(5, objeto.getId_resultado());
-
-            ps.executeUpdate();
-
-        } catch (SQLException error) {
-            System.err.println("Error al modificar el resultado de materia: " + error.getMessage());
-            error.printStackTrace();
-        }
+        throw new IllegalStateException("El resultado final se calcula desde Calificaciones para conservar la relación con la materia.");
     }
 
     // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
-        String consulta = "DELETE FROM resultado_materia WHERE id_resultado = ?";
-
-        try (Connection conexion = Conexion.getConnection();
-                PreparedStatement ps = conexion.prepareStatement(consulta)) {
-
-            ps.setInt(1, id);
-            ps.executeUpdate();
-
-        } catch (SQLException error) {
-            System.err.println("Error al eliminar el resultado de materia: " + error.getMessage());
-            error.printStackTrace();
-        }
+        throw new IllegalStateException("El resultado final se calcula desde Calificaciones para conservar la relación con la materia.");
     }
 }

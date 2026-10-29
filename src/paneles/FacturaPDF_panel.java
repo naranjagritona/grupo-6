@@ -14,12 +14,12 @@ import javax.swing.*;
 public final class FacturaPDF_panel {
     private FacturaPDF_panel() {}
 
-    // Convertimos las páginas del PDF en imágenes para poder verlas en Swing.
+    // convertimos las páginas del PDF en imágenes para poder verlas en Swing.
     public static JPanel renderizar(byte[] pdf) throws Exception {
         JPanel paginas = new JPanel();
         paginas.setLayout(new BoxLayout(paginas, BoxLayout.Y_AXIS));
         paginas.setBackground(Color.GRAY);
-        // El PDF se genera en la web; acá solamente mostramos sus páginas.
+        // el PDF se genera en la web; acá solamente mostramos sus páginas.
         try (PDDocument documento = Loader.loadPDF(pdf)) {
             PDFRenderer renderer = new PDFRenderer(documento);
             for (int i = 0; i < documento.getNumberOfPages(); i++) {
@@ -32,7 +32,7 @@ public final class FacturaPDF_panel {
         return paginas;
     }
 
-    // Abrimos una ventana aparte para consultar el PDF sin cerrar Facturación.
+    // abrimos una ventana aparte para consultar el PDF sin cerrar Facturación.
     public static void mostrar(Component padre, byte[] pdf, JPanel paginas) {
         JDialog ventana =
                 new JDialog(
@@ -41,7 +41,7 @@ public final class FacturaPDF_panel {
                         Dialog.ModalityType.MODELESS);
         ventana.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         ventana.add(new JScrollPane(paginas));
-        // Elegimos dónde guardar y pedimos confirmación si el archivo ya existe.
+        // elegimos dónde guardar y pedimos confirmación si el archivo ya existe.
         JButton guardar = new JButton("Guardar PDF");
         guardar.addActionListener(
                 e -> {

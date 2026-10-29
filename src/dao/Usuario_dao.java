@@ -27,8 +27,18 @@ public class Usuario_dao implements Dao<Usuario, Integer> {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    // Buscamos el usuario y después verificamos su contraseña con bcrypt.
+                    // buscamos el usuario y después verificamos su contraseña con bcrypt.
                     if (!Contrasenas.verificar(contraseña, rs.getString("contraseña"))) continue;
+                    int rol = rs.getInt("id_rol");
+                    String perfil = rol == 1 ? "secretaria" : rol == 4 ? "preceptor" : rol == 5 ? "directivo" : null;
+                    if (perfil != null) {
+                        try (PreparedStatement estado = conexion.prepareStatement("SELECT estado FROM " + perfil + " WHERE id_usuario=?")) {
+                            estado.setInt(1, rs.getInt("id_usuario"));
+                            try (ResultSet registro = estado.executeQuery()) {
+                                if (registro.next() && !"Activo".equals(registro.getString(1))) continue;
+                            }
+                        }
+                    }
                     usuario = new Usuario();
                     usuario.setId_usuario(rs.getInt("id_usuario"));
                     usuario.setId_rol(rs.getInt("id_rol"));

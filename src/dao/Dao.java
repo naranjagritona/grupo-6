@@ -5,17 +5,17 @@ import java.util.List;
 // definimos las operaciones que comparten las clases de acceso a la base de datos
 public interface Dao<T, ID> {
 
-    // Crear
+    // crear
     void insertar(T entidad);
 
     T obtenerPorId(ID id);
 
-    // Leer (todos los registros)
+    // leer (todos los registros)
     List<T> obtenerTodos();
 
-    // Actualizar
+    // actualizar
     void modificar(T entidad);
 
-    // Eliminar
+    // eliminar
     void eliminar(ID id);
 }

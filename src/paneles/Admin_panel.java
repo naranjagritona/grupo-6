@@ -42,6 +42,8 @@ public class Admin_panel extends JPanel {
     private List<Object[]> docentesCargados = List.of();
     private final JLabel estadoCarga = new JLabel("Cargando datos…");
     private int versionCarga;
+    // conservamos los perfiles visibles para modificar el registro seleccionado en la tabla
+    private java.util.List<java.util.Map<String, Object>> personalCargado = java.util.List.of();
 
     private Admin_servicio adminServicio;
     private Log_Usuario_dao logUsuarioDao;
@@ -196,12 +198,12 @@ public class Admin_panel extends JPanel {
         JPanel panelGFilter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         panelGFilter.setBackground(Color.WHITE);
         panelGFilter.add(new JLabel("Ver:"));
-        cmbTipoPersona = new JComboBox<>(new String[] {"Alumnos", "Docentes"});
+        cmbTipoPersona = new JComboBox<>(new String[] {"Alumnos", "Docentes", "Directivos", "Preceptores", "Secretaría"});
         cmbTipoPersona.addActionListener(_ -> cargarTablaPersonas());
         panelGFilter.add(cmbTipoPersona);
         panelGHeader.add(panelGFilter, BorderLayout.EAST);
 
-        // La búsqueda filtra lo cargado sin volver a consultar la base en cada letra.
+        // la búsqueda filtra lo cargado sin volver a consultar la base en cada letra.
         JPanel buscador = new JPanel(new BorderLayout(8, 0));
         buscador.setBackground(Color.WHITE);
         buscador.add(new JLabel("Buscar usuario:"), BorderLayout.WEST);
@@ -224,7 +226,8 @@ public class Admin_panel extends JPanel {
                             "DNI",
                             "Matrícula / Legajo",
                             "Estado",
-                            "Usuario"
+                            "Usuario",
+                            "Mail"
                         },
                         0) {
                     private static final long serialVersionUID = 1L;
@@ -289,6 +292,9 @@ public class Admin_panel extends JPanel {
         btnBajaPersona.setForeground(Color.WHITE);
         btnBajaPersona.addActionListener(_ -> darDeBajaPersonaSeleccionada());
 
+        JButton btnPersonal = Ficha_Inscripcion_dialog.boton("Registrar personal");
+        btnPersonal.addActionListener(e -> new Personal_dialog(SwingUtilities.getWindowAncestor(this), usuarioLogueado, tipoPersonalSeleccionado(), null, this::cargarDatosAdmin).setVisible(true));
+        panelGButtons.add(btnPersonal);
         panelGButtons.add(btnEditarPersona);
         panelGButtons.add(btnBajaPersona);
         panelGestionPersonas.add(panelGButtons, BorderLayout.SOUTH);
@@ -393,7 +399,7 @@ public class Admin_panel extends JPanel {
         panelLogContainer.setMinimumSize(new Dimension(0, 330));
         panelLogContainer.add(scrollLog, BorderLayout.CENTER);
 
-        panelCentral.add(panelLogContainer);
+        if (servicios.Permisos_servicio.directivo(usuarioLogueado)) panelCentral.add(panelLogContainer);
 
         JScrollPane contenido = new JScrollPane(panelCentral);
         contenido.getVerticalScrollBar().setUnitIncrement(20);
@@ -813,8 +819,12 @@ public class Admin_panel extends JPanel {
         return panelBtn;
     }
 
-    // Cambiar el tipo de persona aprovecha los datos de la última carga.
+    // cambiar el tipo de persona aprovecha los datos de la última carga.
     private void cargarTablaPersonas() {
+        if (tipoPersonalSeleccionado() != null) {
+            cargarPersonal();
+            return;
+        }
         modeloPersonas.setRowCount(0);
         List<Object[]> personas =
                 "Docentes".equals(cmbTipoPersona.getSelectedItem())
@@ -827,6 +837,13 @@ public class Admin_panel extends JPanel {
 
     // modificamos los datos de la persona seleccionada en la tabla
     private void modificarPersonaSeleccionada() {
+        if (tipoPersonalSeleccionado() != null) {
+            int seleccion = tablaPersonas.getSelectedRow();
+            if (seleccion < 0) { JOptionPane.showMessageDialog(this, "Seleccioná una persona de la tabla."); return; }
+            var persona = personalCargado.get(tablaPersonas.convertRowIndexToModel(seleccion));
+            new Personal_dialog(SwingUtilities.getWindowAncestor(this), usuarioLogueado, tipoPersonalSeleccionado(), persona, this::cargarDatosAdmin).setVisible(true);
+            return;
+        }
         int fila = tablaPersonas.getSelectedRow();
         if (fila == -1) {
             JOptionPane.showMessageDialog(
@@ -918,6 +935,17 @@ public class Admin_panel extends JPanel {
 
     // pasamos el estado del usuario seleccionado a inactivo (dar de baja)
     private void darDeBajaPersonaSeleccionada() {
+        if (tipoPersonalSeleccionado() != null) {
+            int seleccion = tablaPersonas.getSelectedRow();
+            if (seleccion < 0) { JOptionPane.showMessageDialog(this, "Seleccioná una persona de la tabla."); return; }
+            var fila = personalCargado.get(tablaPersonas.convertRowIndexToModel(seleccion));
+            if (JOptionPane.showConfirmDialog(this, "¿Dar de baja al personal seleccionado conservando sus datos?", "Confirmar baja", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+            clases.Personal persona = new clases.Personal();
+            persona.setTipo(tipoPersonalSeleccionado()); persona.setId(((Number) fila.get("id")).intValue());
+            persona.setNombre(fila.get("nombre").toString()); persona.setApellido(fila.get("apellido").toString()); persona.setDni(fila.get("dni").toString()); persona.setMail(fila.get("mail").toString()); persona.setEstado("Inactivo");
+            Ficha_Inscripcion_dialog.ejecutar(this, () -> { new servicios.Personal_servicio().modificar(persona, usuarioLogueado.getId_usuario()); return true; }, resultado -> cargarDatosAdmin());
+            return;
+        }
         int fila = tablaPersonas.getSelectedRow();
         if (fila == -1) {
             JOptionPane.showMessageDialog(
@@ -952,7 +980,29 @@ public class Admin_panel extends JPanel {
         }
     }
 
-    // Cargamos todo en segundo plano, con tres consultas y una sola conexión.
+    // identificamos el perfil administrativo que está seleccionado en el filtro
+    private clases.Personal.Tipo tipoPersonalSeleccionado() {
+        if (cmbTipoPersona == null) return null;
+        for (clases.Personal.Tipo tipo : clases.Personal.Tipo.values()) {
+            if (tipo.nombre.equals(cmbTipoPersona.getSelectedItem())) return tipo;
+        }
+        return null;
+    }
+
+    // consultamos los perfiles y mostramos los mismos datos que se cargan manualmente en el formulario
+    private void cargarPersonal() {
+        clases.Personal.Tipo tipo = tipoPersonalSeleccionado();
+        if (tipo == null) return;
+        Ficha_Inscripcion_dialog.ejecutar(this, () -> new servicios.Personal_servicio().listar(tipo, usuarioLogueado.getId_usuario()), personas -> {
+            if (tipoPersonalSeleccionado() != tipo) return;
+            personalCargado = personas; modeloPersonas.setRowCount(0);
+            for (var persona : personas) modeloPersonas.addRow(new Object[] {
+                persona.get("id"), persona.get("nombre"), persona.get("apellido"), persona.get("dni"), persona.get("legajo"), persona.get("estado"), persona.get("nombre_usuario"), persona.get("mail")
+            });
+        });
+    }
+
+    // cargamos todo en segundo plano, con tres consultas y una sola conexión.
     private void cargarDatosAdmin() {
         servicios.Auditoria_servicio.registrar(
                 "CONSULTAR", "Administración", "Actualizar contadores y actividades");
@@ -996,7 +1046,7 @@ public class Admin_panel extends JPanel {
         }.execute();
     }
 
-    // El detalle usa varias líneas en lugar de apretar todo en una sola.
+    // el detalle usa varias líneas en lugar de apretar todo en una sola.
     private static class DetalleLogRenderer extends JTextArea
             implements javax.swing.table.TableCellRenderer {
         private static final long serialVersionUID = 1L;
