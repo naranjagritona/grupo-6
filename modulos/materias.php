@@ -10,6 +10,8 @@ $materiaDAO = new MateriaDAO($conexion);
 $busquedaEntrada = $_GET['q'] ?? '';
 $busqueda = is_string($busquedaEntrada) ? trim($busquedaEntrada) : '';
 $error = '';
+$mensajeExito = $_SESSION['materias_mensaje'] ?? '';
+unset($_SESSION['materias_mensaje']);
 if (!isset($_SESSION['materias_csrf'])) {
     $_SESSION['materias_csrf'] = bin2hex(random_bytes(32));
 }
@@ -24,8 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if (($_POST['action'] ?? '') === 'save') {
                 $materiaDAO->guardarMateria((int) ($_POST['id_materia'] ?? 0), (string) ($_POST['nombre_materia'] ?? ''));
+                $_SESSION['materias_mensaje'] = 'La materia se guardó correctamente.';
             } elseif (($_POST['action'] ?? '') === 'delete') {
                 $materiaDAO->eliminarMateria((int) ($_POST['id_materia'] ?? 0));
+                $_SESSION['materias_mensaje'] = 'La materia se eliminó correctamente.';
             } else {
                 throw new InvalidArgumentException('La operación solicitada no es válida.');
             }
@@ -68,6 +72,7 @@ $materiasConCurso = count(array_filter($registros, static fn(array $fila): bool 
     <header class="topbar"><span></span><div class="topbar-tools"><div class="user"><div class="avatar"><i class="bi bi-person"></i></div><div class="user-meta"><strong><?= htmlspecialchars($usuario['name'],ENT_QUOTES,'UTF-8') ?></strong><small><?= htmlspecialchars($usuario['role'],ENT_QUOTES,'UTF-8') ?></small></div></div><form method="post" action="logout.php"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['logout_csrf'] ??= bin2hex(random_bytes(32)),ENT_QUOTES,'UTF-8') ?>"><button class="logout-button" type="submit"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span></button></form></div></header>
     <main class="content"><div class="contenedor-materias">
       <div class="page-head"><div><h1>Materias</h1><p>Administrá el catálogo y consultá en qué cursos se dicta cada materia.</p></div><?php if($usuario['isAdmin']): ?><a class="primary-btn boton-nueva-materia" href="materias.php?nuevo=1"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nueva materia</a><?php endif; ?></div>
+      <?php if($mensajeExito!==''): ?><div class="message success" role="status"><?= htmlspecialchars($mensajeExito,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
       <?php if($error!==''): ?><div class="message error" role="alert"><?= htmlspecialchars($error,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
       <div class="resumen-materias"><article class="resumen-materia"><span class="resumen-icono"><i class="bi bi-book" aria-hidden="true"></i></span><div><small>Materias visibles</small><strong><?= count($registros) ?></strong></div></article><article class="resumen-materia"><span class="resumen-icono azul"><i class="bi bi-mortarboard" aria-hidden="true"></i></span><div><small>Con cursos asociados</small><strong><?= $materiasConCurso ?></strong></div></article><article class="resumen-materia"><span class="resumen-icono verde"><i class="bi bi-collection" aria-hidden="true"></i></span><div><small>Cursos relacionados</small><strong><?= $totalCursos ?></strong></div></article></div>
       <?php if($usuario['isAdmin'] && (isset($_GET['nuevo']) || $editar!==null)): ?>

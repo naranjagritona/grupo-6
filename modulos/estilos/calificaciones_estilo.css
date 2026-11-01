@@ -2,6 +2,7 @@
 .calificaciones-page .main-panel{height:100vh;min-height:0}
 .calificaciones-page .main-panel>.content{min-height:0;flex:1 1 auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable}
 .grade-head-actions{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.grade-action-hint{color:#64748b;font-size:.75rem}
 .promotion-card{margin-bottom:1rem;overflow:hidden}
 .promotion-card .card-header{align-items:flex-start;margin-bottom:.8rem}
 .promotion-card .card-header h2{font-size:1.05rem}

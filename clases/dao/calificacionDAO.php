@@ -133,7 +133,7 @@ class CalificacionDAO implements dao {
         $courses = $this->conexion->prepare(
             "SELECT DISTINCT c.id_curso AS id,
                 CONCAT(c.`año`, '° ', c.division, ' - ', m.nombre_materia, ' - ', p.nombre) AS etiqueta,
-                p.fecha_inicio AS fecha_orden
+                p.fecha_inicio AS fecha_orden, c.estado
              FROM curso c INNER JOIN materia m ON m.id_materia = c.id_materia
              INNER JOIN periodo_lectivo p ON p.id_periodo_lectivo = c.id_periodo
              LEFT JOIN inscripcion i ON i.id_curso = c.id_curso" . $where .
@@ -207,6 +207,7 @@ class CalificacionDAO implements dao {
             'SELECT i.id_inscripcion, CONCAT(a.apellido, ", ", a.nombre) AS alumno,
                 a.matricula, cn.id_columna_notas, cn.titulo, cn.tipo, cn.nota_maxima,
                 cn.nota_aprobacion, cn.estado AS estado_evaluacion, cn.fecha_evaluacion,
+                c.estado AS estado_curso,
                 g.id_calificacion, g.nota, g.observaciones
              FROM inscripcion i INNER JOIN alumno a ON a.id_alumno = i.id_alumno
              INNER JOIN curso c ON c.id_curso = i.id_curso
@@ -327,11 +328,14 @@ class CalificacionDAO implements dao {
             || !$fechaValida || $fechaValida->format('Y-m-d') !== $fecha) {
             throw new InvalidArgumentException('Revisá el título, el tipo, la escala y la fecha de evaluación.');
         }
-        $curso = $this->conexion->prepare('SELECT id_docente FROM curso WHERE id_curso = ?');
+        $curso = $this->conexion->prepare('SELECT id_docente, estado FROM curso WHERE id_curso = ?');
         $curso->execute([$idCurso]);
-        $docente = $curso->fetchColumn();
-        if ($docente === false || ($usuario['isTeacher'] && (int) $docente !== (int) $usuario['id_docente'])) {
+        $datosCurso = $curso->fetch(PDO::FETCH_ASSOC);
+        if (!$datosCurso || ($usuario['isTeacher'] && (int) $datosCurso['id_docente'] !== (int) $usuario['id_docente'])) {
             throw new InvalidArgumentException('El curso no existe o no está asignado a tu cuenta.');
+        }
+        if ($datosCurso['estado'] !== 'Activo') {
+            throw new InvalidArgumentException('Solo se pueden agregar evaluaciones en cursos activos.');
         }
         $query = $this->conexion->prepare(
             "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion,
@@ -362,7 +366,7 @@ class CalificacionDAO implements dao {
         $evaluationSql = "SELECT cn.id_columna_notas AS id,
             CONCAT(c.`año`, '° ', c.division, ' - ', m.nombre_materia, ' - ', cn.titulo, ' (máximo ', cn.nota_maxima, ')') AS etiqueta
             FROM columna_notas cn INNER JOIN curso c ON c.id_curso = cn.id_curso
-            INNER JOIN materia m ON m.id_materia = c.id_materia WHERE cn.estado = 'Abierta'";
+            INNER JOIN materia m ON m.id_materia = c.id_materia WHERE cn.estado = 'Abierta' AND c.estado = 'Activo'";
         $enrollmentParameters = [];
         $evaluationParameters = [];
         if ($usuario['isTeacher']) {
@@ -446,7 +450,8 @@ class CalificacionDAO implements dao {
         }
         $relacion = $this->conexion->prepare(
             "SELECT i.id_curso AS curso_inscripcion, i.id_alumno, i.estado AS estado_inscripcion,
-                cn.id_curso AS curso_evaluacion, cn.nota_maxima, cn.estado AS estado_evaluacion, c.id_docente
+                cn.id_curso AS curso_evaluacion, cn.nota_maxima, cn.estado AS estado_evaluacion,
+                c.id_docente, c.estado AS estado_curso
             FROM inscripcion i INNER JOIN columna_notas cn ON cn.id_columna_notas = ?
             INNER JOIN curso c ON c.id_curso = i.id_curso WHERE i.id_inscripcion = ?"
         );
@@ -462,8 +467,9 @@ class CalificacionDAO implements dao {
         if ($usuario['isTeacher'] && (int) $registro['id_docente'] !== (int) $usuario['id_docente']) {
             throw new InvalidArgumentException('Solo podés cargar notas de tus cursos.');
         }
-        if (!$actual && (!in_array($registro['estado_inscripcion'], ['Confirmada', 'Finalizada'], true) || $registro['estado_evaluacion'] !== 'Abierta')) {
-            throw new InvalidArgumentException('Solo se pueden calificar inscripciones confirmadas o finalizadas.');
+        if (!$actual && (!in_array($registro['estado_inscripcion'], ['Confirmada', 'Finalizada'], true)
+            || $registro['estado_evaluacion'] !== 'Abierta' || $registro['estado_curso'] !== 'Activo')) {
+            throw new InvalidArgumentException('Solo se pueden cargar notas en cursos activos y evaluaciones abiertas.');
         }
 
         $this->conexion->beginTransaction();
