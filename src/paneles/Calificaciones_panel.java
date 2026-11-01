@@ -20,7 +20,9 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,13 +52,17 @@ public class Calificaciones_panel extends JPanel {
     private final Usuario usuarioLogueado;
     private final servicios.Calificaciones_servicio servicio;
     private boolean ocupado;
+    private List<dao.ConsultaCalificaciones_dao.Fila> filasCurso = List.of();
     private List<dao.ConsultaCalificaciones_dao.Fila> filasActuales = List.of();
     private boolean llenandoCursos;
+    private boolean llenandoFiltros;
     private int versionCursos;
     private int versionTabla;
     private javax.swing.SwingWorker<?, ?> cargaTabla;
     private final JLabel estadoCarga = new JLabel(" ");
     private final JComboBox<ItemCombo> cmbCurso = new JComboBox<>();
+    private final JComboBox<String> cmbMateria = new JComboBox<>();
+    private final JComboBox<ItemCombo> cmbEvaluacion = new JComboBox<>();
     private final DefaultTableModel modelo =
             new DefaultTableModel(
                     new String[] {
@@ -79,6 +85,25 @@ public class Calificaciones_panel extends JPanel {
                 }
             };
     private final JTable tabla = new JTable(modelo);
+    private final DefaultTableModel modeloPlanilla = new DefaultTableModel() {
+        private static final long serialVersionUID = 1L;
+        @Override public boolean isCellEditable(int row, int column) {
+            return usuarioLogueado != null && usuarioLogueado.getId_rol() == 2
+                    && column >= 2 && column - 2 < columnasPlanilla.size()
+                    && "Abierta".equals(new ArrayList<>(columnasPlanilla.values()).get(column - 2).getEstado());
+        }
+        @Override public void setValueAt(Object value, int row, int column) {
+            Object anterior = getValueAt(row, column);
+            super.setValueAt(value, row, column);
+            if (column >= 2 && row >= 0 && row < inscripcionesPlanilla.size()) {
+                guardarCeldaPlanilla(row, column - 2, anterior, value);
+            }
+        }
+    };
+    private final JTable tablaPlanilla = new JTable(modeloPlanilla);
+    private final Map<Integer, dao.ConsultaCalificaciones_dao.Fila> inscripcionesPlanilla = new LinkedHashMap<>();
+    private final Map<Integer, Columna_Notas> columnasPlanilla = new LinkedHashMap<>();
+    private final javax.swing.JTabbedPane vistas = new javax.swing.JTabbedPane();
     private final Map<Integer, Calificacion> calificacionesPorFila = new HashMap<>();
     private final Map<Integer, Columna_Notas> columnasPorFila = new HashMap<>();
 
@@ -128,6 +153,22 @@ public class Calificaciones_panel extends JPanel {
                     }
                 });
         filtros.add(cmbCurso);
+        filtros.add(new JLabel("Materia:"));
+        cmbMateria.setPreferredSize(new java.awt.Dimension(180, 28));
+        cmbMateria.addActionListener(e -> {
+            if (!llenandoFiltros) {
+                actualizarEvaluacionesFiltro();
+                aplicarFiltros();
+            }
+        });
+        filtros.add(cmbMateria);
+        filtros.add(new JLabel("Evaluación:"));
+        cmbEvaluacion.setRenderer(cmbCurso.getRenderer());
+        cmbEvaluacion.setPreferredSize(new java.awt.Dimension(230, 28));
+        cmbEvaluacion.addActionListener(e -> {
+            if (!llenandoFiltros) aplicarFiltros();
+        });
+        filtros.add(cmbEvaluacion);
         filtros.add(estadoCarga);
         JButton actualizar = new JButton("Actualizar");
         actualizar.addActionListener(e -> cargarCursos());
@@ -148,11 +189,29 @@ public class Calificaciones_panel extends JPanel {
         JScrollPane scroll = new JScrollPane(tabla);
         scroll.setColumnHeaderView(tabla.getTableHeader());
         scroll.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
-        add(scroll, BorderLayout.CENTER);
+        tablaPlanilla.setRowHeight(34);
+        tablaPlanilla.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        tablaPlanilla.setSelectionBackground(new Color(220, 232, 248));
+        tablaPlanilla.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 12));
+        tablaPlanilla.getTableHeader().setBackground(new Color(235, 240, 247));
+        tablaPlanilla.getTableHeader().setForeground(new Color(24, 61, 110));
+        tablaPlanilla.getTableHeader().setReorderingAllowed(false);
+        JScrollPane scrollPlanilla = new JScrollPane(tablaPlanilla);
+        scrollPlanilla.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
+        JPanel vistaPlanilla = new JPanel(new BorderLayout(0, 6));
+        vistaPlanilla.setBackground(Color.WHITE);
+        JLabel ayudaPlanilla = new JLabel("Editá las notas directamente en las celdas abiertas. Las filas corresponden a alumnos inscriptos.");
+        ayudaPlanilla.setForeground(new Color(90, 104, 122));
+        ayudaPlanilla.setBorder(BorderFactory.createEmptyBorder(8, 16, 2, 8));
+        vistaPlanilla.add(ayudaPlanilla, BorderLayout.NORTH);
+        vistaPlanilla.add(scrollPlanilla, BorderLayout.CENTER);
+        vistas.addTab("Planilla editable", vistaPlanilla);
+        vistas.addTab("Detalle", scroll);
+        add(vistas, BorderLayout.CENTER);
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 10));
         acciones.setBackground(Color.WHITE);
-        JButton nuevaEvaluacion = new JButton("Nueva evaluación");
+        JButton nuevaEvaluacion = new JButton("Agregar tema / columna");
         JButton cargarNota = new JButton("Cargar nota");
         JButton modificar = new JButton("Modificar nota");
         JButton historial = new JButton("Historial");
@@ -253,11 +312,14 @@ public class Calificaciones_panel extends JPanel {
             cargaTabla.cancel(true);
         }
         modelo.setRowCount(0);
+        filasCurso = List.of();
         filasActuales = List.of();
         calificacionesPorFila.clear();
         columnasPorFila.clear();
+        actualizarPlanilla(List.of());
         ItemCombo cursoItem = (ItemCombo) cmbCurso.getSelectedItem();
         if (cursoItem == null) {
+            limpiarFiltros();
             estadoCarga.setText("No hay cursos disponibles.");
             return;
         }
@@ -278,55 +340,9 @@ public class Calificaciones_panel extends JPanel {
                         }
                         try {
                             List<dao.ConsultaCalificaciones_dao.Fila> filas = get();
-                            filasActuales = filas;
-                            for (dao.ConsultaCalificaciones_dao.Fila dato : filas) {
-                                Columna_Notas col = dato.columna();
-                                Calificacion nota = dato.nota();
-                                String estado =
-                                        nota == null
-                                                ? "Pendiente"
-                                                : nota.getNota() >= col.getNota_aprobacion()
-                                                        ? "Aprobado"
-                                                        : "Desaprobado";
-                                int fila = modelo.getRowCount();
-                                modelo.addRow(
-                                        new Object[] {
-                                            dato.alumno(),
-                                            dato.dni(),
-                                            col.getNombre_materia() + " · " + col.getTitulo(),
-                                            col.getTipo(),
-                                            nota == null ? "—" : nota.getNota(),
-                                            col.getNota_maxima(),
-                                            estado,
-                                            nota == null || nota.getFecha_carga() == null
-                                                    ? "—"
-                                                    : nota.getFecha_carga()
-                                                            .format(
-                                                                    DateTimeFormatter.ofPattern(
-                                                                            "dd/MM/yyyy")),
-                                            nota == null ? "" : nota.getObservaciones()
-                                        });
-                                if (nota != null) {
-                                    calificacionesPorFila.put(fila, nota);
-                                }
-                                columnasPorFila.put(fila, col);
-                            }
-                            estadoCarga.setText(filas.size() + " registros");
-                            if (filas.isEmpty()) {
-                                modelo.addRow(
-                                        new Object[] {
-                                            "Sin inscripciones activas o evaluaciones para este"
-                                                    + " curso",
-                                            "",
-                                            "",
-                                            "",
-                                            "",
-                                            "",
-                                            "",
-                                            "",
-                                            ""
-                                        });
-                            }
+                            filasCurso = filas;
+                            actualizarOpcionesFiltros(filas);
+                            aplicarFiltros();
                         } catch (Exception e) {
                             estadoCarga.setText("No se pudieron cargar las calificaciones.");
                             aviso(
@@ -337,6 +353,176 @@ public class Calificaciones_panel extends JPanel {
                     }
                 };
         cargaTabla.execute();
+    }
+
+    private void actualizarOpcionesFiltros(List<dao.ConsultaCalificaciones_dao.Fila> filas) {
+        String materiaAnterior = (String) cmbMateria.getSelectedItem();
+        Integer evaluacionAnterior = cmbEvaluacion.getSelectedItem() instanceof ItemCombo item
+                ? item.getId() : 0;
+        llenandoFiltros = true;
+        cmbMateria.removeAllItems();
+        cmbMateria.addItem("Todas las materias");
+        filas.stream().map(f -> f.columna().getNombre_materia()).distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER).forEach(cmbMateria::addItem);
+        if (materiaAnterior != null) cmbMateria.setSelectedItem(materiaAnterior);
+        llenandoFiltros = false;
+        actualizarEvaluacionesFiltro(evaluacionAnterior);
+    }
+
+    private void actualizarEvaluacionesFiltro() {
+        Integer anterior = cmbEvaluacion.getSelectedItem() instanceof ItemCombo item ? item.getId() : 0;
+        actualizarEvaluacionesFiltro(anterior);
+    }
+
+    private void actualizarEvaluacionesFiltro(Integer evaluacionAnterior) {
+        String materia = (String) cmbMateria.getSelectedItem();
+        llenandoFiltros = true;
+        cmbEvaluacion.removeAllItems();
+        cmbEvaluacion.addItem(new ItemCombo(0, "Todas las evaluaciones"));
+        filasCurso.stream()
+                .filter(f -> materia == null || "Todas las materias".equals(materia)
+                        || materia.equals(f.columna().getNombre_materia()))
+                .map(dao.ConsultaCalificaciones_dao.Fila::columna)
+                .collect(java.util.stream.Collectors.toMap(
+                        Columna_Notas::getId_columna_notas, c -> c,
+                        (primera, ignorada) -> primera, LinkedHashMap::new))
+                .values().forEach(c -> cmbEvaluacion.addItem(new ItemCombo(
+                        c.getId_columna_notas(), c.getTitulo() + " · " + c.getTipo()
+                                + (c.getFecha_evaluacion() == null ? "" : " · " + c.getFecha_evaluacion()))));
+        if (evaluacionAnterior != null) {
+            for (int i = 0; i < cmbEvaluacion.getItemCount(); i++) {
+                if (evaluacionAnterior.equals(cmbEvaluacion.getItemAt(i).getId())) {
+                    cmbEvaluacion.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+        llenandoFiltros = false;
+    }
+
+    private void limpiarFiltros() {
+        llenandoFiltros = true;
+        cmbMateria.removeAllItems();
+        cmbMateria.addItem("Todas las materias");
+        cmbEvaluacion.removeAllItems();
+        cmbEvaluacion.addItem(new ItemCombo(0, "Todas las evaluaciones"));
+        llenandoFiltros = false;
+    }
+
+    private void aplicarFiltros() {
+        String materia = (String) cmbMateria.getSelectedItem();
+        ItemCombo evaluacion = (ItemCombo) cmbEvaluacion.getSelectedItem();
+        int idEvaluacion = evaluacion == null ? 0 : evaluacion.getId();
+        filasActuales = filasCurso.stream()
+                .filter(f -> materia == null || "Todas las materias".equals(materia)
+                        || materia.equals(f.columna().getNombre_materia()))
+                .filter(f -> idEvaluacion == 0 || idEvaluacion == f.columna().getId_columna_notas())
+                .toList();
+        modelo.setRowCount(0);
+        calificacionesPorFila.clear();
+        columnasPorFila.clear();
+        actualizarPlanilla(filasActuales);
+        for (dao.ConsultaCalificaciones_dao.Fila dato : filasActuales) {
+            Columna_Notas columna = dato.columna();
+            Calificacion nota = dato.nota();
+            String resultado = nota == null ? "Pendiente"
+                    : nota.getNota() >= columna.getNota_aprobacion() ? "Aprobado" : "Desaprobado";
+            int fila = modelo.getRowCount();
+            modelo.addRow(new Object[] {
+                dato.alumno(), dato.dni(), columna.getNombre_materia() + " · " + columna.getTitulo(),
+                columna.getTipo(), nota == null ? "—" : nota.getNota(), columna.getNota_maxima(), resultado,
+                nota == null || nota.getFecha_carga() == null ? "—"
+                        : nota.getFecha_carga().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                nota == null ? "" : nota.getObservaciones()
+            });
+            if (nota != null) calificacionesPorFila.put(fila, nota);
+            columnasPorFila.put(fila, columna);
+        }
+        estadoCarga.setText(filasActuales.size() + " registros");
+        if (filasActuales.isEmpty()) {
+            modelo.addRow(new Object[] {"No hay calificaciones para estos filtros", "", "", "", "", "", "", "", ""});
+        }
+    }
+
+    // armamos una fila por alumno y una columna por evaluación, como en una planilla.
+    private void actualizarPlanilla(List<dao.ConsultaCalificaciones_dao.Fila> filas) {
+        columnasPlanilla.clear();
+        inscripcionesPlanilla.clear();
+        for (var fila : filas) {
+            columnasPlanilla.putIfAbsent(fila.columna().getId_columna_notas(), fila.columna());
+            inscripcionesPlanilla.putIfAbsent(fila.idInscripcion(), fila);
+        }
+        List<Object> encabezados = new java.util.ArrayList<>(List.of("Alumno", "DNI"));
+        for (Columna_Notas columna : columnasPlanilla.values()) {
+            encabezados.add(columna.getNombre_materia() + " · " + columna.getTitulo()
+                    + " (máx. " + columna.getNota_maxima() + ")");
+        }
+        modeloPlanilla.setDataVector(new Object[0][encabezados.size()], encabezados.toArray());
+        Map<String, Object> notas = new HashMap<>();
+        for (var fila : filas) {
+            if (fila.nota() != null) {
+                notas.put(fila.idInscripcion() + ":" + fila.columna().getId_columna_notas(), fila.nota().getNota());
+            }
+        }
+        for (var entrada : inscripcionesPlanilla.entrySet()) {
+            Object[] valores = new Object[encabezados.size()];
+            valores[0] = entrada.getValue().alumno();
+            valores[1] = entrada.getValue().dni();
+            int indice = 2;
+            for (Integer idColumna : columnasPlanilla.keySet()) {
+                Object nota = notas.get(entrada.getKey() + ":" + idColumna);
+                valores[indice++] = nota == null ? "" : nota;
+            }
+            modeloPlanilla.addRow(valores);
+        }
+        tablaPlanilla.getColumnModel().getColumn(0).setPreferredWidth(190);
+        tablaPlanilla.getColumnModel().getColumn(1).setPreferredWidth(100);
+        for (int i = 2; i < tablaPlanilla.getColumnCount(); i++) {
+            tablaPlanilla.getColumnModel().getColumn(i).setPreferredWidth(150);
+        }
+    }
+
+    // guardamos la celda mediante la misma validación e historial que los formularios.
+    private void guardarCeldaPlanilla(int fila, int indiceColumna, Object anterior, Object nuevo) {
+        if (ocupado) { cargarTabla(); return; }
+        if (indiceColumna < 0 || indiceColumna >= columnasPlanilla.size()) return;
+        String valor = nuevo == null ? "" : nuevo.toString().trim();
+        if (valor.isEmpty()) { cargarTabla(); return; }
+        var alumno = new ArrayList<>(inscripcionesPlanilla.values()).get(fila);
+        Columna_Notas columna = new ArrayList<>(columnasPlanilla.values()).get(indiceColumna);
+        Calificacion existente = filasActuales.stream()
+                .filter(d -> d.idInscripcion() == alumno.idInscripcion()
+                        && d.columna().getId_columna_notas().equals(columna.getId_columna_notas()))
+                .map(dao.ConsultaCalificaciones_dao.Fila::nota).filter(java.util.Objects::nonNull)
+                .findFirst().orElse(null);
+        if (existente != null && String.valueOf(anterior).equals(valor)) return;
+        String motivo = "";
+        if (existente != null) {
+            motivo = JOptionPane.showInputDialog(this, "Motivo de la corrección de la nota:", "Editar nota", JOptionPane.QUESTION_MESSAGE);
+            if (motivo == null) { cargarTabla(); return; }
+        }
+        final String razon = motivo;
+        ocupado = true;
+        estadoCarga.setText("Guardando nota…");
+        new javax.swing.SwingWorker<Void, Void>() {
+            protected Void doInBackground() throws Exception {
+                if (existente == null) servicio.registrarNota(alumno.idInscripcion(), columna.getId_columna_notas(), valor, "");
+                else servicio.modificarNota(existente.getId_calificacion(), valor, razon);
+                return null;
+            }
+            protected void done() {
+                ocupado = false;
+                try {
+                    get();
+                    estadoCarga.setText("Nota guardada");
+                } catch (Exception e) {
+                    estadoCarga.setText("No se pudo guardar la nota");
+                    aviso(e.getCause() == null ? e.getMessage() : e.getCause().getMessage());
+                } finally {
+                    cargarTabla();
+                }
+            }
+        }.execute();
     }
 
     // ejecutamos las operaciones sin dejar la ventana esperando la conexión
