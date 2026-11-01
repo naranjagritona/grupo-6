@@ -37,9 +37,8 @@ public class Calificaciones_servicio {
         }
         try (PreparedStatement q =
                 db.prepareStatement(
-                        "SELECT c.estado,d.id_usuario FROM curso c LEFT JOIN docente d ON"
-                                + " d.id_docente=c.id_docente WHERE c.id_curso=? FOR UPDATE")) {
-            q.setInt(1, curso);
+                        "SELECT c.estado,? FROM curso c WHERE c.id_curso=? AND EXISTS(SELECT 1 FROM curso_materia cm JOIN docente d ON d.id_docente=cm.id_docente WHERE cm.id_curso=c.id_curso AND d.id_usuario=?) FOR UPDATE")) {
+            q.setInt(1, usuario.getId_usuario()); q.setInt(2, curso); q.setInt(3, usuario.getId_usuario());
             try (ResultSet rs = q.executeQuery()) {
                 if (!rs.next()
                         || (requiereActivo && !"Activo".equals(rs.getString(1)))
@@ -47,6 +46,21 @@ public class Calificaciones_servicio {
                     throw new IllegalArgumentException(
                             "El curso no está activo o no te corresponde.");
                 }
+            }
+        }
+    }
+
+    private void permitirMateria(Connection db, int curso, int materia) throws SQLException {
+        if (!new dao.Resultado_Academico_dao().asignado(db, curso, materia, usuario.getId_usuario()))
+            throw new IllegalArgumentException("La materia no está asignada a tu cuenta.");
+    }
+
+    private void permitirEvaluacion(Connection db, int columna) throws SQLException {
+        try (PreparedStatement q = db.prepareStatement("SELECT id_curso,id_materia FROM columna_notas WHERE id_columna_notas=?")) {
+            q.setInt(1, columna);
+            try (ResultSet rs = q.executeQuery()) {
+                if (!rs.next()) throw new IllegalArgumentException("La evaluación no existe.");
+                permitirMateria(db, rs.getInt(1), rs.getInt(2));
             }
         }
     }
@@ -95,6 +109,7 @@ public class Calificaciones_servicio {
             db.setAutoCommit(false);
             try {
                 permitir(db, curso);
+                permitirMateria(db, curso, materia);
                 try (PreparedStatement consulta = db.prepareStatement("SELECT id_materia FROM curso_materia WHERE id_curso=? AND id_materia=?")) {
                     consulta.setInt(1, curso); consulta.setInt(2, materia);
                     try (ResultSet registros = consulta.executeQuery()) { if (!registros.next()) throw new IllegalArgumentException("La materia no pertenece al curso."); }
@@ -133,7 +148,7 @@ public class Calificaciones_servicio {
                     consulta.setInt(1, id);
                     try (ResultSet registros = consulta.executeQuery()) { if (!registros.next()) throw new IllegalArgumentException("La evaluación no existe."); curso = registros.getInt(1); }
                 }
-                permitir(conexion, curso);
+                permitir(conexion, curso); permitirEvaluacion(conexion, id);
                 try (PreparedStatement consulta = conexion.prepareStatement("UPDATE columna_notas SET estado='Cerrada',fecha_cierre=CURRENT_DATE WHERE id_columna_notas=?")) {
                     consulta.setInt(1, id); consulta.executeUpdate();
                 }
@@ -166,7 +181,7 @@ public class Calificaciones_servicio {
                 }
             }
         }
-        permitir(db, curso);
+        permitir(db, curso); permitirEvaluacion(db, columna);
         return nota;
     }
 
@@ -314,7 +329,12 @@ public class Calificaciones_servicio {
                                 consulta.setInt(1, usuario.getId_usuario()); consulta.setInt(2, rs.getInt(1));
                                 try (ResultSet registros = consulta.executeQuery()) { if (!registros.next()) throw new IllegalArgumentException("El curso no corresponde al preceptor."); }
                             }
-                        } else permitir(db, rs.getInt(1), false);
+                        } else {
+                            permitir(db, rs.getInt(1), false);
+                            try (PreparedStatement p = db.prepareStatement("SELECT c.id_columna_notas FROM calificacion n JOIN columna_notas c ON c.id_columna_notas=n.id_columna_notas WHERE n.id_calificacion=?")) {
+                                p.setInt(1,id); try (ResultSet evaluacion=p.executeQuery()) { evaluacion.next(); permitirEvaluacion(db,evaluacion.getInt(1)); }
+                            }
+                        }
                     }
                 }
             }

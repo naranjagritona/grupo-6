@@ -10,6 +10,14 @@ public class Resultado_Academico_dao extends Consulta_academica_dao {
         return numero(uno(conexion, "SELECT d.id_usuario FROM curso c JOIN docente d ON d.id_docente=c.id_docente WHERE c.id_curso=?", curso), "id_usuario");
     }
 
+    public boolean asignado(Connection db, int curso, int materia, int usuario) throws SQLException {
+        return !consultar(db, "SELECT cm.id_materia FROM curso_materia cm JOIN docente d ON d.id_docente=cm.id_docente WHERE cm.id_curso=? AND cm.id_materia=? AND d.id_usuario=?", curso, materia, usuario).isEmpty();
+    }
+
+    public List<Map<String,Object>> materiasDocente(Connection db, int curso, int usuario) throws SQLException {
+        return consultar(db, "SELECT m.id_materia,m.nombre_materia FROM curso_materia cm JOIN materia m ON m.id_materia=cm.id_materia JOIN docente d ON d.id_docente=cm.id_docente WHERE cm.id_curso=? AND d.id_usuario=? ORDER BY m.nombre_materia", curso, usuario);
+    }
+
     // buscamos las materias que el docente puede elegir al preparar una evaluación
     public List<Map<String, Object>> materias(Connection conexion, int curso) throws SQLException {
         return consultar(conexion, "SELECT m.id_materia,m.nombre_materia FROM curso_materia cm JOIN materia m ON m.id_materia=cm.id_materia WHERE cm.id_curso=? ORDER BY m.nombre_materia", curso);

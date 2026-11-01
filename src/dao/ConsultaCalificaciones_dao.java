@@ -45,8 +45,8 @@ public class ConsultaCalificaciones_dao {
                 permiso = "";
             } else if (usuario.getId_rol() == 2) {
                 permiso =
-                        " AND EXISTS(SELECT 1 FROM curso cu JOIN docente d ON"
-                                + " d.id_docente=cu.id_docente WHERE cu.id_curso=c.id_curso AND"
+                        " AND EXISTS(SELECT 1 FROM curso_materia cu JOIN docente d ON"
+                                + " d.id_docente=cu.id_docente WHERE cu.id_curso=c.id_curso AND cu.id_materia=c.id_materia AND"
                                 + " d.id_usuario=?) ";
             } else if (usuario.getId_rol() == 4) {
                 permiso = " AND EXISTS(SELECT 1 FROM preceptor_curso pc WHERE pc.id_curso=c.id_curso AND pc.id_usuario=?) ";

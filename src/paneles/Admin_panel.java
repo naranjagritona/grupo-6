@@ -89,9 +89,6 @@ public class Admin_panel extends JPanel {
         JPanel actualizarDatos = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         actualizarDatos.setOpaque(false);
         actualizarDatos.add(estadoCarga);
-        JButton actualizar = new JButton("Actualizar");
-        actualizar.addActionListener(e -> cargarDatosAdmin());
-        actualizarDatos.add(actualizar);
         panelTitulo.add(actualizarDatos, BorderLayout.SOUTH);
         add(panelTitulo, BorderLayout.NORTH);
 

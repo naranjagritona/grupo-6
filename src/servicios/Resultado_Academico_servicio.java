@@ -23,8 +23,7 @@ public class Resultado_Academico_servicio {
     public List<Map<String, Object>> materias(int curso, Integer usuario) throws Exception {
         return dao.transaccion(conexion -> {
             Permisos_servicio.verificar(conexion, dao, usuario, 2);
-            if (dao.docente(conexion, curso) != usuario) throw new IllegalArgumentException("El curso no corresponde al docente.");
-            return dao.materias(conexion, curso);
+            return dao.materiasDocente(conexion, curso, usuario);
         });
     }
 
@@ -52,7 +51,7 @@ public class Resultado_Academico_servicio {
             Inscripcion_servicio.validarAbierta(inscripcion);
             if (!List.of("Confirmada", "Recuperacion").contains(inscripcion.get("estado"))) throw new IllegalArgumentException("La inscripción debe estar confirmada o en recuperación.");
             int curso = numero(inscripcion, "id_curso");
-            if (dao.docente(conexion, curso) != usuario) throw new IllegalArgumentException("El curso no corresponde al docente.");
+            if (!dao.asignado(conexion, curso, materia, usuario)) throw new IllegalArgumentException("El curso no corresponde al docente.");
             var datos = inscripciones.curso(conexion, curso);
             if (datos.get("nota_aprobacion_materia") == null || datos.get("criterio_recuperatorio") == null) throw new IllegalArgumentException("Dirección debe configurar la nota mínima y el criterio de recuperatorios.");
             if (dao.materias(conexion, curso).stream().noneMatch(m -> numero(m, "id_materia") == materia)) throw new IllegalArgumentException("La materia no pertenece al curso.");

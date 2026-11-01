@@ -34,6 +34,10 @@ public class Curso {
     private String nombre_periodo;
     private String nombre_materia;
     private String nombre_docente;
+    private int cantidad_materias;
+
+    public int getCantidad_materias() { return cantidad_materias; }
+    public void setCantidad_materias(int cantidad) { this.cantidad_materias = cantidad; }
 
     public Curso() {}
 

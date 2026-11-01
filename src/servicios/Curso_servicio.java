@@ -10,6 +10,11 @@ import java.util.List;
 public class Curso_servicio {
     private final Curso_dao dao = new Curso_dao();
 
+    // La fecha de fin es inclusiva: desde ese día el curso deja de estar activo.
+    public static String estadoSegunFecha(String estado, LocalDate fin, LocalDate hoy) {
+        return "Activo".equals(estado) && fin != null && !fin.isAfter(hoy) ? "Finalizado" : estado;
+    }
+
     // consultamos los cursos que corresponden al usuario
     public List<Curso> listar(Usuario usuario) { return dao.listar(usuario); }
 

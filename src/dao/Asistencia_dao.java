@@ -11,7 +11,7 @@ public class Asistencia_dao extends Consulta_academica_dao {
     public List<Map<String, Object>> listar(Connection conexion, int curso, LocalDate fecha, Usuario usuario) throws SQLException {
         String alcance = switch (usuario.getId_rol()) {
             case 1, 5 -> "1=1";
-            case 2 -> "EXISTS(SELECT 1 FROM docente d WHERE d.id_docente=c.id_docente AND d.id_usuario=" + usuario.getId_usuario() + ")";
+            case 2 -> "EXISTS(SELECT 1 FROM curso_materia cm JOIN docente d ON d.id_docente=cm.id_docente WHERE cm.id_curso=c.id_curso AND d.id_usuario=" + usuario.getId_usuario() + ")";
             case 3 -> "a.id_usuario=" + usuario.getId_usuario();
             case 4 -> "EXISTS(SELECT 1 FROM preceptor_curso pc WHERE pc.id_curso=c.id_curso AND pc.id_usuario=" + usuario.getId_usuario() + ")";
             default -> "1=0";

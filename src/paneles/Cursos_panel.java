@@ -28,7 +28,6 @@ public class Cursos_panel extends JPanel {
                         "División",
                         "Materias",
                         "Período",
-                        "Docente",
                         "Modalidad",
                         "Turno",
                         "Cupo",
@@ -37,6 +36,9 @@ public class Cursos_panel extends JPanel {
                         "Estado"
                     },
                     0) {
+                public Class<?> getColumnClass(int columna) {
+                    return columna == 2 ? Integer.class : Object.class;
+                }
                 public boolean isCellEditable(int r, int c) {
                     return false;
                 }
@@ -45,6 +47,10 @@ public class Cursos_panel extends JPanel {
     private final TableRowSorter<DefaultTableModel> filtro = new TableRowSorter<>(modelo);
     private final List<Curso> cursos = new ArrayList<>();
     private final JLabel estado = new JLabel(" ");
+    private boolean cargando;
+    private final Timer actualizacionAutomatica = new Timer(60_000, e -> {
+        if (isShowing() && !cargando) cargar();
+    });
 
     public Cursos_panel() {
         this(null);
@@ -61,18 +67,27 @@ public class Cursos_panel extends JPanel {
         titulo.setFont(new Font("Tahoma", Font.BOLD, 24));
         arriba.add(titulo, BorderLayout.NORTH);
         JTextField buscar = new JTextField();
-        buscar.setToolTipText("Buscar por año, materia, docente o estado");
+        buscar.setToolTipText("Buscar por año, división, período, turno o estado");
         JPanel busqueda = new JPanel(new BorderLayout(8, 8));
         busqueda.add(new JLabel("Buscar cursos:"), BorderLayout.WEST);
         busqueda.add(buscar);
         arriba.add(busqueda);
         add(arriba, BorderLayout.NORTH);
         tabla.setRowSorter(filtro);
+        tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabla.setToolTipText("Doble clic para ver las materias y sus docentes");
+        tabla.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    int fila = tabla.rowAtPoint(e.getPoint());
+                    if (fila >= 0) { tabla.setRowSelectionInterval(fila, fila); detalle(); }
+                }
+            }
+        });
         tabla.setRowHeight(30);
-        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         tabla.getColumnModel().getColumn(1).setPreferredWidth(90);
-        tabla.getColumnModel().getColumn(2).setPreferredWidth(330);
-        tabla.getColumnModel().getColumn(2).setPreferredWidth(150);
+        tabla.getColumnModel().getColumn(2).setPreferredWidth(90);
         tabla.getColumnModel().getColumn(3).setPreferredWidth(150);
         JScrollPane desplazamiento = new JScrollPane(tabla);
         desplazamiento.setColumnHeaderView(tabla.getTableHeader());
@@ -100,15 +115,9 @@ public class Cursos_panel extends JPanel {
                             }
                         });
         JPanel abajo = new JPanel(new BorderLayout());
-        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel acciones = new JPanel(new GridLayout(0, 4, 6, 6));
         // solo el administrador puede crear, editar o cancelar un curso.
         if (servicios.Permisos_servicio.directivo(usuario)) {
-            boton(acciones, "Nuevo período", () -> {
-                JTextField nombre = new JTextField(), desde = new JTextField(), hasta = new JTextField();
-                JComboBox<String> tipo = new JComboBox<>(new String[] {"Anual", "Cuatrimestral", "Otro"});
-                Object[] campos = {"Nombre", nombre, "Tipo", tipo, "Inicio (AAAA-MM-DD)", desde, "Fin (AAAA-MM-DD)", hasta};
-                if (JOptionPane.showConfirmDialog(this, campos, "Período lectivo", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) trabajar(() -> { dao.crearPeriodo(nombre.getText(), tipo.getSelectedItem().toString(), desde.getText(), hasta.getText()); return dao.listar(usuario); });
-            });
             boton(acciones, "Nuevo curso", () -> formulario(null));
             boton(
                     acciones,
@@ -142,24 +151,25 @@ public class Cursos_panel extends JPanel {
                 String cupo = JOptionPane.showInputDialog(this, "Cupo máximo:", curso.getCupo_maximo());
                 if (cupo != null) trabajar(() -> { dao.modificarCupo(curso.getId_curso(), Integer.parseInt(cupo)); return dao.listar(usuario); });
             });
-            boton(acciones, "Asignar materias", () -> {
-                Curso curso = seleccion(); if (curso == null) return;
-                try {
-                    List<Materia> materias = new Materia_dao().obtenerTodos(); List<Integer> elegidas = dao.materiasDelCurso(curso.getId_curso());
-                    JPanel formulario = new JPanel(new GridLayout(0, 2)); List<JCheckBox> casillas = new ArrayList<>();
-                    for (Materia materia : materias) { JCheckBox casilla = new JCheckBox(materia.getNombre_materia(), elegidas.contains(materia.getId_materia())); casillas.add(casilla); formulario.add(casilla); }
-                    if (JOptionPane.showConfirmDialog(this, new JScrollPane(formulario), "Materias del curso", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-                        List<Integer> ids = new ArrayList<>(); for (int i = 0; i < casillas.size(); i++) if (casillas.get(i).isSelected()) ids.add(materias.get(i).getId_materia());
-                        trabajar(() -> { dao.asignarMaterias(curso.getId_curso(), ids); return dao.listar(usuario); });
-                    }
-                } catch (Exception error) { error(error); }
-            });
+
         }
         boton(acciones, "Actualizar", this::cargar);
         abajo.add(estado, BorderLayout.WEST);
         abajo.add(acciones, BorderLayout.EAST);
         add(abajo, BorderLayout.SOUTH);
         cargar();
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        actualizacionAutomatica.start();
+    }
+
+    @Override
+    public void removeNotify() {
+        actualizacionAutomatica.stop();
+        super.removeNotify();
     }
 
     private void boton(JPanel p, String texto, Runnable accion) {
@@ -178,12 +188,18 @@ public class Cursos_panel extends JPanel {
         return cursos.get(tabla.convertRowIndexToModel(r));
     }
 
+    private void detalle() {
+        Curso curso = seleccion();
+        if (curso != null) new DetalleCurso_dialog(this, curso, usuario, this::cargar).setVisible(true);
+    }
+
     private void cargar() {
         trabajar(() -> dao.listar(usuario));
     }
 
     // hacemos las consultas en segundo plano para que la ventana siga respondiendo.
     private void trabajar(java.util.concurrent.Callable<List<Curso>> tarea) {
+        cargando = true;
         estado.setText("Cargando…");
         new SwingWorker<List<Curso>, Void>() {
             protected List<Curso> doInBackground() throws Exception {
@@ -199,11 +215,10 @@ public class Cursos_panel extends JPanel {
                     for (Curso c : lista)
                         modelo.addRow(
                                 new Object[] {
-                                    c.getAño(),
+                                    c.getAño() + "°",
                                     c.getDivision(),
-                                    c.getNombre_materia(),
+                                    c.getCantidad_materias(),
                                     c.getNombre_periodo(),
-                                    c.getNombre_docente(),
                                     c.getModalidad(),
                                     c.getTurno(),
                                     c.getCupo_maximo(),
@@ -215,6 +230,8 @@ public class Cursos_panel extends JPanel {
                 } catch (Exception e) {
                     estado.setText("No se pudo completar la operación.");
                     error(e);
+                } finally {
+                    cargando = false;
                 }
             }
         }.execute();
@@ -231,12 +248,7 @@ public class Cursos_panel extends JPanel {
         estado.setText("Preparando formulario…");
         new SwingWorker<Object[], Void>() {
             protected Object[] doInBackground() {
-                return new Object[] {
-                    new Periodo_Lectivo_dao().obtenerTodos(),
-                    new Materia_dao().obtenerTodos(),
-                    new Docente_dao().obtenerTodos(),
-                    original == null ? List.of() : dao.materiasDelCurso(original.getId_curso())
-                };
+                return new Object[] {new Periodo_Lectivo_dao().obtenerTodos()};
             }
 
             @SuppressWarnings("unchecked")
@@ -245,10 +257,7 @@ public class Cursos_panel extends JPanel {
                     Object[] datos = get();
                     editar(
                             original,
-                            (List<Periodo_Lectivo>) datos[0],
-                            (List<Materia>) datos[1],
-                            (List<Docente>) datos[2],
-                            (List<Integer>) datos[3]);
+                            (List<Periodo_Lectivo>) datos[0]);
                     estado.setText(" ");
                 } catch (Exception e) {
                     error(e);
@@ -259,10 +268,7 @@ public class Cursos_panel extends JPanel {
 
     private void editar(
             Curso original,
-            List<Periodo_Lectivo> periodos,
-            List<Materia> materias,
-            List<Docente> docentes,
-            List<Integer> elegidas) {
+            List<Periodo_Lectivo> periodos) {
         JComboBox<Periodo_Lectivo> periodo =
                 new JComboBox<>(periodos.toArray(Periodo_Lectivo[]::new));
         periodo.setRenderer(
@@ -274,25 +280,9 @@ public class Cursos_panel extends JPanel {
                         return this;
                     }
                 });
-        JComboBox<Docente> docente = new JComboBox<>(docentes.toArray(Docente[]::new));
-        docente.setRenderer(
-                new DefaultListCellRenderer() {
-                    public Component getListCellRendererComponent(
-                            JList<?> l, Object v, int i, boolean s, boolean f) {
-                        super.getListCellRendererComponent(l, v, i, s, f);
-                        if (v instanceof Docente d) setText(d.getApellido() + ", " + d.getNombre());
-                        return this;
-                    }
-                });
-        // cada casilla representa una materia; se pueden marcar varias para el mismo curso.
-        JPanel materiasPanel = new JPanel(new GridLayout(0, 2, 8, 8));
-        List<JCheckBox> casillas = new ArrayList<>();
-        for (Materia m : materias) {
-            JCheckBox c =
-                    new JCheckBox(m.getNombre_materia(), elegidas.contains(m.getId_materia()));
-            casillas.add(c);
-            materiasPanel.add(c);
-        }
+        JTextArea materiasPanel = new JTextArea(3, 28);
+        materiasPanel.setEditable(false); materiasPanel.setLineWrap(true); materiasPanel.setWrapStyleWord(true);
+        List<Materia> materiasAnio = new ArrayList<>();
         JTextField division = new JTextField(original == null ? "" : original.getDivision());
         JComboBox<Integer> anio = new JComboBox<>(new Integer[] {1, 2, 3, 4, 5, 6});
         JComboBox<String> modalidad =
@@ -321,16 +311,29 @@ public class Cursos_panel extends JPanel {
             situacion.setSelectedItem(original.getEstado());
             for (Periodo_Lectivo p : periodos)
                 if (p.getId_periodo().equals(original.getId_periodo())) periodo.setSelectedItem(p);
-            for (Docente d : docentes)
-                if (d.getId_docente().equals(original.getId_docente())) docente.setSelectedItem(d);
+
         }
+        Runnable cargarMateriasAnio = () -> {
+            int elegido = (Integer) anio.getSelectedItem();
+            materiasAnio.clear(); materiasPanel.setText("Cargando materias…");
+            new SwingWorker<List<Materia>, Void>() {
+                protected List<Materia> doInBackground() { return new PlanCurso_dao().materias(elegido); }
+                protected void done() {
+                    if (!Integer.valueOf(elegido).equals(anio.getSelectedItem())) return;
+                    try {
+                        materiasAnio.clear(); materiasAnio.addAll(get());
+                        materiasPanel.setText(materiasAnio.isEmpty() ? "Este año no tiene materias. Configuralas desde el módulo Materias." : String.join(", ", materiasAnio.stream().map(Materia::getNombre_materia).toList()));
+                    } catch (Exception e) { materiasAnio.clear(); materiasPanel.setText("No se pudieron cargar las materias."); error(e); }
+                }
+            }.execute();
+        };
+        anio.addActionListener(e -> cargarMateriasAnio.run()); cargarMateriasAnio.run();
         JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
         Object[][] campos = {
             {"Año", anio},
             {"División", division},
             {"Período", periodo},
             {"Materias", materiasPanel},
-            {"Docente", docente},
             {"Modalidad", modalidad},
             {"Turno", turno},
             {"Cupo", cupo},
@@ -358,17 +361,16 @@ public class Cursos_panel extends JPanel {
                         JOptionPane.PLAIN_MESSAGE)
                 == JOptionPane.OK_OPTION) {
             try {
-                List<Integer> ids = new ArrayList<>();
-                for (int i = 0; i < casillas.size(); i++)
-                    if (casillas.get(i).isSelected()) ids.add(materias.get(i).getId_materia());
+                List<Integer> ids = materiasAnio.stream().map(Materia::getId_materia).toList();
                 if (ids.isEmpty())
-                    throw new IllegalArgumentException("Seleccioná al menos una materia.");
+                    throw new IllegalArgumentException("Agregá materias al año desde el módulo Materias antes de crear el curso.");
                 Curso c = new Curso();
                 c.setId_curso(original == null ? null : original.getId_curso());
                 c.setAño((Integer) anio.getSelectedItem());
                 c.setDivision(division.getText());
+                if (periodo.getSelectedItem() == null) throw new IllegalArgumentException("Creá un período lectivo antes de crear el curso.");
                 c.setId_periodo(((Periodo_Lectivo) periodo.getSelectedItem()).getId_periodo());
-                c.setId_docente(((Docente) docente.getSelectedItem()).getId_docente());
+                c.setId_docente(original == null ? null : original.getId_docente());
                 c.setModalidad((String) modalidad.getSelectedItem());
                 c.setTurno((String) turno.getSelectedItem());
                 c.setEstado((String) situacion.getSelectedItem());

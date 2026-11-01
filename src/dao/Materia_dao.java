@@ -106,6 +106,12 @@ public class Materia_dao implements Dao<Materia, Integer> {
     // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
+        try (Connection db = Conexion.getConnection(); PreparedStatement q = db.prepareStatement("SELECT anio FROM materia_anio WHERE id_materia=? ORDER BY anio")) {
+            q.setInt(1, id);
+            try (ResultSet rs = q.executeQuery()) {
+                if (rs.next()) throw new IllegalArgumentException("La materia pertenece al plan de " + rs.getInt(1) + "° año y no se puede eliminar.");
+            }
+        } catch (SQLException e) { throw new IllegalStateException("No se pudo verificar el plan de la materia.", e); }
         String consulta = "DELETE FROM materia WHERE id_materia = ?";
 
         try (Connection conexion = Conexion.getConnection();

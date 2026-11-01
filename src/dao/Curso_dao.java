@@ -16,12 +16,11 @@ public class Curso_dao implements Dao<Curso, Integer> {
 
     // juntamos los nombres de las materias para mostrar un solo registro por curso.
     private static final String CONSULTA =
-            "SELECT c.*,p.nombre nombre_periodo,COALESCE((SELECT GROUP_CONCAT(m.nombre_materia"
+            "SELECT c.*,p.nombre nombre_periodo,(SELECT COUNT(*) FROM curso_materia cmc WHERE cmc.id_curso=c.id_curso) cantidad_materias,COALESCE((SELECT GROUP_CONCAT(m.nombre_materia"
                 + " ORDER BY m.nombre_materia SEPARATOR ', ') FROM curso_materia cm JOIN materia m"
                 + " ON m.id_materia=cm.id_materia WHERE cm.id_curso=c.id_curso),'Sin materias')"
-                + " nombre_materia,CONCAT(d.nombre,' ',d.apellido) nombre_docente FROM curso c LEFT"
-                + " JOIN periodo_lectivo p ON p.id_periodo_lectivo=c.id_periodo LEFT JOIN docente d"
-                + " ON d.id_docente=c.id_docente";
+                + " nombre_materia,COALESCE((SELECT GROUP_CONCAT(DISTINCT CONCAT(dd.nombre,' ',dd.apellido) ORDER BY dd.apellido SEPARATOR ', ') FROM curso_materia cmm JOIN docente dd ON dd.id_docente=cmm.id_docente WHERE cmm.id_curso=c.id_curso),'Sin asignar') nombre_docente FROM curso c LEFT"
+                + " JOIN periodo_lectivo p ON p.id_periodo_lectivo=c.id_periodo";
 
     // pasamos cada fila de la consulta a un objeto Curso.
     private Curso leer(ResultSet rs) throws SQLException {
@@ -29,7 +28,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
         c.setId_curso(rs.getInt("id_curso"));
         c.setId_periodo(rs.getInt("id_periodo"));
         c.setId_materia(rs.getInt("id_materia"));
-        c.setId_docente(rs.getInt("id_docente"));
+        c.setId_docente((Integer) rs.getObject("id_docente"));
         c.setAño(rs.getInt("año"));
         c.setDivision(rs.getString("division"));
         c.setNota_aprobacion_materia((Double) (rs.getObject("nota_aprobacion_materia") == null ? null : rs.getDouble("nota_aprobacion_materia")));
@@ -43,6 +42,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
         c.setEstado(rs.getString("estado"));
         c.setNombre_periodo(rs.getString("nombre_periodo"));
         c.setNombre_materia(rs.getString("nombre_materia"));
+        c.setCantidad_materias(rs.getInt("cantidad_materias"));
         c.setNombre_docente(rs.getString("nombre_docente"));
         return c;
     }
@@ -59,7 +59,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
         List<Integer> parametros = new ArrayList<>();
         if (usuario != null && usuario.getId_rol() == 2) {
             sql +=
-                    " WHERE EXISTS(SELECT 1 FROM docente d2 WHERE d2.id_docente=c.id_docente AND"
+                    " WHERE EXISTS(SELECT 1 FROM curso_materia cm2 JOIN docente d2 ON d2.id_docente=cm2.id_docente WHERE cm2.id_curso=c.id_curso AND"
                             + " d2.id_usuario=?)";
             parametros.add(usuario.getId_usuario());
         }
@@ -91,14 +91,19 @@ public class Curso_dao implements Dao<Curso, Integer> {
     // consulta un registro usando su identificador
     @Override
     public Curso obtenerPorId(Integer id) {
-        try (Connection db = abrirConexion();
-                PreparedStatement q = db.prepareStatement(CONSULTA + " WHERE c.id_curso=?")) {
+        try (Connection db = abrirConexion()) {
+            return obtenerPorId(db, id);
+        } catch (SQLException e) {
+            throw new IllegalStateException("No se pudo consultar el curso.", e);
+        }
+    }
+
+    public Curso obtenerPorId(Connection db, int id) throws SQLException {
+        try (PreparedStatement q = db.prepareStatement(CONSULTA + " WHERE c.id_curso=?")) {
             q.setInt(1, id);
             try (ResultSet rs = q.executeQuery()) {
                 return rs.next() ? leer(rs) : null;
             }
-        } catch (SQLException e) {
-            throw new IllegalStateException("No se pudo consultar el curso.", e);
         }
     }
 
@@ -166,9 +171,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
     // validamos los datos antes de guardar para no dejar un curso incompleto.
     public void guardar(Curso c, List<Integer> seleccion) {
         if (!servicios.Permisos_servicio.directivo(servicios.Permisos_servicio.actual())) throw new IllegalArgumentException("Esta operación corresponde a dirección.");
-        List<Integer> materias = new ArrayList<>(new LinkedHashSet<>(seleccion));
-        if (materias.isEmpty() || materias.contains(null))
-            throw new IllegalArgumentException("Seleccioná al menos una materia.");
+        List<Integer> materias = new ArrayList<>();
         if (c.getAño() == null || c.getAño() < 1 || c.getAño() > 6)
             throw new IllegalArgumentException("El año debe estar entre 1 y 6.");
         if (c.getCupo_maximo() == null || c.getCupo_maximo() < 1 || c.getCupo_maximo() > 1000)
@@ -183,11 +186,16 @@ public class Curso_dao implements Dao<Curso, Integer> {
             throw new IllegalArgumentException("Revisá modalidad, turno y estado.");
         if (c.getDivision() == null || c.getDivision().isBlank() || c.getDivision().trim().length() > 30) throw new IllegalArgumentException("Ingresá una división de hasta 30 caracteres.");
         c.setDivision(c.getDivision().trim());
+        c.setEstado(servicios.Curso_servicio.estadoSegunFecha(c.getEstado(), c.getFecha_fin(),
+                java.time.LocalDate.now(java.time.ZoneId.of("America/Argentina/Buenos_Aires"))));
         boolean nuevo = c.getId_curso() == null || c.getId_curso() == 0;
         int id = nuevo ? 0 : c.getId_curso();
         try (Connection db = abrirConexion()) {
             db.setAutoCommit(false);
             try {
+                // Leemos el plan dentro de la misma transacción que crea el curso.
+                materias.addAll(new PlanCurso_dao().materias(db, c.getAño()).stream().map(clases.Materia::getId_materia).toList());
+                if (materias.isEmpty()) throw new IllegalArgumentException("Agregá materias a este año desde el módulo Materias.");
                 // bloqueamos el período para evitar dos cursos del mismo año al guardar a la vez.
                 try (PreparedStatement q =
                         db.prepareStatement(
@@ -278,7 +286,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
                         db.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                     q.setInt(1, c.getId_periodo());
                     q.setInt(2, principal);
-                    q.setInt(3, c.getId_docente());
+                    q.setObject(3, c.getId_docente() == null || c.getId_docente() == 0 ? null : c.getId_docente());
                     q.setInt(4, c.getAño());
                     q.setString(5, c.getModalidad());
                     q.setString(6, c.getTurno());
@@ -296,15 +304,23 @@ public class Curso_dao implements Dao<Curso, Integer> {
                             id = keys.getInt(1);
                         }
                 }
+                try (PreparedStatement q = db.prepareStatement("SELECT DISTINCT id_materia FROM columna_notas WHERE id_curso=?")) {
+                    q.setInt(1, id);
+                    try (ResultSet rs = q.executeQuery()) {
+                        while (rs.next()) if (!materias.contains(rs.getInt(1)))
+                            throw new IllegalArgumentException("Conservá las materias que ya tienen evaluaciones.");
+                    }
+                }
                 // guardamos el curso y todas sus materias en la misma transacción.
                 try (PreparedStatement q =
-                        db.prepareStatement("DELETE FROM curso_materia WHERE id_curso=?")) {
+                        db.prepareStatement("DELETE FROM curso_materia WHERE id_curso=? AND id_materia NOT IN (" + String.join(",", Collections.nCopies(materias.size(), "?")) + ")")) {
                     q.setInt(1, id);
+                    for (int i=0; i<materias.size(); i++) q.setInt(i+2, materias.get(i));
                     q.executeUpdate();
                 }
                 try (PreparedStatement q =
                         db.prepareStatement(
-                                "INSERT INTO curso_materia(id_curso,id_materia) VALUES(?,?)")) {
+                                "INSERT INTO curso_materia(id_curso,id_materia) VALUES(?,?) ON DUPLICATE KEY UPDATE id_materia=VALUES(id_materia)")) {
                     for (int m : materias) {
                         q.setInt(1, id);
                         q.setInt(2, m);
@@ -361,22 +377,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
     }
     // guardamos las materias que asigna secretaría conservando las que ya tienen evaluaciones
     public void asignarMaterias(int id, List<Integer> materias) throws Exception {
-        if (materias.isEmpty()) throw new IllegalArgumentException("Seleccioná al menos una materia.");
-        Inscripcion_dao inscripciones = new Inscripcion_dao();
-        inscripciones.transaccion(conexion -> {
-            servicios.Permisos_servicio.verificar(conexion, inscripciones, servicios.Auditoria_servicio.usuarioActual(), 1, 5);
-            inscripciones.curso(conexion, id);
-            try (PreparedStatement consulta = conexion.prepareStatement("SELECT DISTINCT id_materia FROM columna_notas WHERE id_curso=?")) {
-                consulta.setInt(1, id);
-                try (ResultSet registros = consulta.executeQuery()) { while (registros.next()) if (!materias.contains(registros.getInt(1))) throw new IllegalArgumentException("Conservá las materias que ya tienen evaluaciones."); }
-            }
-            try (PreparedStatement consulta = conexion.prepareStatement("DELETE FROM curso_materia WHERE id_curso=?")) { consulta.setInt(1, id); consulta.executeUpdate(); }
-            try (PreparedStatement consulta = conexion.prepareStatement("INSERT INTO curso_materia(id_curso,id_materia) VALUES(?,?)")) {
-                for (int materia : new LinkedHashSet<>(materias)) { consulta.setInt(1, id); consulta.setInt(2, materia); consulta.addBatch(); }
-                consulta.executeBatch();
-            }
-            return null;
-        });
+        throw new IllegalArgumentException("Las materias se administran por año desde el módulo Materias.");
     }
 
     // registramos el período lectivo para poder preparar los cursos del año siguiente
