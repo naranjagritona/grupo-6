@@ -1,0 +1,28 @@
+.app.materias-page{height:100vh;min-height:100vh}
+.materias-page .main-panel{height:100vh;min-height:0}
+.materias-page .main-panel>.content{min-height:0;flex:1 1 auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable}
+.contenedor-materias{width:100%;max-width:none;margin:0 auto;padding:.25rem;box-sizing:border-box}
+.contenedor-materias .page-head h1{color:#0f172a;font-size:2rem;letter-spacing:-.03em}
+.contenedor-materias .page-head p{color:#64748b}
+.boton-nueva-materia{display:inline-flex;align-items:center;gap:.45rem;text-decoration:none}
+.resumen-materias{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-bottom:1rem}
+.resumen-materia{display:flex;align-items:center;gap:.85rem;padding:1rem 1.15rem;border:1px solid rgba(148,163,184,.35);border-radius:1rem;background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+.resumen-icono{display:flex;align-items:center;justify-content:center;width:2.65rem;height:2.65rem;border-radius:.8rem;background:#fef3c7;color:#b45309;font-size:1.1rem}
+.resumen-icono.azul{background:#dbeafe;color:#1d4ed8}.resumen-icono.verde{background:#dcfce7;color:#15803d}
+.resumen-materia small{display:block;margin-bottom:.2rem;color:#64748b;font-size:.74rem}.resumen-materia strong{color:#0f172a;font-size:1.45rem;letter-spacing:-.03em}
+.materias-tabla-cabecera{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.2rem;border-bottom:1px solid #e2e8f0}
+.materias-tabla-cabecera h2{margin:0;color:#0f172a;font-size:1rem}.materias-tabla-cabecera p{margin:.25rem 0 0;color:#64748b;font-size:.75rem}
+.contador-registros{white-space:nowrap;padding:.4rem .7rem;border-radius:999px;background:#f1f5f9;color:#475569;font-size:.72rem;font-weight:700}
+.tabla-materias{width:100%;min-width:620px;border-collapse:collapse;text-align:left}
+.tabla-materias thead th{position:sticky;top:0;z-index:1;padding:.8rem 1rem;background:#f8fafc;color:#64748b;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.tabla-materias td{padding:.8rem 1rem;border-top:1px solid #f1f5f9;color:#475569;font-size:.82rem}
+.nombre-materia{display:flex;align-items:center;gap:.7rem;color:#0f172a}.nombre-materia strong{font-weight:650}
+.materia-avatar{display:flex;align-items:center;justify-content:center;width:2.1rem;height:2.1rem;border-radius:.65rem;background:#eff6ff;color:#2563eb}
+.cantidad-cursos{display:inline-flex;align-items:center;gap:.45rem;color:#475569}.cantidad-cursos i{color:#64748b}
+.etiqueta-uso{display:inline-flex;padding:.35rem .6rem;border-radius:999px;font-size:.68rem;font-weight:700}.etiqueta-uso.en-uso{background:#dcfce7;color:#166534}.etiqueta-uso.sin-uso{background:#f1f5f9;color:#64748b}
+.contenedor-materias .list-filters{display:flex;justify-content:flex-end;gap:.55rem;padding:.8rem 1rem;margin:0;border-bottom:1px solid #e2e8f0}
+.contenedor-materias .list-filters .search{flex:1;max-width:30rem}
+.contenedor-materias .actions{display:flex;align-items:center;gap:.55rem}.contenedor-materias .actions form{margin:0}
+.contenedor-materias .actions button:disabled{opacity:.45;cursor:not-allowed}
+.contenedor-materias .table-card{overflow:hidden;border:1px solid rgba(148,163,184,.35);border-radius:1rem;background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+@media(max-width:760px){.contenedor-materias{padding:0}.resumen-materias{grid-template-columns:1fr}.materias-tabla-cabecera{align-items:flex-start}.contenedor-materias .list-filters{flex-wrap:wrap}.contenedor-materias .list-filters .search{max-width:none;flex-basis:100%}}

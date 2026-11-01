@@ -1,6 +1,6 @@
 <?php
 
-require_once 'dao.php';
+require_once __DIR__ . '/dao.php';
 
 class CalificacionDAO implements dao {
     private $conexion;
@@ -81,10 +81,28 @@ class CalificacionDAO implements dao {
         throw new RuntimeException('No tenés permisos para ver calificaciones.');
     }
 
-    public function listarCalificacionesDeUsuario(array $usuario, string $busqueda = ''): array
+    public function listarCalificacionesDeUsuario(
+        array $usuario,
+        string $busqueda = '',
+        ?int $idCurso = null,
+        ?int $idMateria = null,
+        ?int $idEvaluacion = null
+    ): array
     {
         [$scope, $parameters] = $this->alcancePorUsuario($usuario);
         $conditions = $scope === '' ? [] : [$scope];
+        if ($idCurso !== null && $idCurso > 0) {
+            $conditions[] = 'c.id_curso = :filter_course';
+            $parameters['filter_course'] = $idCurso;
+        }
+        if ($idMateria !== null && $idMateria > 0) {
+            $conditions[] = 'm.id_materia = :filter_subject';
+            $parameters['filter_subject'] = $idMateria;
+        }
+        if ($idEvaluacion !== null && $idEvaluacion > 0) {
+            $conditions[] = 'cn.id_columna_notas = :filter_evaluation';
+            $parameters['filter_evaluation'] = $idEvaluacion;
+        }
         if ($busqueda !== '') {
             $conditions[] = "(a.nombre LIKE :search_first_name OR a.apellido LIKE :search_last_name OR a.matricula LIKE :search_student_number OR m.nombre_materia LIKE :search_subject OR cn.titulo LIKE :search_evaluation OR g.observaciones LIKE :search_notes)";
             foreach (['first_name', 'last_name', 'student_number', 'subject', 'evaluation', 'notes'] as $field) {
@@ -101,6 +119,225 @@ class CalificacionDAO implements dao {
         $query = $this->conexion->prepare($sql);
         $query->execute($parameters);
         return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function opcionesFiltrosCalificacion(
+        array $usuario,
+        ?int $idCurso = null,
+        ?int $idMateria = null
+    ): array
+    {
+        [$scope, $parameters] = $this->alcancePorUsuario($usuario);
+        $conditions = $scope === '' ? [] : [$scope];
+        $where = $conditions === [] ? '' : ' WHERE ' . implode(' AND ', $conditions);
+        $courses = $this->conexion->prepare(
+            "SELECT DISTINCT c.id_curso AS id,
+                CONCAT(c.`año`, '° ', c.division, ' - ', m.nombre_materia, ' - ', p.nombre) AS etiqueta,
+                p.fecha_inicio AS fecha_orden
+             FROM curso c INNER JOIN materia m ON m.id_materia = c.id_materia
+             INNER JOIN periodo_lectivo p ON p.id_periodo_lectivo = c.id_periodo
+             LEFT JOIN inscripcion i ON i.id_curso = c.id_curso" . $where .
+            ' ORDER BY p.fecha_inicio DESC, c.`año`, c.division, m.nombre_materia LIMIT 500'
+        );
+        $courses->execute($parameters);
+        $subjectConditions = $conditions;
+        $subjectParameters = $parameters;
+        if ($idCurso !== null && $idCurso > 0) {
+            $subjectConditions[] = 'c.id_curso = :filter_course';
+            $subjectParameters['filter_course'] = $idCurso;
+        }
+        $subjectWhere = $subjectConditions === [] ? '' : ' WHERE ' . implode(' AND ', $subjectConditions);
+        $subjects = $this->conexion->prepare(
+            "SELECT DISTINCT m.id_materia AS id, m.nombre_materia AS etiqueta
+             FROM curso c INNER JOIN materia m ON m.id_materia = c.id_materia
+             LEFT JOIN inscripcion i ON i.id_curso = c.id_curso" . $subjectWhere .
+            ' ORDER BY m.nombre_materia LIMIT 250'
+        );
+        $subjects->execute($subjectParameters);
+        $evaluationConditions = $subjectConditions;
+        $evaluationParameters = $subjectParameters;
+        if ($idMateria !== null && $idMateria > 0) {
+            $evaluationConditions[] = 'm.id_materia = :filter_subject';
+            $evaluationParameters['filter_subject'] = $idMateria;
+        }
+        $evaluationWhere = $evaluationConditions === [] ? '' : ' WHERE ' . implode(' AND ', $evaluationConditions);
+        $evaluations = $this->conexion->prepare(
+            "SELECT DISTINCT cn.id_columna_notas AS id,
+                CONCAT(cn.titulo, ' - ', m.nombre_materia, ' (', cn.tipo, ')') AS etiqueta,
+                cn.fecha_evaluacion AS fecha_orden
+             FROM columna_notas cn INNER JOIN curso c ON c.id_curso = cn.id_curso
+             INNER JOIN materia m ON m.id_materia = c.id_materia
+             LEFT JOIN inscripcion i ON i.id_curso = c.id_curso" . $evaluationWhere .
+            ' ORDER BY cn.fecha_evaluacion DESC, cn.titulo LIMIT 500'
+        );
+        $evaluations->execute($evaluationParameters);
+        return [
+            'cursos' => $courses->fetchAll(PDO::FETCH_ASSOC),
+            'materias' => $subjects->fetchAll(PDO::FETCH_ASSOC),
+            'evaluaciones' => $evaluations->fetchAll(PDO::FETCH_ASSOC),
+        ];
+    }
+
+    public function listarPlanillaDeCurso(
+        int $idCurso,
+        array $usuario,
+        ?int $idMateria = null,
+        ?int $idEvaluacion = null
+    ): array {
+        $conditions = ['c.id_curso = :course', "i.estado IN ('Confirmada', 'Finalizada')"];
+        $parameters = ['course' => $idCurso];
+        if ($usuario['isTeacher']) {
+            $conditions[] = 'c.id_docente = :scope';
+            $parameters['scope'] = (int) $usuario['id_docente'];
+        } elseif ($usuario['isStudent']) {
+            $conditions[] = 'i.id_alumno = :scope';
+            $parameters['scope'] = (int) $usuario['id_alumno'];
+        } elseif (!$usuario['isAdmin']) {
+            throw new RuntimeException('No tenés permisos para ver calificaciones.');
+        }
+        if ($idMateria !== null && $idMateria > 0) {
+            $conditions[] = 'm.id_materia = :subject';
+            $parameters['subject'] = $idMateria;
+        }
+        if ($idEvaluacion !== null && $idEvaluacion > 0) {
+            $conditions[] = 'cn.id_columna_notas = :evaluation';
+            $parameters['evaluation'] = $idEvaluacion;
+        }
+        $query = $this->conexion->prepare(
+            'SELECT i.id_inscripcion, CONCAT(a.apellido, ", ", a.nombre) AS alumno,
+                a.matricula, cn.id_columna_notas, cn.titulo, cn.tipo, cn.nota_maxima,
+                cn.nota_aprobacion, cn.estado AS estado_evaluacion, cn.fecha_evaluacion,
+                g.id_calificacion, g.nota, g.observaciones
+             FROM inscripcion i INNER JOIN alumno a ON a.id_alumno = i.id_alumno
+             INNER JOIN curso c ON c.id_curso = i.id_curso
+             LEFT JOIN materia m ON m.id_materia = c.id_materia
+             LEFT JOIN columna_notas cn ON cn.id_curso = c.id_curso
+             LEFT JOIN calificacion g ON g.id_inscripcion = i.id_inscripcion
+                AND g.id_columna_notas = cn.id_columna_notas
+             WHERE ' . implode(' AND ', $conditions) .
+            ' ORDER BY a.apellido, a.nombre, cn.fecha_evaluacion, cn.id_columna_notas'
+        );
+        $query->execute($parameters);
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listarPromocionPorUsuario(
+        array $usuario,
+        float $notaMinima = 6.0,
+        int $materiasDesaprobadasPermitidas = 0
+    ): array {
+        if (!$usuario['isAdmin'] && !$usuario['isStudent']) return [];
+        [$scope, $parameters] = $this->alcancePorUsuario($usuario);
+        $conditions = ["i.estado IN ('Confirmada', 'Finalizada')", "c.estado <> 'Cancelado'"];
+        if ($scope !== '') $conditions[] = $scope;
+        $query = $this->conexion->prepare(
+            "SELECT i.id_alumno, CONCAT(a.apellido, ', ', a.nombre) AS alumno,
+                c.id_periodo, c.`año` AS anio, c.division, c.estado AS estado_curso,
+                m.id_materia, m.nombre_materia AS materia, cn.id_columna_notas,
+                g.nota, cn.nota_maxima, p.nombre AS periodo
+             FROM inscripcion i INNER JOIN alumno a ON a.id_alumno = i.id_alumno
+             INNER JOIN curso c ON c.id_curso = i.id_curso
+             INNER JOIN materia m ON m.id_materia = c.id_materia
+             INNER JOIN periodo_lectivo p ON p.id_periodo_lectivo = c.id_periodo
+             LEFT JOIN columna_notas cn ON cn.id_curso = c.id_curso
+             LEFT JOIN calificacion g ON g.id_inscripcion = i.id_inscripcion
+                AND g.id_columna_notas = cn.id_columna_notas
+             WHERE " . implode(' AND ', $conditions) .
+            ' ORDER BY a.apellido, a.nombre, c.`año`, c.division, p.fecha_inicio, m.nombre_materia'
+        );
+        $query->execute($parameters);
+        $grupos = [];
+        foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $fila) {
+            $clave = implode('|', [$fila['id_alumno'], $fila['id_periodo'], $fila['anio'], $fila['division']]);
+            if (!isset($grupos[$clave])) {
+                $grupos[$clave] = [
+                    'alumno' => $fila['alumno'], 'anio' => $fila['anio'],
+                    'division' => $fila['division'], 'periodo' => $fila['periodo'],
+                    'materias' => [], 'en_curso' => false,
+                ];
+            }
+            $materia = (string) $fila['id_materia'];
+            if (!isset($grupos[$clave]['materias'][$materia])) {
+                $grupos[$clave]['materias'][$materia] = [
+                    'nombre' => $fila['materia'], 'puntos' => 0.0, 'maximo' => 0.0,
+                    'evaluaciones' => 0, 'calificadas' => 0, 'curso_finalizado' => false,
+                ];
+            }
+            if ($fila['estado_curso'] === 'Finalizado') {
+                $grupos[$clave]['materias'][$materia]['curso_finalizado'] = true;
+            } else {
+                $grupos[$clave]['en_curso'] = true;
+            }
+            if ($fila['id_columna_notas'] !== null) {
+                $grupos[$clave]['materias'][$materia]['evaluaciones']++;
+                if ($fila['nota'] !== null && (float) $fila['nota_maxima'] > 0) {
+                    $grupos[$clave]['materias'][$materia]['puntos'] += (float) $fila['nota'];
+                    $grupos[$clave]['materias'][$materia]['maximo'] += (float) $fila['nota_maxima'];
+                    $grupos[$clave]['materias'][$materia]['calificadas']++;
+                }
+            }
+        }
+        $resultado = [];
+        foreach ($grupos as $grupo) {
+            $materias = array_values($grupo['materias']);
+            $aprobadas = $desaprobadas = $incompletas = 0;
+            foreach ($materias as &$materia) {
+                $materia['promedio'] = $materia['maximo'] > 0
+                    ? 10 * $materia['puntos'] / $materia['maximo'] : null;
+                if ($materia['promedio'] === null || ($materia['curso_finalizado']
+                    && ($materia['evaluaciones'] === 0 || $materia['calificadas'] < $materia['evaluaciones']))) {
+                    $incompletas++;
+                } elseif ($materia['promedio'] >= $notaMinima) {
+                    $aprobadas++;
+                } else {
+                    $desaprobadas++;
+                }
+            }
+            unset($materia);
+            if ($grupo['en_curso']) $estado = 'En curso';
+            elseif ($incompletas > 0) $estado = 'Incompleto';
+            else $estado = $desaprobadas <= $materiasDesaprobadasPermitidas ? 'Promociona' : 'No promociona';
+            $resultado[] = [
+                'alumno' => $grupo['alumno'], 'anio' => $grupo['anio'],
+                'division' => $grupo['division'], 'periodo' => $grupo['periodo'],
+                'cantidad_materias' => count($materias), 'aprobadas' => $aprobadas,
+                'desaprobadas' => $desaprobadas, 'incompletas' => $incompletas,
+                'estado' => $estado, 'materias_detalle' => $materias,
+            ];
+        }
+        return $resultado;
+    }
+
+    public function guardarEvaluacion(int $idCurso, array $datos, array $usuario): void
+    {
+        if (!$usuario['isAdmin'] && !$usuario['isTeacher']) {
+            throw new InvalidArgumentException('No tenés permisos para agregar evaluaciones.');
+        }
+        $titulo = trim((string) ($datos['titulo'] ?? ''));
+        $tipo = trim((string) ($datos['tipo'] ?? ''));
+        $maximo = filter_var($datos['nota_maxima'] ?? null, FILTER_VALIDATE_FLOAT);
+        $aprobacion = filter_var($datos['nota_aprobacion'] ?? null, FILTER_VALIDATE_FLOAT);
+        $fecha = trim((string) ($datos['fecha_evaluacion'] ?? ''));
+        $tiposPermitidos = ['Evaluación', 'Trabajo Práctico', 'Recuperatorio', 'Otro'];
+        $fechaValida = DateTimeImmutable::createFromFormat('!Y-m-d', $fecha);
+        if ($titulo === '' || preg_match_all('/./us', $titulo) > 200
+            || !in_array($tipo, $tiposPermitidos, true)
+            || $maximo === false || $maximo <= 0
+            || $aprobacion === false || $aprobacion < 0 || $aprobacion > $maximo
+            || !$fechaValida || $fechaValida->format('Y-m-d') !== $fecha) {
+            throw new InvalidArgumentException('Revisá el título, el tipo, la escala y la fecha de evaluación.');
+        }
+        $curso = $this->conexion->prepare('SELECT id_docente FROM curso WHERE id_curso = ?');
+        $curso->execute([$idCurso]);
+        $docente = $curso->fetchColumn();
+        if ($docente === false || ($usuario['isTeacher'] && (int) $docente !== (int) $usuario['id_docente'])) {
+            throw new InvalidArgumentException('El curso no existe o no está asignado a tu cuenta.');
+        }
+        $query = $this->conexion->prepare(
+            "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion,
+                fecha_evaluacion, fecha_cierre, estado) VALUES (?, ?, ?, ?, ?, ?, ?, 'Abierta')"
+        );
+        $query->execute([$idCurso, $titulo, $tipo, $maximo, $aprobacion, $fecha, $fecha]);
     }
 
     public function obtenerCalificacionDeUsuario(int $id, array $usuario): ?array
@@ -204,7 +441,7 @@ class CalificacionDAO implements dao {
         if ($id > 0 && $actual === null) {
             throw new InvalidArgumentException('La calificación no existe o no pertenece a tus cursos.');
         }
-        if ($usuario['isTeacher'] && ($actual === null || (int) $actual['id_inscripcion'] !== $inscripcion || (int) $actual['id_columna_notas'] !== $evaluacion)) {
+        if ($usuario['isTeacher'] && $id > 0 && ($actual === null || (int) $actual['id_inscripcion'] !== $inscripcion || (int) $actual['id_columna_notas'] !== $evaluacion)) {
             throw new InvalidArgumentException('Solo podés editar una nota existente y no cambiar su alumno ni evaluación.');
         }
         $relacion = $this->conexion->prepare(

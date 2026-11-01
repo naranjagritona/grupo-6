@@ -1,6 +1,6 @@
 <?php
 
-require_once 'dao.php';
+require_once __DIR__ . '/dao.php';
 
 class MateriaDAO implements dao {
     private $conexion;

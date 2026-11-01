@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../database.php';
-require_once 'dao.php';
+require_once __DIR__ . '/dao.php';
 
 class UsuarioDAO implements dao {
     private $conexion;
