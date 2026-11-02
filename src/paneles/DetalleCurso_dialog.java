@@ -9,9 +9,11 @@ import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
+// mostramos la información general, las materias y los alumnos del curso seleccionado
 public class DetalleCurso_dialog extends JDialog {
     private static final long serialVersionUID = 1L;
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    // compartimos los accesos a datos y las opciones de docentes que utiliza la ventana
     private final PlanCurso_dao dao;
     private final DetalleCurso_dao detalleDao;
     private final java.util.function.Supplier<List<Docente>> obtenerDocentes;
@@ -34,19 +36,23 @@ public class DetalleCurso_dialog extends JDialog {
     private List<PlanCurso_dao.Detalle> filas = List.of();
     private List<Docente> docentes = List.of();
 
+    // juntamos los resultados de la consulta antes de actualizar los componentes de la ventana
     private record Carga(DetalleCurso_dao.Datos datos, List<PlanCurso_dao.Detalle> materias, List<Docente> docentes) {}
 
+    // creamos tablas sin edición para que los cambios se hagan desde sus formularios
     private static DefaultTableModel soloLectura(String... columnas) {
         return new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int fila, int columna) { return false; }
         };
     }
 
+    // preparamos los accesos a datos que utiliza el detalle del curso
     public DetalleCurso_dialog(Component origen, Curso curso, Usuario usuario, Runnable alCambiar) {
         this(origen, curso, usuario, alCambiar, new PlanCurso_dao(),
                 () -> new dao.Docente_dao().obtenerTodos(), new DetalleCurso_dao());
     }
 
+    // armamos las pestañas, los indicadores y los botones según los permisos del usuario
     DetalleCurso_dialog(Component origen, Curso curso, Usuario usuario, Runnable alCambiar,
             PlanCurso_dao dao, java.util.function.Supplier<List<Docente>> obtenerDocentes, DetalleCurso_dao detalleDao) {
         super(SwingUtilities.getWindowAncestor(origen), "Detalle del curso " + curso.getAño() + "° " + curso.getDivision(), ModalityType.APPLICATION_MODAL);
@@ -93,14 +99,17 @@ public class DetalleCurso_dialog extends JDialog {
         setLocationRelativeTo(origen); cargar();
     }
 
+    // habilitamos la asignación solamente cuando la pestaña de materias está disponible
     private void actualizarBotonDocente() {
         asignar.setEnabled(!cargando && !filas.isEmpty() && pestanias.getSelectedIndex() == 1);
     }
 
+    // avisamos que hay una operación en curso y evitamos repetirla desde los botones
     private void ocupado(boolean valor) {
         cargando = valor; actualizarBotonDocente(); actualizar.setEnabled(!valor);
     }
 
+    // consultamos el detalle en segundo plano y actualizamos las pestañas cuando termina
     private void cargar() {
         ocupado(true); estado.setText("Cargando información del curso…");
         new SwingWorker<Carga, Void>() {
@@ -130,6 +139,7 @@ public class DetalleCurso_dialog extends JDialog {
         }.execute();
     }
 
+    // completamos el encabezado, los cupos y los datos generales con la consulta actualizada
     private void mostrarInformacion(DetalleCurso_dao.Datos datos) {
         setTitle("Detalle del curso " + curso.getAño() + "° " + curso.getDivision());
         titulo.setText("Curso " + curso.getAño() + "° " + curso.getDivision() + " · " + curso.getEstado());
@@ -147,6 +157,7 @@ public class DetalleCurso_dialog extends JDialog {
         indicadores.revalidate(); indicadores.repaint(); informacion.revalidate(); informacion.repaint();
     }
 
+    // armamos cada recuadro que muestra el cupo, los alumnos o la cantidad de materias
     private void indicador(String etiqueta, Object valor) {
         JPanel panel = new JPanel(new BorderLayout(4, 6));
         panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEtchedBorder(), BorderFactory.createEmptyBorder(10, 12, 10, 12)));
@@ -155,6 +166,7 @@ public class DetalleCurso_dialog extends JDialog {
         panel.add(numero, BorderLayout.CENTER); indicadores.add(panel);
     }
 
+    // mostramos el nombre del dato y avisamos si todavía no tiene un valor configurado
     private void dato(String etiqueta, Object valor) {
         JPanel panel = new JPanel(new BorderLayout(4, 5));
         JLabel nombre = new JLabel(etiqueta); nombre.setFont(nombre.getFont().deriveFont(Font.BOLD));
@@ -163,6 +175,7 @@ public class DetalleCurso_dialog extends JDialog {
         informacion.add(panel);
     }
 
+    // tomamos la materia seleccionada y guardamos el docente después de confirmar la elección
     private void elegirDocente() {
         int fila = tabla.getSelectedRow();
         if (fila < 0) { JOptionPane.showMessageDialog(this, "Seleccioná una materia."); return; }
@@ -190,6 +203,7 @@ public class DetalleCurso_dialog extends JDialog {
         }.execute();
     }
 
+    // mostramos la causa del error para que el usuario sepa por qué no se completó la operación
     private void error(Exception e) {
         Throwable causa = e.getCause() == null ? e : e.getCause();
         JOptionPane.showMessageDialog(this, causa.getMessage(), "Detalle del curso", JOptionPane.ERROR_MESSAGE);

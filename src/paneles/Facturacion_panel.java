@@ -19,6 +19,7 @@ import javax.swing.table.DefaultTableModel;
 // consultamos las cuotas y preparamos las operaciones de pago y sus comprobantes
 public class Facturacion_panel extends JPanel {
     private static final long serialVersionUID = 1L;
+    // guardamos el usuario y los componentes que muestran las cuotas y sus pagos
     private final Usuario usuario;
     private final JTextField buscar = new JTextField(25);
     private final JLabel resumen = new JLabel("Cargando facturación…");
@@ -97,12 +98,14 @@ public class Facturacion_panel extends JPanel {
         cargar();
     }
 
+    // colocamos la tabla dentro del desplazamiento manteniendo sus encabezados visibles
     private static JScrollPane tablaConEncabezado(JTable tabla) {
         JScrollPane scroll = new JScrollPane(tabla);
         scroll.setColumnHeaderView(tabla.getTableHeader());
         return scroll;
     }
 
+    // preparamos tablas sin edición para conservar los datos que devuelve la web
     private static DefaultTableModel modelo(String... columnas) {
         return new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int r, int c) {
@@ -111,10 +114,12 @@ public class Facturacion_panel extends JPanel {
         };
     }
 
+    // leemos un dato de la respuesta y devolvemos texto vacío cuando no tiene valor
     public static String texto(JsonObject o, String k) {
         return o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsString() : "";
     }
 
+    // mostramos el importe con el formato de moneda usado en la aplicación
     private String dinero(String valor) {
         try {
             return NumberFormat.getCurrencyInstance(Locale.of("es", "AR"))
@@ -124,6 +129,7 @@ public class Facturacion_panel extends JPanel {
         }
     }
 
+    // agregamos el botón y registramos la acción que el usuario realiza en facturación
     private void boton(String titulo, Runnable accion) {
         JButton b = new JButton(titulo);
         b.addActionListener(

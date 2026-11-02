@@ -8,6 +8,7 @@ import java.util.List;
 
 // coordinamos las consultas y la gestión de cursos con los permisos de cada rol
 public class Curso_servicio {
+    // declaramos el dao que consulta y guarda los datos de los cursos
     private final Curso_dao dao = new Curso_dao();
 
     // La fecha de fin es inclusiva: desde ese día el curso deja de estar activo.
@@ -30,7 +31,7 @@ public class Curso_servicio {
     // verificamos el cupo antes de guardar el nuevo valor
     public void modificarCupo(int curso, int cupo) throws Exception { dao.modificarCupo(curso, cupo); }
 
-    // enviamos las materias seleccionadas para conservar las relaciones del curso
+    // delegamos la asignación para informar que las materias se administran por año
     public void asignarMaterias(int curso, List<Integer> materias) throws Exception { dao.asignarMaterias(curso, materias); }
 
     // comprobamos el nombre, el tipo y las fechas antes de registrar el período

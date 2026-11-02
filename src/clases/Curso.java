@@ -34,13 +34,17 @@ public class Curso {
     private String nombre_periodo;
     private String nombre_materia;
     private String nombre_docente;
+    // guardamos la cantidad de materias que se muestra en el listado de cursos
     private int cantidad_materias;
 
+    // consultamos y modificamos la cantidad obtenida al cargar las materias del curso
     public int getCantidad_materias() { return cantidad_materias; }
     public void setCantidad_materias(int cantidad) { this.cantidad_materias = cantidad; }
 
+    // permitimos crear el curso y completar sus datos con los métodos de acceso
     public Curso() {}
 
+    // recibimos los datos principales para crear un curso con sus valores iniciales
     public Curso(
             Integer id_curso,
             Integer id_periodo,

@@ -12,6 +12,7 @@ import javax.swing.*;
 
 // mostramos las páginas del PDF y permitimos guardar el comprobante
 public final class FacturaPDF_panel {
+    // evitamos crear instancias porque el visor se abre mediante sus métodos compartidos
     private FacturaPDF_panel() {}
 
     // convertimos las páginas del PDF en imágenes para poder verlas en Swing.

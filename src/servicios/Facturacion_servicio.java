@@ -10,6 +10,7 @@ import java.util.Arrays;
 
 // enviamos las consultas de facturación a la web para usar los mismos pagos y facturas
 public final class Facturacion_servicio {
+    // definimos la dirección del servicio web que administra los pagos y comprobantes
     private static final String URL =
             "https://academiaintegral.cavernservices.org/modulos/api_facturacion.php";
     // guardamos la sesión en memoria para usarla en las siguientes consultas.
@@ -24,6 +25,7 @@ public final class Facturacion_servicio {
     private static char[] clave;
     private static String csrf;
 
+    // evitamos crear instancias porque las consultas comparten la misma sesión
     private Facturacion_servicio() {}
 
     // recibimos los datos del acceso y limpiamos cualquier sesión anterior.

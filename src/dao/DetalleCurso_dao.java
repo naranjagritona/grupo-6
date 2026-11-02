@@ -7,16 +7,21 @@ import java.util.*;
 
 // Consultamos el curso, la ocupación y sus inscripciones desde la misma transacción.
 public class DetalleCurso_dao extends Consulta_academica_dao {
+    // guardamos el nombre, el estado y la fecha de cada inscripción del listado
     public record Alumno(String nombre, String estado, LocalDate fecha) {}
+    // reunimos los datos del curso y los totales de inscripciones para mostrarlos juntos
     public record Datos(Curso curso, int ocupados, int confirmados, int pendientes,
                         int totalInscripciones, List<Alumno> alumnos) {
+        // calculamos los lugares libres sin mostrar valores negativos si el cupo ya está completo
         public int disponibles() { return Math.max(0, curso.getCupo_maximo() - ocupados); }
     }
 
+    // consultamos el curso con la misma conexión utilizada para contar sus inscripciones
     protected Curso obtenerCurso(java.sql.Connection db, int idCurso) throws java.sql.SQLException {
         return new Curso_dao().obtenerPorId(db, idCurso);
     }
 
+    // verificamos el acceso del usuario y consultamos la información general y sus alumnos
     public Datos consultar(int idCurso, Usuario usuario) throws Exception {
         return transaccion(db -> {
             if (usuario == null || servicios.Auditoria_servicio.usuarioActual() == null) throw new IllegalArgumentException("Iniciá sesión para consultar el curso.");

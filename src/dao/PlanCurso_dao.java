@@ -6,8 +6,10 @@ import java.util.*;
 
 // El plan pertenece al año; la asignación de cada docente pertenece al curso y materia.
 public class PlanCurso_dao extends Consulta_academica_dao {
+    // guardamos la materia y el docente que se muestran en el detalle del curso
     public record Detalle(int materia, String nombre, Integer docente, String nombreDocente) {}
 
+    // reunimos las materias de los seis años para mostrar el plan en una sola consulta
     public Map<Integer,List<Materia>> planPorAnio() {
         Map<Integer,List<Materia>> plan = new LinkedHashMap<>();
         for (int anio=1; anio<=6; anio++) plan.put(anio, new ArrayList<>());
@@ -19,11 +21,13 @@ public class PlanCurso_dao extends Consulta_academica_dao {
         } catch (SQLException e) { throw new IllegalStateException("No se pudieron cargar las materias por año.", e); }
     }
 
+    // abrimos la conexión y buscamos las materias que corresponden al año seleccionado
     public List<Materia> materias(int anio) {
         try (Connection db = abrirConexion()) { return materias(db, anio); }
         catch (SQLException e) { throw new IllegalStateException("No se pudieron cargar las materias del año.", e); }
     }
 
+    // consultamos el plan del año usando la conexión de la operación actual
     public List<Materia> materias(Connection db, int anio) throws SQLException {
         List<Materia> lista = new ArrayList<>();
         try (PreparedStatement q = db.prepareStatement("SELECT m.id_materia,m.nombre_materia FROM materia_anio ma JOIN materia m ON m.id_materia=ma.id_materia WHERE ma.anio=? ORDER BY m.nombre_materia")) {
@@ -35,6 +39,7 @@ public class PlanCurso_dao extends Consulta_academica_dao {
         return lista;
     }
 
+    // traemos las materias del curso y dejamos sin asignar las que todavía no tienen docente
     public List<Detalle> detalle(int curso) throws Exception {
         try (Connection db = abrirConexion()) {
             List<Detalle> lista = new ArrayList<>();
@@ -48,6 +53,7 @@ public class PlanCurso_dao extends Consulta_academica_dao {
         }
     }
 
+    // verificamos el permiso de dirección y agregamos la materia al año y a sus cursos
     public void agregar(int anio, Integer materia, String nombre) throws Exception {
         if (anio < 1 || anio > 6) throw new IllegalArgumentException("Seleccioná un año entre 1 y 6.");
         transaccion(db -> {
@@ -65,6 +71,37 @@ public class PlanCurso_dao extends Consulta_academica_dao {
         });
     }
 
+    // Se retira del año seleccionado; los otros años conservan su plan y sus datos.
+    public void eliminarDelAnio(int anio, int materia) throws Exception {
+        if (anio < 1 || anio > 6) throw new IllegalArgumentException("Seleccioná un año válido.");
+        transaccion(db -> {
+            servicios.Permisos_servicio.verificar(db, this, servicios.Auditoria_servicio.usuarioActual(), 5);
+            var cursos = consultar(db, "SELECT id_curso,id_materia FROM curso WHERE CAST(año AS UNSIGNED)=? ORDER BY id_curso FOR UPDATE", anio);
+            uno(db, "SELECT id_materia FROM materia WHERE id_materia=? FOR UPDATE", materia);
+            if (consultar(db, "SELECT id_materia FROM materia_anio WHERE anio=? AND id_materia=? FOR UPDATE", anio, materia).isEmpty())
+                throw new IllegalArgumentException("La materia ya no pertenece a este año. Actualizá el listado.");
+            if (!consultar(db, "SELECT n.id_calificacion FROM calificacion n JOIN columna_notas cn ON cn.id_columna_notas=n.id_columna_notas WHERE cn.id_materia=? LIMIT 1", materia).isEmpty())
+                throw new IllegalArgumentException("No se puede eliminar la materia porque tiene calificaciones registradas.");
+            if (!consultar(db, "SELECT cn.id_columna_notas FROM columna_notas cn JOIN curso c ON c.id_curso=cn.id_curso WHERE CAST(c.año AS UNSIGNED)=? AND cn.id_materia=? LIMIT 1", anio, materia).isEmpty())
+                throw new IllegalArgumentException("La materia tiene evaluaciones creadas en este año. Conservá esas evaluaciones antes de quitarla.");
+            if (!consultar(db, "SELECT r.id_resultado_materia FROM resultado_materia r JOIN inscripcion i ON i.id_inscripcion=r.id_inscripcion JOIN curso c ON c.id_curso=i.id_curso WHERE CAST(c.año AS UNSIGNED)=? AND r.id_materia=? AND (r.resultado NOT IN ('En curso','Pendiente') OR r.promedio<>0 OR r.id_usuario IS NOT NULL) LIMIT 1", anio, materia).isEmpty())
+                throw new IllegalArgumentException("No se puede eliminar la materia porque tiene resultados académicos registrados.");
+            for (var curso : cursos) {
+                int id = numero(curso, "id_curso");
+                if (numero(curso, "id_materia") == materia) {
+                    var alternativas = consultar(db, "SELECT id_materia FROM curso_materia WHERE id_curso=? AND id_materia<>? ORDER BY id_materia LIMIT 1", id, materia);
+                    if (alternativas.isEmpty()) throw new IllegalArgumentException("El curso no puede quedar sin materias. Agregá otra materia al año antes de quitar la última.");
+                    ejecutar(db, "UPDATE curso SET id_materia=? WHERE id_curso=?", numero(alternativas.getFirst(), "id_materia"), id);
+                }
+            }
+            ejecutar(db, "DELETE r FROM resultado_materia r JOIN inscripcion i ON i.id_inscripcion=r.id_inscripcion JOIN curso c ON c.id_curso=i.id_curso WHERE CAST(c.año AS UNSIGNED)=? AND r.id_materia=?", anio, materia);
+            ejecutar(db, "DELETE cm FROM curso_materia cm JOIN curso c ON c.id_curso=cm.id_curso WHERE CAST(c.año AS UNSIGNED)=? AND cm.id_materia=?", anio, materia);
+            ejecutar(db, "DELETE FROM materia_anio WHERE anio=? AND id_materia=?", anio, materia);
+            return null;
+        });
+    }
+
+    // comprobamos el docente y la asignación anterior antes de guardar el cambio
     public void asignar(int curso, int materia, Integer docente, Integer anterior) throws Exception {
         transaccion(db -> {
             servicios.Permisos_servicio.verificar(db, this, servicios.Auditoria_servicio.usuarioActual(), 1, 5);

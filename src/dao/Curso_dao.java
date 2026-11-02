@@ -10,6 +10,7 @@ import java.util.*;
 
 // consultamos y modificamos los registros de curso en la base de datos
 public class Curso_dao implements Dao<Curso, Integer> {
+    // abrimos la conexión que utilizan las consultas y los cambios de cursos
     protected Connection abrirConexion() {
         return Conexion.getConnection();
     }
@@ -98,6 +99,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
         }
     }
 
+    // consultamos un curso usando una conexión existente para conservar la misma transacción
     public Curso obtenerPorId(Connection db, int id) throws SQLException {
         try (PreparedStatement q = db.prepareStatement(CONSULTA + " WHERE c.id_curso=?")) {
             q.setInt(1, id);
@@ -136,7 +138,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
         }
     }
 
-    // estos identificadores permiten marcar las materias al editar el curso.
+    // consultamos los identificadores de las materias relacionadas con el curso
     public List<Integer> materiasDelCurso(int id) {
         try (Connection db = abrirConexion();
                 PreparedStatement q =
@@ -375,7 +377,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
             return null;
         });
     }
-    // guardamos las materias que asigna secretaría conservando las que ya tienen evaluaciones
+    // impedimos la asignación individual porque las materias se administran desde el plan del año
     public void asignarMaterias(int id, List<Integer> materias) throws Exception {
         throw new IllegalArgumentException("Las materias se administran por año desde el módulo Materias.");
     }

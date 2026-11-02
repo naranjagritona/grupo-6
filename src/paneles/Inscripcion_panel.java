@@ -36,7 +36,6 @@ public class Inscripcion_panel extends JFrame {
     private JButton btnCalificaciones;
     private JButton btnFacturacion;
     private JButton btnAdmin;
-    private JButton btnAsistencia;
     private JButton btnCerrarSesion;
 
     private JPanel contentPane;
@@ -505,16 +504,6 @@ public class Inscripcion_panel extends JFrame {
                     }
                 });
 
-        btnAsistencia = new JButton("Asistencia");
-        btnAsistencia.setBackground(new Color(24, 61, 110));
-        btnAsistencia.setForeground(new Color(203, 213, 225));
-        btnAsistencia.setFont(new Font("Tahoma", Font.BOLD, 12));
-        panelMenu.add(btnAsistencia);
-        btnAsistencia.addActionListener(e -> {
-            panelContenido.removeAll(); splitPane.setVisible(false);
-            panelContenido.add(new Asistencia_panel(usuarioLogueado), BorderLayout.CENTER);
-            panelContenido.revalidate(); panelContenido.repaint();
-        });
         aplicarPermisosPorRol();
         boolean secretario = servicios.Permisos_servicio.secretario(usuarioLogueado);
         btnRegistrar.setVisible(secretario);
@@ -534,7 +523,6 @@ public class Inscripcion_panel extends JFrame {
         btnInscripciones.setVisible(gestion);
         btnAdmin.setVisible(gestion);
         btnFacturacion.setVisible(gestion || rol == 3);
-        btnAsistencia.setVisible(true);
         if (!gestion) {
             mostrarPanelCursos();
         }
@@ -543,7 +531,7 @@ public class Inscripcion_panel extends JFrame {
     private void ordenarMenuLateral() {
         // acomodamos solo las opciones visibles para no dejar espacios entre los botones.
         JButton[] opciones = {
-            btnCursos, btnMaterias, btnCalificaciones, btnInscripciones, btnFacturacion, btnAsistencia, btnAdmin
+            btnCursos, btnMaterias, btnCalificaciones, btnInscripciones, btnFacturacion, btnAdmin
         };
         int posicion = 61;
         Container menu = btnCursos.getParent();

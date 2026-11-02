@@ -140,7 +140,8 @@ public class Materias_panel extends JPanel {
             if (directivo) {
                 JButton agregar = new JButton("+ Agregar");
                 agregar.setToolTipText("Agregar una materia a " + anio + "° año");
-                agregar.addActionListener(e -> agregar(anio));
+                final int anioSeleccionado = anio;
+                agregar.addActionListener(e -> agregar(anioSeleccionado));
                 titulo.add(agregar, BorderLayout.EAST);
             }
             tarjeta.add(titulo, BorderLayout.NORTH);
@@ -157,8 +158,16 @@ public class Materias_panel extends JPanel {
                     item.setOpaque(true);
                     item.setBackground(new Color(246, 249, 253));
                     item.setBorder(BorderFactory.createEmptyBorder(7, 8, 7, 8));
-                    item.setToolTipText("Materia " + materia.getId_materia());
-                    lista.add(item);
+                    JPanel fila = new JPanel(new BorderLayout(8, 0));
+                    fila.setOpaque(false);
+                    fila.add(item, BorderLayout.CENTER);
+                    if (directivo) {
+                        final int anioSeleccionado = anio;
+                        JButton eliminar = new JButton("Eliminar");
+                        eliminar.addActionListener(e -> eliminar(anioSeleccionado, materia));
+                        fila.add(eliminar, BorderLayout.EAST);
+                    }
+                    lista.add(fila);
                 }
             }
             tarjeta.add(lista, BorderLayout.CENTER);
@@ -172,6 +181,26 @@ public class Materias_panel extends JPanel {
         }
         anios.revalidate();
         anios.repaint();
+    }
+
+    private void eliminar(int anio, Materia materia) {
+        if (cargando) return;
+        if (JOptionPane.showConfirmDialog(this,
+                "¿Eliminar " + materia.getNombre_materia() + " de " + anio + "° año?\nSe quitará de los cursos de ese año. Los demás años se conservan.",
+                "Eliminar materia", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) return;
+        cargando = true;
+        estado.setText("Verificando calificaciones…");
+        new SwingWorker<Void, Void>() {
+            protected Void doInBackground() throws Exception {
+                dao.eliminarDelAnio(anio, materia.getId_materia());
+                return null;
+            }
+            protected void done() {
+                cargando = false;
+                try { get(); cargar(); }
+                catch (Exception e) { error(e); estado.setText("La materia no se eliminó."); }
+            }
+        }.execute();
     }
 
     private void agregar(int anio) {

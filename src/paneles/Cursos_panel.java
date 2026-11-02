@@ -48,10 +48,12 @@ public class Cursos_panel extends JPanel {
     private final List<Curso> cursos = new ArrayList<>();
     private final JLabel estado = new JLabel(" ");
     private boolean cargando;
+    // actualizamos el listado cada minuto mientras el módulo está visible y no hay otra consulta
     private final Timer actualizacionAutomatica = new Timer(60_000, e -> {
         if (isShowing() && !cargando) cargar();
     });
 
+    // permitimos crear el panel sin recibir un usuario desde el constructor
     public Cursos_panel() {
         this(null);
     }
@@ -75,7 +77,6 @@ public class Cursos_panel extends JPanel {
         add(arriba, BorderLayout.NORTH);
         tabla.setRowSorter(filtro);
         tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tabla.setToolTipText("Doble clic para ver las materias y sus docentes");
         tabla.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
@@ -160,18 +161,21 @@ public class Cursos_panel extends JPanel {
         cargar();
     }
 
+    // iniciamos la actualización automática cuando el panel entra en la pantalla
     @Override
     public void addNotify() {
         super.addNotify();
         actualizacionAutomatica.start();
     }
 
+    // detenemos el temporizador al salir del módulo para evitar consultas innecesarias
     @Override
     public void removeNotify() {
         actualizacionAutomatica.stop();
         super.removeNotify();
     }
 
+    // creamos el botón y conectamos la acción que se ejecuta al presionarlo
     private void boton(JPanel p, String texto, Runnable accion) {
         JButton b = new JButton(texto);
         b.addActionListener(e -> accion.run());
@@ -188,11 +192,13 @@ public class Cursos_panel extends JPanel {
         return cursos.get(tabla.convertRowIndexToModel(r));
     }
 
+    // abrimos la ventana con los datos del curso seleccionado en la tabla
     private void detalle() {
         Curso curso = seleccion();
         if (curso != null) new DetalleCurso_dialog(this, curso, usuario, this::cargar).setVisible(true);
     }
 
+    // solicitamos los cursos que puede consultar el usuario que inició sesión
     private void cargar() {
         trabajar(() -> dao.listar(usuario));
     }
@@ -237,13 +243,14 @@ public class Cursos_panel extends JPanel {
         }.execute();
     }
 
+    // mostramos el motivo por el que no se pudo consultar o guardar el curso
     private void error(Exception e) {
         Throwable causa = e.getCause() != null ? e.getCause() : e;
         JOptionPane.showMessageDialog(
                 this, causa.getMessage(), "Cursos", JOptionPane.ERROR_MESSAGE);
     }
 
-    // antes de abrir el formulario, buscamos las opciones y las materias que ya tiene.
+    // antes de abrir el formulario, buscamos los períodos lectivos disponibles
     private void formulario(Curso original) {
         estado.setText("Preparando formulario…");
         new SwingWorker<Object[], Void>() {
@@ -266,6 +273,7 @@ public class Cursos_panel extends JPanel {
         }.execute();
     }
 
+    // preparamos los campos del curso y cargamos sus materias según el año elegido
     private void editar(
             Curso original,
             List<Periodo_Lectivo> periodos) {
