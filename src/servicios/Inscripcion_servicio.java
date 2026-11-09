@@ -51,7 +51,7 @@ public class Inscripcion_servicio {
         for (Inscripcion ins : inscripciones) {
             if (ins.getId_alumno().equals(idAlumno) && ins.getId_curso().equals(idCurso)) {
                 if ("Confirmada".equalsIgnoreCase(ins.getEstado())
-                        || "Pendiente".equalsIgnoreCase(ins.getEstado())) {
+                        || "Pendiente".equalsIgnoreCase(ins.getEstado()) || "Recuperacion".equalsIgnoreCase(ins.getEstado())) {
                     return true;
                 }
             }
@@ -101,10 +101,6 @@ public class Inscripcion_servicio {
         if (!hayCupo(idCurso)) {
             return "El curso ha alcanzado su cupo máximo de inscripciones.";
         }
-        if (!plazoPeriodo(idCurso)) {
-            return "La inscripción está fuera de término respecto a las fechas del período"
-                    + " lectivo.";
-        }
         return "OK";
     }
 
@@ -130,7 +126,7 @@ public class Inscripcion_servicio {
     public void registrar(Inscripcion inscripcion, Integer idUsuario) {
         try {
             inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, 1);
+                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, clases.Rol.SECRETARIA);
                 if (!java.util.List.of("Pendiente", "Confirmada").contains(inscripcion.getEstado())) {
                     throw new IllegalArgumentException("La inscripción se registra como Pendiente o Confirmada.");
                 }
@@ -141,8 +137,10 @@ public class Inscripcion_servicio {
                 if (inscripcion.getFecha_inscripcion() == null) throw new IllegalArgumentException("Ingresá una fecha válida.");
                 int id = inscripcionDao.crear(conexion, inscripcion);
                 inscripcionDao.movimiento(conexion, id, null, inscripcion.getEstado(), "Registro de inscripción", idUsuario);
+                avisarAsignacion(conexion, inscripcion.getId_alumno(), inscripcion.getId_curso(), id, idUsuario);
                 return null;
             });
+            enviarAvisos(idUsuario);
         } catch (Exception error) {
             throw new IllegalArgumentException(error.getMessage(), error);
         }
@@ -152,7 +150,7 @@ public class Inscripcion_servicio {
     public void modificar(Inscripcion inscripcion, Integer idUsuario) {
         try {
             inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, 1);
+                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, clases.Rol.SECRETARIA);
                 var anterior = inscripcionDao.bloquear(conexion, inscripcion.getId_inscripcion());
                 validarAbierta(anterior);
                 if (!java.util.List.of("Pendiente", "Confirmada").contains(inscripcion.getEstado())) {
@@ -165,6 +163,8 @@ public class Inscripcion_servicio {
                 if ("Recuperacion".equals(anterior.get("estado"))) {
                     throw new IllegalArgumentException("La recuperación se resuelve al aprobar las materias y revisar la promoción.");
                 }
+                if (inscripcion.getFecha_inscripcion() == null) throw new IllegalArgumentException("Ingresá una fecha válida.");
+                inscripcionDao.fecha(conexion, inscripcion.getId_inscripcion(), inscripcion.getFecha_inscripcion());
                 inscripcionDao.estado(conexion, inscripcion.getId_inscripcion(), inscripcion.getEstado(), "");
                 inscripcionDao.movimiento(conexion, inscripcion.getId_inscripcion(), anterior.get("estado").toString(), inscripcion.getEstado(), "Modificación administrativa", idUsuario);
                 return null;
@@ -179,7 +179,7 @@ public class Inscripcion_servicio {
         try {
             String razon = motivo(motivo);
             inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, usuario, 1);
+                Permisos_servicio.verificar(conexion, inscripcionDao, usuario, clases.Rol.SECRETARIA);
                 var anterior = inscripcionDao.bloquear(conexion, id);
                 validarAbierta(anterior);
                 inscripcionDao.estado(conexion, id, "Cancelada", razon);
@@ -218,10 +218,11 @@ public class Inscripcion_servicio {
     public void cambiarCurso(Integer origen, Integer destino, String motivo, Integer usuario) throws Exception {
         String razon = motivo(motivo);
         inscripcionDao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, inscripcionDao, usuario, 1);
+            Permisos_servicio.verificar(conexion, inscripcionDao, usuario, clases.Rol.SECRETARIA);
             trasladar(conexion, origen, destino, razon, usuario, false, "Trasladado");
             return null;
         });
+        enviarAvisos(usuario);
     }
 
     // cerramos la inscripción anterior y generamos la de destino dentro de la misma transacción
@@ -241,8 +242,18 @@ public class Inscripcion_servicio {
         int nueva = inscripcionDao.destino(conexion, dao.Consulta_academica_dao.numero(anterior, "id_alumno"), destino, origen);
         inscripcionDao.movimiento(conexion, origen, anterior.get("estado").toString(), estadoOrigen, motivo, usuario);
         inscripcionDao.movimiento(conexion, nueva, null, "Confirmada", "Inscripción de destino vinculada a la anterior #" + origen, usuario);
+        avisarAsignacion(conexion, dao.Consulta_academica_dao.numero(anterior, "id_alumno"), destino, nueva, usuario);
         return nueva;
     }
+
+    // el aviso comparte la transacción de la nueva inscripción y no se envía antes de su confirmación
+    protected void avisarAsignacion(java.sql.Connection db, int alumno, int curso, int inscripcion, int actor) throws Exception {
+        var avisos = new dao.Notificacion_Correo_dao();
+        new Notificaciones_servicio(avisos).asignacion(db, avisos.usuarioAlumno(db, alumno), curso, "inscripcion-" + inscripcion, actor);
+    }
+
+    // iniciamos el envío sólo cuando ya terminó correctamente la transacción
+    protected void enviarAvisos(int actor) { Notificaciones_servicio.enviarPendientes(actor); }
 
     public record Ficha(java.util.Map<String, Object> datos, java.util.List<java.util.Map<String, Object>> notas,
             java.util.List<java.util.Map<String, Object>> resultados, java.util.List<java.util.Map<String, Object>> movimientos) {}
@@ -250,7 +261,7 @@ public class Inscripcion_servicio {
     // consultamos los datos del alumno y de la inscripción para mostrarlos en una ventana de detalle
     public Ficha ficha(int id, Integer usuario) throws Exception {
         return inscripcionDao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, inscripcionDao, usuario, 1, 5);
+            Permisos_servicio.verificar(conexion, inscripcionDao, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
             return new Ficha(inscripcionDao.ficha(conexion, id), inscripcionDao.notas(conexion, id), inscripcionDao.resultados(conexion, id), inscripcionDao.movimientos(conexion, id));
         });
     }

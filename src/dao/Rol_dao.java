@@ -12,7 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos y modificamos los registros de rol en la base de datos
-public class Rol_dao implements Dao<Rol, Integer> {
+public class Rol_dao extends Consulta_academica_dao implements Dao<Rol, Integer> {
+    // consultamos los roles disponibles con la conexión de la operación administrativa
+    public List<Rol> listar(Connection db) throws SQLException {
+        List<Rol> roles=new ArrayList<>();
+        for(var fila:consultar(db,"SELECT id_rol,nombre,descripcion_rol FROM rol ORDER BY id_rol"))roles.add(new Rol(numero(fila,"id_rol"),(String)fila.get("nombre"),(String)fila.get("descripcion_rol")));
+        return roles;
+    }
 
     // inserta el registro recibido en la tabla correspondiente
     @Override

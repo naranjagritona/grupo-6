@@ -30,9 +30,14 @@ public class Calificaciones_servicio {
 
     // comprueba el rol de la cuenta y su relación con el curso
     private void permitir(Connection db, int curso, boolean requiereActivo) throws SQLException {
-        try { servicios.Permisos_servicio.verificar(db, new dao.Consulta_academica_dao(), usuario == null ? null : usuario.getId_usuario(), 2); }
+        try { servicios.Permisos_servicio.verificar(db, new dao.Consulta_academica_dao(), usuario == null ? null : usuario.getId_usuario(), clases.Rol.DIRECTIVO, clases.Rol.DOCENTE); }
         catch (Exception error) { throw new IllegalArgumentException(error.getMessage(), error); }
-        if (usuario == null || usuario.getId_rol() != 2) {
+        if (new dao.Consulta_academica_dao().obtenerRol(db, usuario.getId_usuario()) == clases.Rol.DIRECTIVO) {
+            var datos = new dao.Inscripcion_dao().curso(db, curso);
+            if (requiereActivo && !"Activo".equals(datos.get("estado"))) throw new IllegalArgumentException("El curso no está activo.");
+            return;
+        }
+        if (usuario == null || usuario.getId_rol() != clases.Rol.DOCENTE) {
             throw new IllegalArgumentException("No tenés permisos para modificar calificaciones.");
         }
         try (PreparedStatement q =
@@ -42,7 +47,7 @@ public class Calificaciones_servicio {
             try (ResultSet rs = q.executeQuery()) {
                 if (!rs.next()
                         || (requiereActivo && !"Activo".equals(rs.getString(1)))
-                        || (usuario.getId_rol() == 2 && usuario.getId_usuario() != rs.getInt(2))) {
+                        || (usuario.getId_rol() == clases.Rol.DOCENTE && usuario.getId_usuario() != rs.getInt(2))) {
                     throw new IllegalArgumentException(
                             "El curso no está activo o no te corresponde.");
                 }
@@ -51,7 +56,12 @@ public class Calificaciones_servicio {
     }
 
     private void permitirMateria(Connection db, int curso, int materia) throws SQLException {
-        if (!new dao.Resultado_Academico_dao().asignado(db, curso, materia, usuario.getId_usuario()))
+        var resultados = new dao.Resultado_Academico_dao();
+        if (new dao.Consulta_academica_dao().obtenerRol(db, usuario.getId_usuario()) == clases.Rol.DIRECTIVO) {
+            if (resultados.materias(db, curso).stream().noneMatch(m -> dao.Consulta_academica_dao.numero(m, "id_materia") == materia)) throw new IllegalArgumentException("La materia no pertenece al curso.");
+            return;
+        }
+        if (!resultados.asignado(db, curso, materia, usuario.getId_usuario()))
             throw new IllegalArgumentException("La materia no está asignada a tu cuenta.");
     }
 
@@ -316,15 +326,15 @@ public class Calificaciones_servicio {
                 q.setInt(1, id);
                 try (ResultSet rs = q.executeQuery()) {
                     if (!rs.next()) throw new IllegalArgumentException("La nota ya no existe.");
-                    if (usuario != null && usuario.getId_rol() == 3) {
+                    if (usuario != null && usuario.getId_rol() == clases.Rol.ALUMNO) {
                         if (usuario.getId_usuario() != rs.getInt(2)) {
                             throw new IllegalArgumentException(
                                     "Esta nota no corresponde a tu cuenta.");
                         }
                     } else {
-                        if (usuario != null && (usuario.getId_rol() == 1 || usuario.getId_rol() == 5)) {
+                        if (usuario != null && (usuario.getId_rol() == clases.Rol.SECRETARIA || usuario.getId_rol() == clases.Rol.DIRECTIVO)) {
                             // permitimos la consulta de auditoría sin habilitar la modificación de notas
-                        } else if (usuario != null && usuario.getId_rol() == 4) {
+                        } else if (usuario != null && usuario.getId_rol() == -1) {
                             try (PreparedStatement consulta = db.prepareStatement("SELECT id_usuario FROM preceptor_curso WHERE id_usuario=? AND id_curso=?")) {
                                 consulta.setInt(1, usuario.getId_usuario()); consulta.setInt(2, rs.getInt(1));
                                 try (ResultSet registros = consulta.executeQuery()) { if (!registros.next()) throw new IllegalArgumentException("El curso no corresponde al preceptor."); }

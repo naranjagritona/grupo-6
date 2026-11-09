@@ -1,137 +1,30 @@
 package servicios;
 
 import com.google.gson.*;
-
-import java.net.*;
-import java.net.http.*;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Arrays;
 
-// enviamos las consultas de facturación a la web para usar los mismos pagos y facturas
+// consultamos pagos y comprobantes con la sesión HTTPS compartida de la aplicación
 public final class Facturacion_servicio {
-    // definimos la dirección del servicio web que administra los pagos y comprobantes
-    private static final String URL =
-            "https://academiaintegral.cavernservices.org/modulos/api_facturacion.php";
-    // guardamos la sesión en memoria para usarla en las siguientes consultas.
-    private static final CookieManager cookies =
-            new CookieManager(null, CookiePolicy.ACCEPT_ORIGINAL_SERVER);
-    private static final HttpClient cliente =
-            HttpClient.newBuilder()
-                    .cookieHandler(cookies)
-                    .connectTimeout(Duration.ofSeconds(15))
-                    .build();
-    private static String usuario;
-    private static char[] clave;
-    private static String csrf;
-
-    // evitamos crear instancias porque las consultas comparten la misma sesión
     private Facturacion_servicio() {}
+    public static void prepararSesion(String usuario,String clave) { SesionWeb_servicio.prepararSesion(usuario,clave); }
+    public static void cerrarSesion() { SesionWeb_servicio.cerrarSesion(); }
 
-    // recibimos los datos del acceso y limpiamos cualquier sesión anterior.
-    public static synchronized void prepararSesion(String nombre, String contrasena) {
-        cerrarSesion();
-        usuario = nombre;
-        clave = contrasena.toCharArray();
-    }
-
-    // al salir borramos la sesión y la contraseña que todavía estuviera en memoria.
-    public static synchronized void cerrarSesion() {
-        cookies.getCookieStore().removeAll();
-        csrf = null;
-        usuario = null;
-        if (clave != null) Arrays.fill(clave, '\0');
-        clave = null;
-    }
-
-    // abrimos la sesión web solo la primera vez que se usa Facturación.
-    private static synchronized void asegurarSesion() throws Exception {
-        if (csrf != null) return;
-        if (clave == null)
-            throw new IllegalStateException("Volvé a iniciar sesión para usar Facturación.");
-        JsonObject datos = new JsonObject();
-        datos.addProperty("accion", "ingresar");
-        datos.addProperty("usuario", usuario);
-        datos.addProperty("clave", new String(clave));
-        JsonObject respuesta = json(enviar("POST", "", datos, null));
-        csrf = respuesta.get("csrf").getAsString();
-        // después de abrir la sesión web, ya no necesitamos conservar la contraseña.
-        Arrays.fill(clave, '\0');
-        clave = null;
-    }
-
-    // las operaciones usan JSON y un código de sesión para validar los formularios.
-    private static HttpResponse<byte[]> enviar(
-            String metodo, String consulta, JsonObject datos, String token) throws Exception {
-        HttpRequest.Builder peticion =
-                HttpRequest.newBuilder(URI.create(URL + consulta))
-                        .timeout(Duration.ofSeconds(60))
-                        .header("Accept", "application/json");
-        if (metodo.equals("POST")) {
-            peticion.header("Content-Type", "application/json; charset=UTF-8");
-            if (token != null) peticion.header("X-CSRF-Token", token);
-            peticion.POST(
-                    HttpRequest.BodyPublishers.ofString(datos.toString(), StandardCharsets.UTF_8));
-        } else peticion.GET();
-        HttpResponse<byte[]> respuesta =
-                cliente.send(peticion.build(), HttpResponse.BodyHandlers.ofByteArray());
-        if (respuesta.statusCode() < 200 || respuesta.statusCode() >= 300) {
-            String mensaje = "No se pudo completar la operación de facturación.";
-            try {
-                mensaje =
-                        JsonParser.parseString(new String(respuesta.body(), StandardCharsets.UTF_8))
-                                .getAsJsonObject()
-                                .get("error")
-                                .getAsString();
-            } catch (Exception ignored) {
-            }
-            throw new IllegalStateException(mensaje);
-        }
-        return respuesta;
-    }
-
-    // convertimos la respuesta para que el panel pueda leer sus datos.
-    private static JsonObject json(HttpResponse<byte[]> r) {
-        try {
-            return JsonParser.parseString(new String(r.body(), StandardCharsets.UTF_8))
-                    .getAsJsonObject();
-        } catch (Exception e) {
-            throw new IllegalStateException(
-                    "La web no devolvió una respuesta válida de facturación.", e);
-        }
-    }
-
-    // consultamos las cuotas; la web aplica los permisos del usuario.
+    // la web limita los resultados según el rol autenticado y valida cada operación
     public static JsonObject listar(String buscar) throws Exception {
-        asegurarSesion();
-        return json(
-                enviar(
-                        "GET",
-                        "?accion=listar&q=" + URLEncoder.encode(buscar, StandardCharsets.UTF_8),
-                        null,
-                        null));
+        return SesionWeb_servicio.json("api_facturacion.php","GET","?accion=listar&q="+URLEncoder.encode(buscar,StandardCharsets.UTF_8),null);
     }
-
-    // buscamos los pagos de la inscripción elegida.
     public static JsonArray historial(int id) throws Exception {
-        asegurarSesion();
-        return json(enviar("GET", "?accion=historial&id_inscripcion=" + id, null, null))
-                .getAsJsonArray("pagos");
+        return SesionWeb_servicio.json("api_facturacion.php","GET","?accion=historial&id_inscripcion="+id,null).getAsJsonArray("pagos");
+    }
+    public static JsonObject operar(String accion,JsonObject datos) throws Exception {
+        datos.addProperty("accion",accion);return SesionWeb_servicio.json("api_facturacion.php","POST","",datos);
     }
 
-    // el pago, la confirmación y el reenvío se procesan del lado de la web.
-    public static JsonObject operar(String accion, JsonObject datos) throws Exception {
-        asegurarSesion();
-        datos.addProperty("accion", accion);
-        return json(enviar("POST", "", datos, csrf));
-    }
-
-    // revisamos que la descarga sea un PDF antes de mandarla al visor.
+    // comprobamos la cabecera PDF antes de entregar el comprobante al visor
     public static byte[] factura(int id) throws Exception {
-        asegurarSesion();
-        byte[] pdf = enviar("GET", "?accion=pdf&id_factura=" + id, null, null).body();
-        if (pdf.length < 5 || !new String(pdf, 0, 5, StandardCharsets.US_ASCII).equals("%PDF-"))
-            throw new IllegalStateException("La factura recibida no es un PDF válido.");
+        byte[] pdf=SesionWeb_servicio.enviar("api_facturacion.php","GET","?accion=pdf&id_factura="+id,null);
+        if(pdf.length<5||!new String(pdf,0,5,StandardCharsets.US_ASCII).equals("%PDF-"))throw new IllegalStateException("La factura recibida no es un PDF válido.");
         return pdf;
     }
 }

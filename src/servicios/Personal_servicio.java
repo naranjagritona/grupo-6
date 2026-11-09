@@ -29,7 +29,8 @@ public class Personal_servicio {
     // consultamos los perfiles que puede administrar la cuenta de la sesión
     public List<Map<String, Object>> listar(Personal.Tipo tipo, Integer usuario) throws Exception {
         return dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 1, 5);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.DIRECTIVO, clases.Rol.SECRETARIA);
+            if (tipo == null || !Permisos_servicio.administrarCuenta(dao.obtenerRol(conexion, usuario), tipo.rol)) throw new IllegalArgumentException("No tenés permiso para administrar ese perfil.");
             return dao.listar(conexion, tipo);
         });
     }
@@ -42,8 +43,10 @@ public class Personal_servicio {
         if (personal.getContraseña() == null || personal.getContraseña().length() < 8) throw new IllegalArgumentException("La contraseña debe tener al menos ocho caracteres.");
         String clave = seguridad.Contrasenas.paraGuardar(personal.getContraseña());
         return dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 1, 5);
-            if (dao.usuarioExiste(conexion, personal.getUsuario())) throw new IllegalArgumentException("El nombre de usuario ya está registrado.");
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.DIRECTIVO, clases.Rol.SECRETARIA);
+            if (!Permisos_servicio.rolesCreables(dao.obtenerRol(conexion, usuario)).contains(personal.getTipo().rol)) throw new IllegalArgumentException("No tenés permiso para crear ese perfil.");
+            var cuentas = new dao.Usuario_dao();cuentas.reservarAlta(conexion);
+            if (cuentas.nombreOMailOcupado(conexion, personal.getUsuario(), personal.getMail(), 0)) throw new IllegalArgumentException("El usuario o mail ya está registrado.");
             int cuenta = dao.crearUsuario(conexion, personal, clave);
             return dao.crear(conexion, personal, cuenta);
         });
@@ -53,7 +56,8 @@ public class Personal_servicio {
     public void modificar(Personal personal, Integer usuario) throws Exception {
         validar(personal);
         dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 1, 5);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.DIRECTIVO, clases.Rol.SECRETARIA);
+            if (!Permisos_servicio.administrarCuenta(dao.obtenerRol(conexion, usuario), personal.getTipo().rol)) throw new IllegalArgumentException("No tenés permiso para administrar ese perfil.");
             var anterior = dao.obtener(conexion, personal.getTipo(), personal.getId());
             if (((Number) anterior.get("id_usuario")).intValue() == usuario && "Inactivo".equals(personal.getEstado())) throw new IllegalArgumentException("No podés dar de baja tu propia cuenta.");
             dao.modificar(conexion, personal);

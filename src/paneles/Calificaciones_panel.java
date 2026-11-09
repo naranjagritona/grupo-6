@@ -88,7 +88,7 @@ public class Calificaciones_panel extends JPanel {
     private final DefaultTableModel modeloPlanilla = new DefaultTableModel() {
         private static final long serialVersionUID = 1L;
         @Override public boolean isCellEditable(int row, int column) {
-            return usuarioLogueado != null && usuarioLogueado.getId_rol() == 2
+            return servicios.Permisos_servicio.editarCalificaciones(usuarioLogueado)
                     && column >= 2 && column - 2 < columnasPlanilla.size()
                     && "Abierta".equals(new ArrayList<>(columnasPlanilla.values()).get(column - 2).getEstado());
         }
@@ -221,7 +221,7 @@ public class Calificaciones_panel extends JPanel {
         modificar.addActionListener(e -> modificarNota());
         historial.addActionListener(e -> mostrarHistorial());
         borrar.addActionListener(e -> eliminarNota());
-        boolean edita = usuario != null && usuario.getId_rol() == 2;
+        boolean edita = servicios.Permisos_servicio.editarCalificaciones(usuario);
         nuevaEvaluacion.setVisible(edita);
         cargarNota.setVisible(edita);
         modificar.setVisible(edita);

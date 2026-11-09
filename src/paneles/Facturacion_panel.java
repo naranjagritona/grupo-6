@@ -71,7 +71,7 @@ public class Facturacion_panel extends JPanel {
         separador.setResizeWeight(.55);
         JTabbedPane pestanas = new JTabbedPane();
         pestanas.addTab("Cuotas y facturas", separador);
-        if (servicios.Permisos_servicio.gestion(usuario)) {
+        if (servicios.Permisos_servicio.gestionarFacturacion(usuario)) {
             JPanel efectivo = new JPanel(new BorderLayout());
             efectivo.add(tablaConEncabezado(tp));
             JButton confirmar = new JButton("Confirmar recepción del efectivo");
@@ -85,7 +85,7 @@ public class Facturacion_panel extends JPanel {
                         e -> {
                             if (!e.getValueIsAdjusting()) cargarHistorial();
                         });
-        if (servicios.Permisos_servicio.gestion(usuario)) {
+        if (servicios.Permisos_servicio.gestionarFacturacion(usuario)) {
             boton("Modificar cuota", this::modificarCuota);
         }
         boton("Pagar cuota", this::pagar);
@@ -278,7 +278,7 @@ public class Facturacion_panel extends JPanel {
 
     // el nombre y el mes vienen de la base; el formulario no permite modificarlos.
     private void modificarCuota() {
-        if (!servicios.Permisos_servicio.gestion(usuario)) {
+        if (!servicios.Permisos_servicio.gestionarFacturacion(usuario)) {
             return;
         }
         String valor = JOptionPane.showInputDialog(this, "Importe general de la cuota:", importe);
@@ -370,7 +370,7 @@ public class Facturacion_panel extends JPanel {
 
     // quien recibe el dinero escribe su nombre y confirma que el efectivo fue entregado.
     private void confirmarEfectivo() {
-        if (!servicios.Permisos_servicio.gestion(usuario)) return;
+        if (!servicios.Permisos_servicio.gestionarFacturacion(usuario)) return;
         int fila = tp.getSelectedRow();
         if (fila < 0) {
             JOptionPane.showMessageDialog(this, "Seleccioná el efectivo pendiente.");

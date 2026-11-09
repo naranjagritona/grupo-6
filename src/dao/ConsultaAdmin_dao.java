@@ -8,7 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos los contadores, las personas y los logs con una sola conexión
-public class ConsultaAdmin_dao {
+public class ConsultaAdmin_dao extends Consulta_academica_dao {
+    // reunimos los contadores que se muestran al entrar a administración
+    public int[] contadores(Connection db) throws SQLException {
+        var fila=uno(db,"SELECT (SELECT COUNT(*) FROM alumno) alumnos,(SELECT COUNT(*) FROM docente) docentes,(SELECT COUNT(*) FROM curso WHERE estado='Activo') cursos,(SELECT COUNT(*) FROM inscripcion) inscripciones,(SELECT COUNT(*) FROM usuario) usuarios");
+        return new int[]{numero(fila,"alumnos"),numero(fila,"docentes"),numero(fila,"cursos"),numero(fila,"inscripciones"),numero(fila,"usuarios")};
+    }
+
+    // exigimos dirección antes de consultar los logs, incluso si no se abre la pantalla de auditoría
+    public List<java.util.Map<String,Object>> logs(Connection db, Integer actor) throws Exception {
+        servicios.Permisos_servicio.verificar(db,this,actor,clases.Rol.DIRECTIVO);
+        return consultar(db,"SELECT l.id_log_usuario,u.nombre_usuario usuario,r.nombre rol,l.accion,l.campo_modificado,COALESCE(l.valor_nuevo,l.valor_anterior) detalle,l.fecha_hora FROM log_usuario l LEFT JOIN usuario u ON u.id_usuario=l.id_usuario LEFT JOIN rol r ON r.id_rol=u.id_rol ORDER BY l.fecha_hora DESC,l.id_log_usuario DESC LIMIT 200");
+    }
     public record Datos(
             int[] totales, List<Object[]> alumnos, List<Object[]> docentes, List<Object[]> logs) {}
 

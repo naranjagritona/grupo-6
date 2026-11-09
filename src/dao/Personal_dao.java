@@ -23,15 +23,14 @@ public class Personal_dao extends Consulta_academica_dao {
 
     // creamos la cuenta con el rol correspondiente y la contraseña protegida
     public int crearUsuario(Connection conexion, Personal personal, String contraseña) throws SQLException {
-        return insertarRegistro(conexion, "INSERT INTO usuario(id_rol,nombre_usuario,contraseña) VALUES(?,?,?)", personal.getTipo().rol, personal.getUsuario(), contraseña);
+        return insertarRegistro(conexion, "INSERT INTO usuario(id_rol,nombre_usuario,contraseña,mail) VALUES(?,?,?,?)", personal.getTipo().rol, personal.getUsuario(), contraseña, personal.getMail());
     }
 
     // guardamos el perfil y generamos su legajo a partir del identificador de la tabla
     public String crear(Connection conexion, Personal personal, int usuario) throws SQLException {
         String tabla = personal.getTipo().tabla;
-        int id = insertarRegistro(conexion, "INSERT INTO " + tabla + "(id_usuario,nombre,apellido,dni,mail,estado) VALUES(?,?,?,?,?,?)", usuario, personal.getNombre(), personal.getApellido(), personal.getDni(), personal.getMail(), personal.getEstado());
-        String legajo = personal.getTipo().prefijo + "-" + String.format(java.util.Locale.ROOT, "%06d", id);
-        ejecutar(conexion, "UPDATE " + tabla + " SET legajo=? WHERE id_" + tabla + "=?", legajo, id);
+        String legajo = personal.getTipo().prefijo + "-U" + usuario;
+        insertarRegistro(conexion, "INSERT INTO " + tabla + "(id_usuario,nombre,apellido,dni,mail,legajo,estado) VALUES(?,?,?,?,?,?,?)", usuario, personal.getNombre(), personal.getApellido(), personal.getDni(), personal.getMail(), legajo, personal.getEstado());
         return legajo;
     }
 

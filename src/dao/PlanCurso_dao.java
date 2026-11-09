@@ -57,7 +57,7 @@ public class PlanCurso_dao extends Consulta_academica_dao {
     public void agregar(int anio, Integer materia, String nombre) throws Exception {
         if (anio < 1 || anio > 6) throw new IllegalArgumentException("Seleccioná un año entre 1 y 6.");
         transaccion(db -> {
-            servicios.Permisos_servicio.verificar(db, this, servicios.Auditoria_servicio.usuarioActual(), 5);
+            servicios.Permisos_servicio.verificar(db, this, servicios.Auditoria_servicio.usuarioActual(), clases.Rol.DIRECTIVO);
             int id;
             if (materia == null) {
                 String valor = nombre == null ? "" : nombre.trim().replaceAll("\\s+", " ");
@@ -75,7 +75,7 @@ public class PlanCurso_dao extends Consulta_academica_dao {
     public void eliminarDelAnio(int anio, int materia) throws Exception {
         if (anio < 1 || anio > 6) throw new IllegalArgumentException("Seleccioná un año válido.");
         transaccion(db -> {
-            servicios.Permisos_servicio.verificar(db, this, servicios.Auditoria_servicio.usuarioActual(), 5);
+            servicios.Permisos_servicio.verificar(db, this, servicios.Auditoria_servicio.usuarioActual(), clases.Rol.DIRECTIVO);
             var cursos = consultar(db, "SELECT id_curso,id_materia FROM curso WHERE CAST(año AS UNSIGNED)=? ORDER BY id_curso FOR UPDATE", anio);
             uno(db, "SELECT id_materia FROM materia WHERE id_materia=? FOR UPDATE", materia);
             if (consultar(db, "SELECT id_materia FROM materia_anio WHERE anio=? AND id_materia=? FOR UPDATE", anio, materia).isEmpty())
@@ -101,19 +101,23 @@ public class PlanCurso_dao extends Consulta_academica_dao {
         });
     }
 
-    // comprobamos el docente y la asignación anterior antes de guardar el cambio
+    // bloqueamos el curso y su relación con la materia antes de comparar la asignación anterior
+    public Map<String,Object> bloquearAsignacion(Connection db, int curso, int materia) throws SQLException {
+        uno(db, "SELECT id_curso FROM curso WHERE id_curso=? FOR UPDATE", curso);
+        return uno(db, "SELECT id_docente FROM curso_materia WHERE id_curso=? AND id_materia=? FOR UPDATE", curso, materia);
+    }
+
+    public boolean docenteActivo(Connection db, int docente) throws SQLException {
+        return "Activo".equals(uno(db, "SELECT estado FROM docente WHERE id_docente=? FOR UPDATE", docente).get("estado"));
+    }
+
+    // guardamos la relación usando la conexión que también conserva el aviso de asignación
+    public void actualizarAsignacion(Connection db, int curso, int materia, Integer docente) throws SQLException {
+        ejecutar(db, "UPDATE curso_materia SET id_docente=? WHERE id_curso=? AND id_materia=?", docente, curso, materia);
+    }
+
+    // mantenemos la entrada de gestión y delegamos las reglas y el correo al servicio
     public void asignar(int curso, int materia, Integer docente, Integer anterior) throws Exception {
-        transaccion(db -> {
-            servicios.Permisos_servicio.verificar(db, this, servicios.Auditoria_servicio.usuarioActual(), 1, 5);
-            uno(db, "SELECT id_curso FROM curso WHERE id_curso=? FOR UPDATE", curso);
-            var relacion = uno(db, "SELECT id_docente FROM curso_materia WHERE id_curso=? AND id_materia=? FOR UPDATE", curso, materia);
-            if (!Objects.equals(relacion.get("id_docente"), anterior)) throw new IllegalArgumentException("Otro usuario cambió esta asignación. Actualizá el detalle y volvé a intentar.");
-            if (docente != null) {
-                var datos = uno(db, "SELECT estado FROM docente WHERE id_docente=? FOR UPDATE", docente);
-                if (!"Activo".equals(datos.get("estado"))) throw new IllegalArgumentException("Seleccioná un docente activo.");
-            }
-            ejecutar(db, "UPDATE curso_materia SET id_docente=? WHERE id_curso=? AND id_materia=?", docente, curso, materia);
-            return null;
-        });
+        new servicios.Curso_servicio().asignarDocente(this, curso, materia, docente, anterior, servicios.Auditoria_servicio.usuarioActual());
     }
 }

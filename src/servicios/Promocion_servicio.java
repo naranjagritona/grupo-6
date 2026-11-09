@@ -16,8 +16,13 @@ public class Promocion_servicio {
 
     // compartimos el dao para guardar todas las promociones dentro de una misma transacción
     public Promocion_servicio(Inscripcion_dao dao) {
+        this(dao, new Inscripcion_servicio(dao));
+    }
+
+    // compartimos el servicio de traslado para conservar la transacción y los avisos del lote
+    public Promocion_servicio(Inscripcion_dao dao, Inscripcion_servicio inscripciones) {
         this.dao = dao;
-        this.inscripciones = new Inscripcion_servicio(dao);
+        this.inscripciones = inscripciones;
     }
 
     public record Revision(int inscripcion, String alumno, boolean aprobado, Double promedio, String motivo) {}
@@ -57,7 +62,7 @@ public class Promocion_servicio {
     // mostramos la revisión de la división antes de realizar cualquier cambio de inscripción
     public List<Revision> revisar(int curso, Integer usuario) throws Exception {
         return dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 1, 5);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
             var datos = dao.curso(conexion, curso);
             validarRegla(datos);
             List<Revision> lista = new ArrayList<>();
@@ -68,8 +73,8 @@ public class Promocion_servicio {
 
     // volvemos a revisar cada alumno y promovemos solamente a quienes cumplen todas las condiciones
     public Resultado promocionar(int origen, int destino, Integer usuario) throws Exception {
-        return dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 1, 5);
+        Resultado resultado = dao.transaccion(conexion -> {
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
             var curso = dao.curso(conexion, origen);
             var siguiente = dao.curso(conexion, destino);
             validarRegla(curso);
@@ -103,6 +108,8 @@ public class Promocion_servicio {
             }
             return new Resultado(promovidos, recuperacion);
         });
+        inscripciones.enviarAvisos(usuario);
+        return resultado;
     }
 
     // guardamos las notas mínimas y el criterio de recuperatorios que define dirección
@@ -112,7 +119,7 @@ public class Promocion_servicio {
             throw new IllegalArgumentException("Revisá las notas mínimas de 0 a 10 y el criterio de recuperatorios.");
         }
         dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 5);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.DIRECTIVO);
             var anterior = dao.curso(conexion, curso);
             dao.regla(conexion, curso, materia, promocion, criterio);
             if (!Objects.equals(anterior.get("criterio_recuperatorio"), criterio)) {

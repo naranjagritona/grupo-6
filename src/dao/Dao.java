@@ -2,7 +2,6 @@ package dao;
 
 import java.util.List;
 
-// definimos las operaciones que comparten las clases de acceso a la base de datos
 public interface Dao<T, ID> {
 
     // crear

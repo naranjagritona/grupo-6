@@ -25,13 +25,12 @@ public class DetalleCurso_dao extends Consulta_academica_dao {
     public Datos consultar(int idCurso, Usuario usuario) throws Exception {
         return transaccion(db -> {
             if (usuario == null || servicios.Auditoria_servicio.usuarioActual() == null) throw new IllegalArgumentException("Iniciá sesión para consultar el curso.");
-            servicios.Permisos_servicio.verificar(db, this, usuario.getId_usuario(), 1, 2, 3, 4, 5);
+            servicios.Permisos_servicio.verificar(db, this, usuario.getId_usuario(), clases.Rol.SECRETARIA, clases.Rol.DOCENTE, clases.Rol.ALUMNO, clases.Rol.DIRECTIVO);
             int rol = obtenerRol(db, usuario.getId_usuario());
             String alcance = switch (rol) {
-                case 1, 5 -> null;
-                case 2 -> "SELECT 1 FROM curso_materia cm JOIN docente d ON d.id_docente=cm.id_docente WHERE cm.id_curso=? AND d.id_usuario=?";
-                case 3 -> "SELECT 1 FROM inscripcion i JOIN alumno a ON a.id_alumno=i.id_alumno WHERE i.id_curso=? AND a.id_usuario=?";
-                case 4 -> "SELECT 1 FROM preceptor_curso WHERE id_curso=? AND id_usuario=?";
+                case clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO -> null;
+                case clases.Rol.DOCENTE -> "SELECT 1 FROM curso_materia cm JOIN docente d ON d.id_docente=cm.id_docente WHERE cm.id_curso=? AND d.id_usuario=?";
+                case clases.Rol.ALUMNO -> "SELECT 1 FROM inscripcion i JOIN alumno a ON a.id_alumno=i.id_alumno WHERE i.id_curso=? AND a.id_usuario=?";
                 default -> throw new IllegalArgumentException("No tenés acceso a este curso.");
             };
             if (alcance != null && consultar(db, alcance, idCurso, usuario.getId_usuario()).isEmpty())
@@ -41,7 +40,7 @@ public class DetalleCurso_dao extends Consulta_academica_dao {
             var resumen = uno(db, "SELECT COUNT(*) total,COALESCE(SUM(estado IN ('Pendiente','Confirmada','Recuperacion')),0) ocupados,COALESCE(SUM(estado IN ('Confirmada','Recuperacion')),0) confirmados,COALESCE(SUM(estado='Pendiente'),0) pendientes FROM inscripcion WHERE id_curso=?", idCurso);
             String sql = "SELECT CONCAT(a.apellido,', ',a.nombre) nombre,i.estado,i.fecha_inscripcion FROM inscripcion i JOIN alumno a ON a.id_alumno=i.id_alumno WHERE i.id_curso=?";
             // El alumno consulta su inscripción; los roles de gestión ven el listado del curso.
-            List<Map<String,Object>> filas = rol == 3
+            List<Map<String,Object>> filas = rol == clases.Rol.ALUMNO
                     ? consultar(db, sql + " AND a.id_usuario=? ORDER BY a.apellido,a.nombre,i.id_inscripcion", idCurso, usuario.getId_usuario())
                     : consultar(db, sql + " ORDER BY a.apellido,a.nombre,i.id_inscripcion", idCurso);
             List<Alumno> alumnos = new ArrayList<>();

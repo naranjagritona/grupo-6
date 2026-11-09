@@ -22,8 +22,8 @@ public class Resultado_Academico_servicio {
     // consultamos las materias disponibles para el docente del curso
     public List<Map<String, Object>> materias(int curso, Integer usuario) throws Exception {
         return dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 2);
-            return dao.materiasDocente(conexion, curso, usuario);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.DIRECTIVO, clases.Rol.DOCENTE);
+            return dao.obtenerRol(conexion, usuario) == clases.Rol.DIRECTIVO ? dao.materias(conexion, curso) : dao.materiasDocente(conexion, curso, usuario);
         });
     }
 
@@ -46,12 +46,12 @@ public class Resultado_Academico_servicio {
     public String cerrar(int id, int materia, String observacion, Integer usuario) throws Exception {
         String motivo = Inscripcion_servicio.motivo(observacion);
         return dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 2);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.DIRECTIVO, clases.Rol.DOCENTE);
             var inscripcion = inscripciones.bloquear(conexion, id);
             Inscripcion_servicio.validarAbierta(inscripcion);
             if (!List.of("Confirmada", "Recuperacion").contains(inscripcion.get("estado"))) throw new IllegalArgumentException("La inscripción debe estar confirmada o en recuperación.");
             int curso = numero(inscripcion, "id_curso");
-            if (!dao.asignado(conexion, curso, materia, usuario)) throw new IllegalArgumentException("El curso no corresponde al docente.");
+            if (dao.obtenerRol(conexion, usuario) != clases.Rol.DIRECTIVO && !dao.asignado(conexion, curso, materia, usuario)) throw new IllegalArgumentException("El curso no corresponde al docente.");
             var datos = inscripciones.curso(conexion, curso);
             if (datos.get("nota_aprobacion_materia") == null || datos.get("criterio_recuperatorio") == null) throw new IllegalArgumentException("Dirección debe configurar la nota mínima y el criterio de recuperatorios.");
             if (dao.materias(conexion, curso).stream().noneMatch(m -> numero(m, "id_materia") == materia)) throw new IllegalArgumentException("La materia no pertenece al curso.");

@@ -12,7 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos y modificamos los registros de docente en la base de datos
-public class Docente_dao implements Dao<Docente, Integer> {
+public class Docente_dao extends Consulta_academica_dao implements Dao<Docente, Integer> {
+    // registramos el docente junto con su cuenta y el legajo generado por el servicio
+    public int crear(java.sql.Connection db, Docente d) throws java.sql.SQLException {
+        return insertarRegistro(db,"INSERT INTO docente(id_usuario,nombre,apellido,dni,legajo,estado) VALUES(?,?,?,?,?,?)",d.getId_usuario(),d.getNombre(),d.getApellido(),d.getDni(),d.getLegajo(),d.getEstado());
+    }
+
+    // actualizamos los datos personales sin aceptar un legajo o una cuenta diferentes
+    public void actualizarAdministracion(java.sql.Connection db, Docente d) throws java.sql.SQLException {
+        ejecutar(db,"UPDATE docente SET nombre=?,apellido=?,dni=?,estado=? WHERE id_docente=?",d.getNombre(),d.getApellido(),d.getDni(),d.getEstado(),d.getId_docente());
+    }
 
     // inserta el registro recibido en la tabla correspondiente
     @Override

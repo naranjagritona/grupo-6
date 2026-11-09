@@ -42,4 +42,22 @@ public class Curso_servicio {
         if (fin.isBefore(inicio)) throw new IllegalArgumentException("El fin no puede ser anterior al inicio.");
         dao.crearPeriodo(nombre.trim(), tipo, inicio, fin);
     }
+    // coordinamos la asignación y su aviso en una transacción y enviamos sólo después de confirmarla
+    public void asignarDocente(dao.PlanCurso_dao plan, int curso, int materia, Integer docente, Integer anterior, Integer actor) throws Exception {
+        boolean cambio = plan.transaccion(db -> {
+            Permisos_servicio.verificar(db, plan, actor, clases.Rol.DIRECTIVO);
+            var relacion = plan.bloquearAsignacion(db, curso, materia);
+            if (!java.util.Objects.equals(relacion.get("id_docente"), anterior)) throw new IllegalArgumentException("Otro usuario cambió esta asignación. Actualizá el detalle y volvé a intentar.");
+            if (docente != null && !plan.docenteActivo(db, docente)) throw new IllegalArgumentException("Seleccioná un docente activo.");
+            if (java.util.Objects.equals(docente, anterior)) return false;
+            plan.actualizarAsignacion(db, curso, materia, docente);
+            if (docente != null) {
+                var avisos = new dao.Notificacion_Correo_dao();
+                new Notificaciones_servicio(avisos).asignacion(db, avisos.usuarioDocente(db, docente), curso, "docente-" + java.util.UUID.randomUUID(), actor);
+            }
+            return true;
+        });
+        if (cambio) Notificaciones_servicio.enviarPendientes(actor);
+    }
+
 }

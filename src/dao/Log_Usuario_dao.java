@@ -13,7 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos y modificamos los registros de log usuario en la base de datos
-public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
+public class Log_Usuario_dao extends Consulta_academica_dao implements Dao<Log_Usuario, Integer> {
+
+    // la auditoría sólo puede consultarse desde una sesión vigente de dirección
+    private void verificarLectura() {
+        try { transaccion(db -> { servicios.Permisos_servicio.verificar(db, this, servicios.Auditoria_servicio.usuarioActual(), clases.Rol.DIRECTIVO); return null; }); }
+        catch (Exception e) { throw new IllegalArgumentException(e.getMessage(), e); }
+    }
 
     // inserta el registro recibido en la tabla correspondiente
     @Override
@@ -42,6 +48,7 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
     // consulta un registro usando su identificador
     @Override
     public Log_Usuario obtenerPorId(Integer id) {
+        verificarLectura();
         Log_Usuario log = null;
         String consulta = "SELECT * FROM log_usuario WHERE id_log_usuario = ?";
 
@@ -75,6 +82,7 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
     // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Log_Usuario> obtenerTodos() {
+        verificarLectura();
         List<Log_Usuario> listaLogs = new ArrayList<>();
         String consulta = "SELECT * FROM log_usuario";
 
@@ -108,6 +116,7 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
     // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Log_Usuario objeto) {
+        verificarLectura();
         String consulta =
                 "UPDATE log_usuario SET id_usuario = ?, accion = ?, campo_modificado = ?,"
                         + " valor_anterior = ?, valor_nuevo = ? WHERE id_log_usuario = ?";
@@ -133,6 +142,7 @@ public class Log_Usuario_dao implements Dao<Log_Usuario, Integer> {
     // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
+        verificarLectura();
         String consulta = "DELETE FROM log_usuario WHERE id_log_usuario = ?";
 
         try (Connection conexion = Conexion.getConnection();

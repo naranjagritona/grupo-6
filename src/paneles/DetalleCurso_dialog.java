@@ -86,7 +86,7 @@ public class DetalleCurso_dialog extends JDialog {
         JPanel pie = new JPanel(new BorderLayout(8, 8)); pie.add(estado, BorderLayout.NORTH);
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         asignar.setEnabled(false);
-        if (servicios.Permisos_servicio.gestion(usuario)) botones.add(asignar);
+        if (servicios.Permisos_servicio.directivo(usuario)) botones.add(asignar);
         asignar.addActionListener(e -> elegirDocente());
         actualizar.addActionListener(e -> cargar()); botones.add(actualizar);
         JButton cerrar = new JButton("Cerrar"); cerrar.addActionListener(e -> dispose()); botones.add(cerrar);
@@ -101,7 +101,7 @@ public class DetalleCurso_dialog extends JDialog {
 
     // habilitamos la asignación solamente cuando la pestaña de materias está disponible
     private void actualizarBotonDocente() {
-        asignar.setEnabled(!cargando && !filas.isEmpty() && pestanias.getSelectedIndex() == 1);
+        asignar.setEnabled(servicios.Permisos_servicio.directivo(usuario) && !cargando && !filas.isEmpty() && pestanias.getSelectedIndex() == 1);
     }
 
     // avisamos que hay una operación en curso y evitamos repetirla desde los botones
@@ -116,7 +116,7 @@ public class DetalleCurso_dialog extends JDialog {
             protected Carga doInBackground() throws Exception {
                 var datos = detalleDao.consultar(curso.getId_curso(), usuario);
                 var materias = dao.detalle(curso.getId_curso());
-                var opciones = servicios.Permisos_servicio.gestion(usuario) ? obtenerDocentes.get() : List.<Docente>of();
+                var opciones = servicios.Permisos_servicio.directivo(usuario) ? obtenerDocentes.get() : List.<Docente>of();
                 return new Carga(datos, materias, opciones);
             }
             protected void done() {
@@ -130,7 +130,7 @@ public class DetalleCurso_dialog extends JDialog {
                     modeloAlumnos.setRowCount(0);
                     for (var alumno : carga.datos().alumnos()) modeloAlumnos.addRow(new Object[]{alumno.nombre(), alumno.estado(), alumno.fecha() == null ? "—" : FECHA.format(alumno.fecha())});
                     pestanias.setTitleAt(1, "Materias y docentes (" + filas.size() + ")");
-                    pestanias.setTitleAt(2, usuario != null && usuario.getId_rol() == 3 ? "Mi inscripción" : "Alumnos e inscripciones (" + carga.datos().alumnos().size() + ")");
+                    pestanias.setTitleAt(2, usuario != null && usuario.getId_rol() == clases.Rol.ALUMNO ? "Mi inscripción" : "Alumnos e inscripciones (" + carga.datos().alumnos().size() + ")");
                     notaAlumnos.setText(carga.datos().alumnos().isEmpty() ? "Todavía no hay alumnos inscriptos en este curso." : " ");
                     estado.setText("Información actualizada.");
                 } catch (Exception e) { error(e); estado.setText("No se pudo cargar el detalle."); }
@@ -195,7 +195,7 @@ public class DetalleCurso_dialog extends JDialog {
         if (java.util.Objects.equals(id, materia.docente())) return;
         ocupado(true); estado.setText("Guardando asignación…");
         new SwingWorker<Void, Void>() {
-            protected Void doInBackground() throws Exception { dao.asignar(curso.getId_curso(), materia.materia(), id, materia.docente()); return null; }
+            protected Void doInBackground() throws Exception { new servicios.Curso_servicio().asignarDocente(dao, curso.getId_curso(), materia.materia(), id, materia.docente(), usuario.getId_usuario()); return null; }
             protected void done() {
                 try { get(); alCambiar.run(); cargar(); }
                 catch (Exception e) { error(e); estado.setText("No se guardó la asignación."); ocupado(false); }

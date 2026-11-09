@@ -15,12 +15,12 @@ public class Personal_dialog extends JDialog {
         JPanel formulario = new JPanel(new GridLayout(0, 2, 10, 10));
         formulario.setBackground(Color.WHITE);
         formulario.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
-        JComboBox<Personal.Tipo> tipo = new JComboBox<>(Personal.Tipo.values());
+        JComboBox<Personal.Tipo> tipo = new JComboBox<>(java.util.Arrays.stream(Personal.Tipo.values()).filter(t -> servicios.Permisos_servicio.rolesCreables(usuario.getId_rol()).contains(t.rol)).toArray(Personal.Tipo[]::new));
         if (seleccionado != null) tipo.setSelectedItem(seleccionado);
         tipo.setEnabled(original == null);
         JTextField nombre = new JTextField(), apellido = new JTextField(), dni = new JTextField(), mail = new JTextField(), cuenta = new JTextField();
         JPasswordField clave = new JPasswordField();
-        JTextField legajo = new JTextField("Se genera al guardar"); legajo.setEditable(false);
+        JLabel legajo = new JLabel("Se genera al guardar");
         JComboBox<String> estado = new JComboBox<>(new String[] {"Activo", "Inactivo"});
         if (original != null) {
             nombre.setText(original.get("nombre").toString()); apellido.setText(original.get("apellido").toString());

@@ -8,6 +8,7 @@ public class Usuario {
     private Integer id_rol;
     private String nombre_usuario;
     private String contraseña;
+    private String mail;
 
     public Usuario() {}
 
@@ -56,4 +57,7 @@ public class Usuario {
     public void setContraseña(String contraseña) {
         this.contraseña = contraseña;
     }
+
+    public String getMail() { return mail; }
+    public void setMail(String mail) { this.mail = mail; }
 }

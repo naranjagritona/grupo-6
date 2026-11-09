@@ -2,6 +2,13 @@ package clases;
 
 // identificamos el tipo de cuenta y sus permisos dentro del sistema
 public class Rol {
+    // identificamos los mismos roles que utiliza la aplicación web y la base compartida
+    public static final int DIRECTIVO = 1;
+    public static final int SECRETARIA = 2;
+    public static final int DOCENTE = 3;
+    public static final int ALUMNO = 4;
+    public static final int COOPERADORA = 5;
+
     private Integer id_rol;
     private String nombre;
     private String descripcion_rol;
@@ -38,4 +45,7 @@ public class Rol {
     public void setDescripcion_rol(String descripcion_rol) {
         this.descripcion_rol = descripcion_rol;
     }
+
+    @Override
+    public String toString() { return nombre; }
 }

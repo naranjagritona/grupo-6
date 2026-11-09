@@ -12,7 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos y modificamos los registros de responsable en la base de datos
-public class Responsable_dao implements Dao<Responsable, Integer> {
+public class Responsable_dao extends Consulta_academica_dao implements Dao<Responsable, Integer> {
+    // guardamos el responsable usando la conexión del alta de la cuenta del alumno
+    public int crear(java.sql.Connection db, Responsable r) throws java.sql.SQLException {
+        return insertarRegistro(db,"INSERT INTO responsable(nombre,apellido,dni,tipo_relacion) VALUES(?,?,?,?)",r.getNombre(),r.getApellido(),r.getDni(),r.getTipo_relacion());
+    }
+
+    // modificamos los datos del responsable sin cambiar el vínculo con la inscripción del alumno
+    public void actualizarAdministracion(java.sql.Connection db, Responsable r) throws java.sql.SQLException {
+        ejecutar(db,"UPDATE responsable SET nombre=?,apellido=?,dni=?,tipo_relacion=? WHERE id_responsable=?",r.getNombre(),r.getApellido(),r.getDni(),r.getTipo_relacion(),r.getId_responsable());
+    }
 
     // inserta el registro recibido en la tabla correspondiente
     @Override

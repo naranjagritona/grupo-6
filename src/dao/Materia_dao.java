@@ -17,6 +17,7 @@ public class Materia_dao implements Dao<Materia, Integer> {
     // inserta el registro recibido en la tabla correspondiente
     @Override
     public void insertar(Materia objeto) {
+        if (!servicios.Permisos_servicio.directivo(servicios.Permisos_servicio.actual())) throw new IllegalArgumentException("Esta operación corresponde a Dirección.");
         String consulta = "INSERT INTO materia (nombre_materia) VALUES (?)";
 
         try (Connection conexion = Conexion.getConnection();
@@ -87,6 +88,7 @@ public class Materia_dao implements Dao<Materia, Integer> {
     // actualiza los datos del registro seleccionado
     @Override
     public void modificar(Materia objeto) {
+        if (!servicios.Permisos_servicio.directivo(servicios.Permisos_servicio.actual())) throw new IllegalArgumentException("Esta operación corresponde a Dirección.");
         String consulta = "UPDATE materia SET nombre_materia = ? WHERE id_materia = ?";
 
         try (Connection conexion = Conexion.getConnection();
@@ -106,6 +108,7 @@ public class Materia_dao implements Dao<Materia, Integer> {
     // elimina el registro seleccionado si las relaciones lo permiten
     @Override
     public void eliminar(Integer id) {
+        if (!servicios.Permisos_servicio.directivo(servicios.Permisos_servicio.actual())) throw new IllegalArgumentException("Esta operación corresponde a Dirección.");
         try (Connection db = Conexion.getConnection(); PreparedStatement q = db.prepareStatement("SELECT anio FROM materia_anio WHERE id_materia=? ORDER BY anio")) {
             q.setInt(1, id);
             try (ResultSet rs = q.executeQuery()) {

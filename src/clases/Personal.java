@@ -3,9 +3,10 @@ package clases;
 // guardamos los datos de los perfiles administrativos y su cuenta de usuario
 public class Personal {
     public enum Tipo {
-        DIRECTIVO("directivo", "Directivos", 5, "DIR"),
-        PRECEPTOR("preceptor", "Preceptores", 4, "PRE"),
-        SECRETARIA("secretaria", "Secretaría", 1, "SEC");
+        DIRECTIVO("directivo", "Directivos", Rol.DIRECTIVO, "DIR"),
+        PRECEPTOR("preceptor", "Preceptores", -1, "PRE"),
+        SECRETARIA("secretaria", "Secretaría", Rol.SECRETARIA, "SEC"),
+        COOPERADORA("cooperadora", "Cooperadora", Rol.COOPERADORA, "COO");
 
         public final String tabla;
         public final String nombre;

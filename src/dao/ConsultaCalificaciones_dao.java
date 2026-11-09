@@ -24,6 +24,8 @@ public class ConsultaCalificaciones_dao {
     }
 
     public List<Fila> listar(int idCurso, clases.Usuario usuario) {
+        usuario = servicios.Permisos_servicio.actual();
+        if (!servicios.Permisos_servicio.verCalificaciones(usuario)) throw new IllegalArgumentException("No tenés acceso a Calificaciones.");
         String sql =
                 """
                 SELECT a.nombre,a.apellido,a.dni,i.id_inscripcion,m.nombre_materia,
@@ -41,16 +43,14 @@ public class ConsultaCalificaciones_dao {
                 """;
         if (usuario != null) {
             String permiso;
-            if ((usuario.getId_rol() == 1 || usuario.getId_rol() == 5)) {
+            if ((usuario.getId_rol() == clases.Rol.DIRECTIVO)) {
                 permiso = "";
-            } else if (usuario.getId_rol() == 2) {
+            } else if (usuario.getId_rol() == clases.Rol.DOCENTE) {
                 permiso =
                         " AND EXISTS(SELECT 1 FROM curso_materia cu JOIN docente d ON"
                                 + " d.id_docente=cu.id_docente WHERE cu.id_curso=c.id_curso AND cu.id_materia=c.id_materia AND"
                                 + " d.id_usuario=?) ";
-            } else if (usuario.getId_rol() == 4) {
-                permiso = " AND EXISTS(SELECT 1 FROM preceptor_curso pc WHERE pc.id_curso=c.id_curso AND pc.id_usuario=?) ";
-            } else if (usuario.getId_rol() == 3) {
+            } else if (usuario.getId_rol() == clases.Rol.ALUMNO) {
                 permiso = " AND a.id_usuario=? ";
             } else {
                 throw new IllegalArgumentException("Esta cuenta no tiene acceso a Calificaciones.");
@@ -60,7 +60,7 @@ public class ConsultaCalificaciones_dao {
         try (Connection db = Conexion.getConnection();
                 PreparedStatement q = db.prepareStatement(sql)) {
             q.setInt(1, idCurso);
-            if (usuario != null && usuario.getId_rol() != 1 && usuario.getId_rol() != 5) {
+            if (usuario != null && usuario.getId_rol() != clases.Rol.SECRETARIA && usuario.getId_rol() != clases.Rol.DIRECTIVO) {
                 q.setInt(2, usuario.getId_usuario());
             }
             List<Fila> filas = new ArrayList<>();

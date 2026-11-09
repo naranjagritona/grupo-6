@@ -12,7 +12,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos y modificamos los registros de alumno en la base de datos
-public class Alumno_dao implements Dao<Alumno, Integer> {
+public class Alumno_dao extends Consulta_academica_dao implements Dao<Alumno, Integer> {
+    // guardamos el alumno con la cuenta y el responsable dentro de la misma transacción
+    public int crear(java.sql.Connection db, Alumno a) throws java.sql.SQLException {
+        return insertarRegistro(db, "INSERT INTO alumno(id_usuario,id_responsable,nombre,apellido,dni,matricula,estado) VALUES(?,?,?,?,?,?,?)", a.getId_usuario(),a.getId_responsable(),a.getNombre(),a.getApellido(),a.getDni(),a.getMatricula(),a.getEstado());
+    }
+
+    // conservamos la matrícula y la cuenta al modificar los datos administrativos del alumno
+    public void actualizarAdministracion(java.sql.Connection db, Alumno a) throws java.sql.SQLException {
+        ejecutar(db,"UPDATE alumno SET id_responsable=?,nombre=?,apellido=?,dni=?,estado=? WHERE id_alumno=?",a.getId_responsable(),a.getNombre(),a.getApellido(),a.getDni(),a.getEstado(),a.getId_alumno());
+    }
+
+    // buscamos únicamente alumnos activos para las sugerencias del formulario de inscripción
+    public java.util.List<Alumno> activosParaInscripcion() {
+        return obtenerTodos().stream().filter(a -> "Activo".equals(a.getEstado())).toList();
+    }
 
     // inserta el registro recibido en la tabla correspondiente
     @Override

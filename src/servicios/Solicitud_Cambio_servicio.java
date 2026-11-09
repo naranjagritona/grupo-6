@@ -9,6 +9,7 @@ import static dao.Consulta_academica_dao.numero;
 public class Solicitud_Cambio_servicio {
     private final Solicitud_Cambio_dao dao;
     private final Inscripcion_dao inscripciones;
+    private final Inscripcion_servicio traslados;
 
     public Solicitud_Cambio_servicio() {
         this(new Solicitud_Cambio_dao(), new Inscripcion_dao());
@@ -16,15 +17,21 @@ public class Solicitud_Cambio_servicio {
 
     // compartimos la conexión para guardar la solicitud y el traslado sin dejar cambios a medias
     public Solicitud_Cambio_servicio(Solicitud_Cambio_dao dao, Inscripcion_dao inscripciones) {
+        this(dao, inscripciones, new Inscripcion_servicio(inscripciones));
+    }
+
+    // coordinamos la resolución con el mismo servicio de traslado y su envío posterior al commit
+    public Solicitud_Cambio_servicio(Solicitud_Cambio_dao dao, Inscripcion_dao inscripciones, Inscripcion_servicio traslados) {
         this.dao = dao;
         this.inscripciones = inscripciones;
+        this.traslados = traslados;
     }
 
     // registramos la solicitud con su explicación sin cambiar todavía la inscripción del alumno
     public void solicitar(int id, int destino, String observacion, Integer usuario) throws Exception {
         String motivo = Inscripcion_servicio.motivo(observacion);
         dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 1, 5);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
             var actual = inscripciones.bloquear(conexion, id);
             Inscripcion_servicio.validarAbierta(actual);
             if ("Pendiente".equals(actual.get("estado"))) throw new IllegalArgumentException("Primero confirmá la inscripción.");
@@ -39,7 +46,7 @@ public class Solicitud_Cambio_servicio {
     // consultamos la bandeja para que secretaría pueda seguirla y dirección pueda resolverla
     public List<Map<String, Object>> listar(Integer usuario) throws Exception {
         return dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 1, 5);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
             return dao.listar(conexion);
         });
     }
@@ -48,15 +55,16 @@ public class Solicitud_Cambio_servicio {
     public void resolver(int id, boolean aprobar, String observacion, Integer usuario) throws Exception {
         String motivo = Inscripcion_servicio.motivo(observacion);
         dao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, dao, usuario, 5);
+            Permisos_servicio.verificar(conexion, dao, usuario, clases.Rol.DIRECTIVO);
             var solicitud = dao.bloquear(conexion, id);
             if (!"Pendiente".equals(solicitud.get("estado"))) throw new IllegalArgumentException("La solicitud ya fue resuelta.");
             Integer nueva = null;
             if (aprobar) {
-                nueva = new Inscripcion_servicio(inscripciones).trasladar(conexion, numero(solicitud, "id_inscripcion"), numero(solicitud, "id_curso_destino"), solicitud.get("observacion").toString(), usuario, true, "Trasladado");
+                nueva = traslados.trasladar(conexion, numero(solicitud, "id_inscripcion"), numero(solicitud, "id_curso_destino"), solicitud.get("observacion").toString(), usuario, true, "Trasladado");
             }
             dao.resolver(conexion, id, aprobar, usuario, motivo, nueva);
             return null;
         });
+        if (aprobar) traslados.enviarAvisos(usuario);
     }
 }

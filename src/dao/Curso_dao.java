@@ -56,23 +56,21 @@ public class Curso_dao implements Dao<Curso, Integer> {
 
     // el administrador ve todos; docentes y alumnos solo ven los cursos que les corresponden.
     public List<Curso> listar(Usuario usuario) {
+        usuario = servicios.Permisos_servicio.actual();
+        if (!servicios.Permisos_servicio.verAcademico(usuario)) throw new IllegalArgumentException("No tenés acceso a Cursos.");
         String sql = CONSULTA;
         List<Integer> parametros = new ArrayList<>();
-        if (usuario != null && usuario.getId_rol() == 2) {
+        if (usuario != null && usuario.getId_rol() == clases.Rol.DOCENTE) {
             sql +=
                     " WHERE EXISTS(SELECT 1 FROM curso_materia cm2 JOIN docente d2 ON d2.id_docente=cm2.id_docente WHERE cm2.id_curso=c.id_curso AND"
                             + " d2.id_usuario=?)";
             parametros.add(usuario.getId_usuario());
         }
-        if (usuario != null && usuario.getId_rol() == 3) {
+        if (usuario != null && usuario.getId_rol() == clases.Rol.ALUMNO) {
             sql +=
                     " WHERE EXISTS(SELECT 1 FROM inscripcion i JOIN alumno a ON"
                             + " a.id_alumno=i.id_alumno WHERE i.id_curso=c.id_curso AND"
                             + " a.id_usuario=?)";
-            parametros.add(usuario.getId_usuario());
-        }
-        if (usuario != null && usuario.getId_rol() == 4) {
-            sql += " WHERE EXISTS(SELECT 1 FROM preceptor_curso pc WHERE pc.id_curso=c.id_curso AND pc.id_usuario=?)";
             parametros.add(usuario.getId_usuario());
         }
         sql += " ORDER BY CAST(c.año AS UNSIGNED),c.division,c.id_curso";
@@ -368,7 +366,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
     public void modificarCupo(int id, int cupo) throws Exception {
         Inscripcion_dao inscripciones = new Inscripcion_dao();
         inscripciones.transaccion(conexion -> {
-            servicios.Permisos_servicio.verificar(conexion, inscripciones, servicios.Auditoria_servicio.usuarioActual(), 1, 5);
+            servicios.Permisos_servicio.verificar(conexion, inscripciones, servicios.Auditoria_servicio.usuarioActual(), clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
             inscripciones.curso(conexion, id);
             if (cupo < 1 || cupo > 1000 || cupo < inscripciones.ocupacion(conexion, id)) throw new IllegalArgumentException("Revisá el cupo y la cantidad de inscripciones activas.");
             try (PreparedStatement consulta = conexion.prepareStatement("UPDATE curso SET cupo_maximo=? WHERE id_curso=?")) {
@@ -386,7 +384,7 @@ public class Curso_dao implements Dao<Curso, Integer> {
     public void crearPeriodo(String nombre, String tipo, java.time.LocalDate inicio, java.time.LocalDate fin) throws Exception {
         Inscripcion_dao inscripciones = new Inscripcion_dao();
         inscripciones.transaccion(conexion -> {
-            servicios.Permisos_servicio.verificar(conexion, inscripciones, servicios.Auditoria_servicio.usuarioActual(), 5);
+            servicios.Permisos_servicio.verificar(conexion, inscripciones, servicios.Auditoria_servicio.usuarioActual(), clases.Rol.DIRECTIVO);
             try (PreparedStatement consulta = conexion.prepareStatement("INSERT INTO periodo_lectivo(nombre,tipo,fecha_inicio,fecha_fin,estado) VALUES(?,?,?,?,'Planificado')")) {
                 consulta.setString(1, nombre); consulta.setString(2, tipo); consulta.setObject(3, inicio); consulta.setObject(4, fin); consulta.executeUpdate();
             }

@@ -255,6 +255,11 @@ public class Inscripcion_dao extends Consulta_academica_dao implements Dao<Inscr
         return uno(conexion, "SELECT * FROM alumno WHERE id_alumno=? FOR UPDATE", id);
     }
 
+    // la modificación administrativa de la fecha conserva el alumno y el curso de la inscripción
+    public void fecha(Connection db, int id, java.time.LocalDate fecha) throws SQLException {
+        ejecutar(db, "UPDATE inscripcion SET fecha_inscripcion=? WHERE id_inscripcion=?", fecha, id);
+    }
+
     // insertamos la inscripción con el estado y la fecha que se validaron en el servicio
     public int crear(Connection conexion, Inscripcion inscripcion) throws SQLException {
         return insertarRegistro(conexion, "INSERT INTO inscripcion(id_alumno,id_curso,fecha_inscripcion,estado,motivo_baja) VALUES(?,?,?,?, '')", inscripcion.getId_alumno(), inscripcion.getId_curso(), inscripcion.getFecha_inscripcion(), inscripcion.getEstado());

@@ -85,12 +85,24 @@ public class Consulta_academica_dao {
     // consultamos el rol real de la cuenta antes de permitir una operación
     public int obtenerRol(Connection conexion, int usuario) throws SQLException {
         int rol = numero(uno(conexion, "SELECT id_rol FROM usuario WHERE id_usuario=?", usuario), "id_rol");
-        String tabla = rol == 1 ? "secretaria" : rol == 4 ? "preceptor" : rol == 5 ? "directivo" : null;
-        if (tabla != null) {
-            var perfiles = consultar(conexion, "SELECT estado FROM " + tabla + " WHERE id_usuario=?", usuario);
-            if (!perfiles.isEmpty() && !"Activo".equals(perfiles.getFirst().get("estado"))) throw new IllegalArgumentException("La cuenta de personal está inactiva.");
-        }
+        if (!perfilActivo(conexion, usuario, rol)) throw new IllegalArgumentException("La cuenta está inactiva o no tiene un perfil válido.");
         return rol;
+    }
+
+    // resolvemos la tabla desde una lista cerrada y exigimos un perfil activo para alumnos y docentes
+    protected boolean perfilActivo(Connection conexion, int usuario, int rol) throws SQLException {
+        String tabla = switch (rol) {
+            case clases.Rol.DIRECTIVO -> "directivo";
+            case clases.Rol.SECRETARIA -> "secretaria";
+            case clases.Rol.DOCENTE -> "docente";
+            case clases.Rol.ALUMNO -> "alumno";
+            case clases.Rol.COOPERADORA -> "cooperadora";
+            default -> null;
+        };
+        if (tabla == null) return false;
+        var perfiles = consultar(conexion, "SELECT estado FROM " + tabla + " WHERE id_usuario=?", usuario);
+        if (perfiles.isEmpty()) return rol != clases.Rol.ALUMNO && rol != clases.Rol.DOCENTE;
+        return perfiles.stream().allMatch(p -> "Activo".equals(p.get("estado")));
     }
 
     // obtenemos el valor numérico de una columna del registro consultado
