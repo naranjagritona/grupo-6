@@ -193,24 +193,8 @@ public class Inscripcion_panel extends JFrame {
                     }
                 });
 
-        // listener para ir al panel de cursos
-        btnCursos.addActionListener(
-                _ -> {
-                    panelContenido.removeAll();
-                    splitPane.setVisible(false);
-                    Cursos_panel panelCursos = new Cursos_panel(usuarioLogueado);
-                    panelContenido.add(panelCursos, BorderLayout.CENTER);
-                    btnCursos.setBackground(new Color(37, 99, 235));
-                    btnCursos.setForeground(Color.WHITE);
-                    btnInscripciones.setBackground(new Color(24, 61, 110));
-                    btnInscripciones.setForeground(new Color(203, 213, 225));
-                    if (btnAdmin != null) {
-                        btnAdmin.setBackground(new Color(24, 61, 110));
-                        btnAdmin.setForeground(new Color(203, 213, 225));
-                    }
-                    panelContenido.revalidate();
-                    panelContenido.repaint();
-                });
+        // abrimos cursos y actualizamos la selección del menú desde un único lugar
+        btnCursos.addActionListener(_ -> mostrarPanelCursos());
 
         // abrimos el catálogo de materias como una vista independiente, igual que Cursos.
         btnMaterias.addActionListener(_ -> mostrarPanelMaterias());
@@ -223,12 +207,7 @@ public class Inscripcion_panel extends JFrame {
                     panelContenido.removeAll();
                     splitPane.setVisible(true);
                     panelContenido.add(splitPane, BorderLayout.CENTER);
-                    btnInscripciones.setBackground(new Color(37, 99, 235));
-                    btnInscripciones.setForeground(Color.WHITE);
-                    btnCursos.setBackground(new Color(24, 61, 110));
-                    btnCursos.setForeground(new Color(203, 213, 225));
-                    btnMaterias.setBackground(new Color(24, 61, 110));
-                    btnMaterias.setForeground(new Color(203, 213, 225));
+                    marcarModuloActivo(btnInscripciones);
                     panelContenido.revalidate();
                     panelContenido.repaint();
                 });
@@ -240,18 +219,7 @@ public class Inscripcion_panel extends JFrame {
                     splitPane.setVisible(false);
                     panelContenido.add(
                             new Calificaciones_panel(usuarioLogueado), BorderLayout.CENTER);
-                    btnCalificaciones.setBackground(new Color(37, 99, 235));
-                    btnCalificaciones.setForeground(Color.WHITE);
-                    btnInscripciones.setBackground(new Color(24, 61, 110));
-                    btnInscripciones.setForeground(new Color(203, 213, 225));
-                    btnCursos.setBackground(new Color(24, 61, 110));
-                    btnCursos.setForeground(new Color(203, 213, 225));
-                    btnMaterias.setBackground(new Color(24, 61, 110));
-                    btnMaterias.setForeground(new Color(203, 213, 225));
-                    if (btnAdmin != null) {
-                        btnAdmin.setBackground(new Color(24, 61, 110));
-                        btnAdmin.setForeground(new Color(203, 213, 225));
-                    }
+                    marcarModuloActivo(btnCalificaciones);
                     panelContenido.revalidate();
                     panelContenido.repaint();
                 });
@@ -263,12 +231,7 @@ public class Inscripcion_panel extends JFrame {
                     splitPane.setVisible(false);
                     Admin_panel panelAdmin = new Admin_panel(usuarioLogueado);
                     panelContenido.add(panelAdmin, BorderLayout.CENTER);
-                    btnAdmin.setBackground(new Color(37, 99, 235));
-                    btnAdmin.setForeground(Color.WHITE);
-                    btnInscripciones.setBackground(new Color(24, 61, 110));
-                    btnInscripciones.setForeground(new Color(203, 213, 225));
-                    btnCursos.setBackground(new Color(24, 61, 110));
-                    btnCursos.setForeground(new Color(203, 213, 225));
+                    marcarModuloActivo(btnAdmin);
                     panelContenido.revalidate();
                     panelContenido.repaint();
                 });
@@ -532,6 +495,18 @@ public class Inscripcion_panel extends JFrame {
             mostrarFacturacion();
         } else if (!gestion) {
             mostrarPanelCursos();
+        } else {
+            marcarModuloActivo(btnInscripciones);
+        }
+    }
+
+    // restauramos todos los botones antes de resaltar el módulo que está abierto
+    private void marcarModuloActivo(JButton activo) {
+        JButton[] opciones = {btnCursos, btnMaterias, btnCalificaciones, btnInscripciones, btnFacturacion, btnAdmin};
+        for (JButton boton : opciones) {
+            boolean seleccionado = boton == activo;
+            boton.setBackground(seleccionado ? new Color(37, 99, 235) : new Color(24, 61, 110));
+            boton.setForeground(seleccionado ? Color.WHITE : new Color(203, 213, 225));
         }
     }
 
@@ -555,7 +530,9 @@ public class Inscripcion_panel extends JFrame {
     private void mostrarFacturacion() {
         if (!servicios.Permisos_servicio.verFacturacion(usuarioLogueado)) return;
         panelContenido.removeAll();
+        splitPane.setVisible(false);
         panelContenido.add(new Facturacion_panel(usuarioLogueado), BorderLayout.CENTER);
+        marcarModuloActivo(btnFacturacion);
         panelContenido.revalidate();
         panelContenido.repaint();
     }
@@ -566,11 +543,8 @@ public class Inscripcion_panel extends JFrame {
 
         Cursos_panel panelCursos = new Cursos_panel(usuarioLogueado);
         panelContenido.add(panelCursos, BorderLayout.CENTER);
+        marcarModuloActivo(btnCursos);
 
-        btnCursos.setBackground(new Color(37, 99, 235));
-        btnCursos.setForeground(Color.WHITE);
-        btnMaterias.setBackground(new Color(24, 61, 110));
-        btnMaterias.setForeground(new Color(203, 213, 225));
 
         panelContenido.revalidate();
         panelContenido.repaint();
@@ -580,19 +554,8 @@ public class Inscripcion_panel extends JFrame {
         panelContenido.removeAll();
         splitPane.setVisible(false);
         panelContenido.add(new Materias_panel(usuarioLogueado), BorderLayout.CENTER);
+        marcarModuloActivo(btnMaterias);
 
-        btnMaterias.setBackground(new Color(37, 99, 235));
-        btnMaterias.setForeground(Color.WHITE);
-        btnInscripciones.setBackground(new Color(24, 61, 110));
-        btnInscripciones.setForeground(new Color(203, 213, 225));
-        btnCursos.setBackground(new Color(24, 61, 110));
-        btnCursos.setForeground(new Color(203, 213, 225));
-        btnCalificaciones.setBackground(new Color(24, 61, 110));
-        btnCalificaciones.setForeground(new Color(203, 213, 225));
-        if (btnAdmin != null) {
-            btnAdmin.setBackground(new Color(24, 61, 110));
-            btnAdmin.setForeground(new Color(203, 213, 225));
-        }
 
         panelContenido.revalidate();
         panelContenido.repaint();
