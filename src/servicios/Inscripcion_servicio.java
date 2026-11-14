@@ -126,7 +126,7 @@ public class Inscripcion_servicio {
     public void registrar(Inscripcion inscripcion, Integer idUsuario) {
         try {
             inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, clases.Rol.SECRETARIA);
+                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
                 if (!java.util.List.of("Pendiente", "Confirmada").contains(inscripcion.getEstado())) {
                     throw new IllegalArgumentException("La inscripción se registra como Pendiente o Confirmada.");
                 }
@@ -150,7 +150,7 @@ public class Inscripcion_servicio {
     public void modificar(Inscripcion inscripcion, Integer idUsuario) {
         try {
             inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, clases.Rol.SECRETARIA);
+                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
                 var anterior = inscripcionDao.bloquear(conexion, inscripcion.getId_inscripcion());
                 validarAbierta(anterior);
                 if (!java.util.List.of("Pendiente", "Confirmada").contains(inscripcion.getEstado())) {
@@ -179,7 +179,7 @@ public class Inscripcion_servicio {
         try {
             String razon = motivo(motivo);
             inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, usuario, clases.Rol.SECRETARIA);
+                Permisos_servicio.verificar(conexion, inscripcionDao, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
                 var anterior = inscripcionDao.bloquear(conexion, id);
                 validarAbierta(anterior);
                 inscripcionDao.estado(conexion, id, "Cancelada", razon);

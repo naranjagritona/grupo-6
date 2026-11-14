@@ -26,6 +26,9 @@ public final class Permisos_servicio {
         return directivo(usuario) || secretario(usuario);
     }
 
+    // dirección y secretaría pueden registrar, modificar y cancelar inscripciones
+    public static boolean administrarInscripciones(Usuario usuario) { return gestion(usuario); }
+
     // distinguimos los módulos de gestión, el trabajo académico y los pagos de cada perfil
     private static boolean tieneRol(Usuario usuario, int rol) { return usuario != null && Objects.equals(usuario.getId_rol(), rol); }
     public static boolean docente(Usuario usuario) { return tieneRol(usuario, Rol.DOCENTE); }

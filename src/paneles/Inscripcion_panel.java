@@ -470,11 +470,11 @@ public class Inscripcion_panel extends JFrame {
                 });
 
         aplicarPermisosPorRol();
-        boolean secretario = servicios.Permisos_servicio.secretario(usuarioLogueado);
-        btnRegistrar.setVisible(secretario);
-        btnModificar.setVisible(secretario);
-        btnDarDeBaja.setVisible(secretario);
-        if (!secretario) { cmbAlumno.setEnabled(false); cmbCurso.setEnabled(false); cmbEstado.setEnabled(false); textFecha.setEditable(false); }
+        boolean administraInscripciones = servicios.Permisos_servicio.administrarInscripciones(usuarioLogueado);
+        btnRegistrar.setVisible(administraInscripciones);
+        btnModificar.setVisible(administraInscripciones);
+        btnDarDeBaja.setVisible(administraInscripciones);
+        if (!administraInscripciones) { cmbAlumno.setEnabled(false); cmbCurso.setEnabled(false); cmbEstado.setEnabled(false); textFecha.setEditable(false); }
 
         ordenarMenuLateral();
         cargarDatosAsincronos();
@@ -920,12 +920,12 @@ public class Inscripcion_panel extends JFrame {
 
     private void limpiarFormulario() {
         idInscripcionSeleccionada = null;
-        textFecha.setEditable(servicios.Permisos_servicio.secretario(usuarioLogueado));
+        textFecha.setEditable(servicios.Permisos_servicio.administrarInscripciones(usuarioLogueado));
         txtMotivoBaja.setText("");
         textFecha.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         cmbAlumno.limpiarSeleccion();
-        cmbAlumno.setEnabled(servicios.Permisos_servicio.secretario(usuarioLogueado));
-        cmbCurso.setEnabled(servicios.Permisos_servicio.secretario(usuarioLogueado));
+        cmbAlumno.setEnabled(servicios.Permisos_servicio.administrarInscripciones(usuarioLogueado));
+        cmbCurso.setEnabled(servicios.Permisos_servicio.administrarInscripciones(usuarioLogueado));
         if (cmbCurso.getItemCount() > 0) cmbCurso.setSelectedIndex(0);
         if (cmbEstado.getItemCount() > 0) cmbEstado.setSelectedIndex(0);
     }

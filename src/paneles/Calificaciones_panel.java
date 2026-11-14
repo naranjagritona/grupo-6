@@ -273,16 +273,9 @@ public class Calificaciones_panel extends JPanel {
                     llenandoCursos = true;
                     cmbCurso.removeAllItems();
                     for (Curso c : cursos) {
-                        String nombre =
-                                "Curso "
-                                        + c.getId_curso()
-                                        + " · "
-                                        + c.getDivision() + " · " + c.getTurno()
-                                        + " · "
-                                        + valor(c.getNombre_periodo())
-                                        + " · "
-                                        + c.getAño()
-                                        + "°";
+                        String nombre = c.getAño() + "° " + c.getDivision()
+                                + " · " + valor(c.getNombre_periodo())
+                                + " · " + valor(c.getTurno());
                         cmbCurso.addItem(new ItemCombo(c.getId_curso(), nombre));
                         if (anterior != null && anterior.equals(c.getId_curso())) {
                             cmbCurso.setSelectedIndex(cmbCurso.getItemCount() - 1);

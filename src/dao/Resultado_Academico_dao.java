@@ -39,6 +39,6 @@ public class Resultado_Academico_dao extends Consulta_academica_dao {
 
     // pedimos revisar los resultados abiertos cuando se incorpora una evaluación o cambia el criterio de cálculo
     public void invalidarCurso(Connection conexion, int curso, Integer materia) throws SQLException {
-        ejecutar(conexion, "UPDATE resultado_materia r JOIN inscripcion i ON i.id_inscripcion=r.id_inscripcion SET r.resultado='En curso',r.fecha_calculo=NOW() WHERE i.id_curso=? AND i.estado IN ('Confirmada','Recuperacion') AND (? IS NULL OR r.id_materia=?)", curso, materia, materia);
+        ejecutar(conexion, "UPDATE resultado_materia SET resultado='En curso',fecha_calculo=NOW() WHERE id_inscripcion IN (SELECT id_inscripcion FROM inscripcion WHERE id_curso=? AND estado IN ('Confirmada','Recuperacion')) AND (? IS NULL OR id_materia=?)", curso, materia, materia);
     }
 }
