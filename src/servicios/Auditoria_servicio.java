@@ -28,6 +28,18 @@ public final class Auditoria_servicio {
         return usuario;
     }
 
+    // guardamos el ingreso antes de abrir la pantalla principal
+    // no lo mandamos al hilo de tareas porque el programa podría cerrarse antes de que lo escriba
+    public static void registrarInicio(clases.Usuario cuenta) {
+        Log_Usuario log = new Log_Usuario();
+        log.setId_usuario(cuenta.getId_usuario());
+        log.setAccion("INICIAR SESION");
+        log.setCampo_modificado("Acceso");
+        log.setValor_anterior("");
+        log.setValor_nuevo("Inicio de sesión de " + cuenta.getNombre_usuario());
+        new Log_Usuario_dao().insertar(log);
+    }
+
     // guarda la operación recibida y conserva el registro de la acción
     public static void registrar(String accion, String modulo, String detalle) {
         Integer id = usuario;

@@ -2,7 +2,9 @@ package paneles;
 
 import clases.Materia;
 import clases.Usuario;
-import dao.PlanCurso_dao;
+
+import servicios.PlanCurso_servicio;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -11,6 +13,7 @@ import java.awt.GridLayout;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
@@ -30,7 +33,7 @@ public class Materias_panel extends JPanel {
     private static final long serialVersionUID = 1L;
     private static final Color AZUL = new Color(24, 74, 132);
     private static final Color BORDE = new Color(218, 226, 236);
-    private final PlanCurso_dao dao;
+    private final PlanCurso_servicio dao;
     private final Usuario usuario;
     private final JPanel anios = new JPanel(new GridLayout(0, 2, 12, 12));
     private final JLabel estado = new JLabel(" ");
@@ -38,13 +41,19 @@ public class Materias_panel extends JPanel {
     private Map<Integer, List<Materia>> plan = new LinkedHashMap<>();
     private boolean cargando;
 
-    public Materias_panel() { this(null); }
-    public Materias_panel(Usuario usuario) { this(usuario, new PlanCurso_dao()); }
+    public Materias_panel() {
+        this(null);
+    }
 
-    Materias_panel(Usuario usuario, PlanCurso_dao dao) {
+    public Materias_panel(Usuario usuario) {
+        this(usuario, new PlanCurso_servicio());
+    }
+
+    Materias_panel(Usuario usuario, PlanCurso_servicio dao) {
         this.usuario = usuario;
         this.dao = dao;
-        servicios.Auditoria_servicio.registrar("ABRIR MODULO", "Materias", "Plan académico por año");
+        servicios.Auditoria_servicio.registrar(
+                "ABRIR MODULO", "Materias", "Plan académico por año");
         setLayout(new BorderLayout(12, 12));
         setBackground(Color.WHITE);
         setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
@@ -53,7 +62,8 @@ public class Materias_panel extends JPanel {
         cabecera.setOpaque(false);
         JLabel titulo = new JLabel("Materias");
         titulo.setFont(new Font("Tahoma", Font.BOLD, 24));
-        JLabel descripcion = new JLabel("Organizá las materias de cada año y consultá su plan académico.");
+        JLabel descripcion =
+                new JLabel("Organizá las materias de cada año y consultá su plan académico.");
         descripcion.setForeground(new Color(90, 104, 122));
         JPanel textos = new JPanel(new GridLayout(0, 1, 0, 4));
         textos.setOpaque(false);
@@ -84,11 +94,21 @@ public class Materias_panel extends JPanel {
         pie.add(actualizar, BorderLayout.EAST);
         add(pie, BorderLayout.SOUTH);
 
-        buscar.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { mostrarPlan(); }
-            public void removeUpdate(DocumentEvent e) { mostrarPlan(); }
-            public void changedUpdate(DocumentEvent e) { mostrarPlan(); }
-        });
+        buscar.getDocument()
+                .addDocumentListener(
+                        new DocumentListener() {
+                            public void insertUpdate(DocumentEvent e) {
+                                mostrarPlan();
+                            }
+
+                            public void removeUpdate(DocumentEvent e) {
+                                mostrarPlan();
+                            }
+
+                            public void changedUpdate(DocumentEvent e) {
+                                mostrarPlan();
+                            }
+                        });
         cargar();
     }
 
@@ -97,7 +117,10 @@ public class Materias_panel extends JPanel {
         cargando = true;
         estado.setText("Cargando materias…");
         new SwingWorker<Map<Integer, List<Materia>>, Void>() {
-            protected Map<Integer, List<Materia>> doInBackground() { return dao.planPorAnio(); }
+            protected Map<Integer, List<Materia>> doInBackground() {
+                return dao.planPorAnio();
+            }
+
             protected void done() {
                 cargando = false;
                 try {
@@ -119,22 +142,30 @@ public class Materias_panel extends JPanel {
         boolean directivo = servicios.Permisos_servicio.directivo(usuario);
         for (int anio = 1; anio <= 6; anio++) {
             List<Materia> todas = plan.getOrDefault(anio, List.of());
-            List<Materia> visibles = todas.stream()
-                    .filter(m -> m.getNombre_materia().toLowerCase(java.util.Locale.ROOT).contains(filtro))
-                    .toList();
+            List<Materia> visibles =
+                    todas.stream()
+                            .filter(
+                                    m ->
+                                            m.getNombre_materia()
+                                                    .toLowerCase(java.util.Locale.ROOT)
+                                                    .contains(filtro))
+                            .toList();
             if (!filtro.isEmpty() && visibles.isEmpty()) continue;
 
             JPanel tarjeta = new JPanel(new BorderLayout(0, 10));
             tarjeta.setBackground(Color.WHITE);
-            tarjeta.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(BORDE), BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+            tarjeta.setBorder(
+                    BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(BORDE),
+                            BorderFactory.createEmptyBorder(12, 14, 12, 14)));
             JPanel titulo = new JPanel(new BorderLayout(8, 0));
             titulo.setOpaque(false);
             JLabel anioLabel = new JLabel(anio + "° año");
             anioLabel.setFont(new Font("Tahoma", Font.BOLD, 17));
             anioLabel.setForeground(AZUL);
             titulo.add(anioLabel, BorderLayout.WEST);
-            JLabel cantidad = new JLabel(todas.size() + (todas.size() == 1 ? " materia" : " materias"));
+            JLabel cantidad =
+                    new JLabel(todas.size() + (todas.size() == 1 ? " materia" : " materias"));
             cantidad.setForeground(new Color(95, 109, 128));
             titulo.add(cantidad, BorderLayout.CENTER);
             if (directivo) {
@@ -185,9 +216,19 @@ public class Materias_panel extends JPanel {
 
     private void eliminar(int anio, Materia materia) {
         if (cargando) return;
-        if (JOptionPane.showConfirmDialog(this,
-                "¿Eliminar " + materia.getNombre_materia() + " de " + anio + "° año?\nSe quitará de los cursos de ese año. Los demás años se conservan.",
-                "Eliminar materia", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) return;
+        if (JOptionPane.showConfirmDialog(
+                        this,
+                        "¿Eliminar "
+                                + materia.getNombre_materia()
+                                + " de "
+                                + anio
+                                + "° año?\n"
+                                + "Se quitará de los cursos de ese año. Los demás años se"
+                                + " conservan.",
+                        "Eliminar materia",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE)
+                != JOptionPane.YES_OPTION) return;
         cargando = true;
         estado.setText("Verificando calificaciones…");
         new SwingWorker<Void, Void>() {
@@ -195,10 +236,16 @@ public class Materias_panel extends JPanel {
                 dao.eliminarDelAnio(anio, materia.getId_materia());
                 return null;
             }
+
             protected void done() {
                 cargando = false;
-                try { get(); cargar(); }
-                catch (Exception e) { error(e); estado.setText("La materia no se eliminó."); }
+                try {
+                    get();
+                    cargar();
+                } catch (Exception e) {
+                    error(e);
+                    estado.setText("La materia no se eliminó.");
+                }
             }
         }.execute();
     }
@@ -207,10 +254,18 @@ public class Materias_panel extends JPanel {
         if (cargando) return;
         estado.setText("Preparando materias…");
         new SwingWorker<List<Materia>, Void>() {
-            protected List<Materia> doInBackground() { return new dao.Materia_dao().obtenerTodos(); }
+            protected List<Materia> doInBackground() {
+                return new dao.Materia_dao().obtenerTodos();
+            }
+
             protected void done() {
-                try { elegir(anio, get()); estado.setText(" "); }
-                catch (Exception e) { error(e); estado.setText("No se pudieron cargar las materias existentes."); }
+                try {
+                    elegir(anio, get());
+                    estado.setText(" ");
+                } catch (Exception e) {
+                    error(e);
+                    estado.setText("No se pudieron cargar las materias existentes.");
+                }
             }
         }.execute();
     }
@@ -219,37 +274,66 @@ public class Materias_panel extends JPanel {
         JComboBox<Materia> existentes = new JComboBox<>();
         existentes.addItem(null);
         for (Materia materia : materias) existentes.addItem(materia);
-        existentes.setRenderer(new DefaultListCellRenderer() {
-            private static final long serialVersionUID = 1L;
-            @Override public java.awt.Component getListCellRendererComponent(
-                    JList<?> lista, Object valor, int indice, boolean seleccionado, boolean foco) {
-                super.getListCellRendererComponent(lista, valor, indice, seleccionado, foco);
-                setText(valor instanceof Materia materia ? materia.getNombre_materia() : "Crear una materia nueva");
-                return this;
-            }
-        });
+        existentes.setRenderer(
+                new DefaultListCellRenderer() {
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
+                    public java.awt.Component getListCellRendererComponent(
+                            JList<?> lista,
+                            Object valor,
+                            int indice,
+                            boolean seleccionado,
+                            boolean foco) {
+                        super.getListCellRendererComponent(
+                                lista, valor, indice, seleccionado, foco);
+                        setText(
+                                valor instanceof Materia materia
+                                        ? materia.getNombre_materia()
+                                        : "Crear una materia nueva");
+                        return this;
+                    }
+                });
         JTextField nombre = new JTextField(24);
         existentes.addActionListener(e -> nombre.setEnabled(existentes.getSelectedItem() == null));
-        if (JOptionPane.showConfirmDialog(this,
-                new Object[] {"Materia para " + anio + "° año", existentes, "Nombre de la materia nueva", nombre},
-                "Agregar materia", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) return;
+        if (JOptionPane.showConfirmDialog(
+                        this,
+                        new Object[] {
+                            "Materia para " + anio + "° año",
+                            existentes,
+                            "Nombre de la materia nueva",
+                            nombre
+                        },
+                        "Agregar materia",
+                        JOptionPane.OK_CANCEL_OPTION)
+                != JOptionPane.OK_OPTION) return;
         Materia seleccionada = (Materia) existentes.getSelectedItem();
         String nombreNuevo = nombre.getText();
         estado.setText("Guardando…");
         new SwingWorker<Void, Void>() {
             protected Void doInBackground() throws Exception {
-                dao.agregar(anio, seleccionada == null ? null : seleccionada.getId_materia(), nombreNuevo);
+                dao.agregar(
+                        anio,
+                        seleccionada == null ? null : seleccionada.getId_materia(),
+                        nombreNuevo);
                 return null;
             }
+
             protected void done() {
-                try { get(); cargar(); }
-                catch (Exception e) { error(e); estado.setText("No se guardó la materia."); }
+                try {
+                    get();
+                    cargar();
+                } catch (Exception e) {
+                    error(e);
+                    estado.setText("No se guardó la materia.");
+                }
             }
         }.execute();
     }
 
     private void error(Exception e) {
         Throwable causa = e.getCause() == null ? e : e.getCause();
-        JOptionPane.showMessageDialog(this, causa.getMessage(), "Materias por año", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(
+                this, causa.getMessage(), "Materias por año", JOptionPane.ERROR_MESSAGE);
     }
 }

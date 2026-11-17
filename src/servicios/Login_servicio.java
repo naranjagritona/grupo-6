@@ -27,9 +27,11 @@ public class Login_servicio {
         // hace la consulta en la BD
         Usuario usuario = usuarioDao.autenticar(nombre_usuario.trim(), contraseña);
         if (usuario != null) {
+            // sólo registramos el ingreso si la contraseña es correcta y el perfil está activo
+            // esperamos a que se guarde el log antes de activar la sesión de esta cuenta
+            Auditoria_servicio.registrarInicio(usuario);
             Auditoria_servicio.iniciar(usuario.getId_usuario());
             Facturacion_servicio.prepararSesion(nombre_usuario.trim(), contraseña);
-            Auditoria_servicio.registrar("INICIAR SESION", "Acceso", "Ingreso a la aplicación");
         }
         return usuario;
     }

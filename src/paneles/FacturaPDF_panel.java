@@ -20,7 +20,7 @@ public final class FacturaPDF_panel {
         JPanel paginas = new JPanel();
         paginas.setLayout(new BoxLayout(paginas, BoxLayout.Y_AXIS));
         paginas.setBackground(Color.GRAY);
-        // el PDF se genera en la web; acá solamente mostramos sus páginas.
+        // el PDF se genera en la web, acá solamente mostramos sus páginas.
         try (PDDocument documento = Loader.loadPDF(pdf)) {
             PDFRenderer renderer = new PDFRenderer(documento);
             for (int i = 0; i < documento.getNumberOfPages(); i++) {

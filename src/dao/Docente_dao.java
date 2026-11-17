@@ -12,15 +12,43 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos y modificamos los registros de docente en la base de datos
-public class Docente_dao extends Consulta_academica_dao implements Dao<Docente, Integer> {
+public class Docente_dao implements Dao<Docente, Integer> {
     // registramos el docente junto con su cuenta y el legajo generado por el servicio
     public int crear(java.sql.Connection db, Docente d) throws java.sql.SQLException {
-        return insertarRegistro(db,"INSERT INTO docente(id_usuario,nombre,apellido,dni,legajo,estado) VALUES(?,?,?,?,?,?)",d.getId_usuario(),d.getNombre(),d.getApellido(),d.getDni(),d.getLegajo(),d.getEstado());
+        String consulta =
+                "INSERT INTO docente(id_usuario,nombre,apellido,dni,legajo,estado)"
+                        + " VALUES(?,?,?,?,?,?)";
+        try (java.sql.PreparedStatement ps =
+                db.prepareStatement(consulta, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+            ps.setObject(1, d.getId_usuario());
+            ps.setObject(2, d.getNombre());
+            ps.setObject(3, d.getApellido());
+            ps.setObject(4, d.getDni());
+            ps.setObject(5, d.getLegajo());
+            ps.setObject(6, d.getEstado());
+            ps.executeUpdate();
+            // usamos el ID que generó la base para relacionar el registro con los demás datos
+            try (java.sql.ResultSet claves = ps.getGeneratedKeys()) {
+                if (!claves.next())
+                    throw new java.sql.SQLException("No se obtuvo el identificador del registro.");
+                return claves.getInt(1);
+            }
+        }
     }
 
     // actualizamos los datos personales sin aceptar un legajo o una cuenta diferentes
-    public void actualizarAdministracion(java.sql.Connection db, Docente d) throws java.sql.SQLException {
-        ejecutar(db,"UPDATE docente SET nombre=?,apellido=?,dni=?,estado=? WHERE id_docente=?",d.getNombre(),d.getApellido(),d.getDni(),d.getEstado(),d.getId_docente());
+    public void actualizarAdministracion(java.sql.Connection db, Docente d)
+            throws java.sql.SQLException {
+        String consulta =
+                "UPDATE docente SET nombre=?,apellido=?,dni=?,estado=? WHERE id_docente=?";
+        try (java.sql.PreparedStatement ps = db.prepareStatement(consulta)) {
+            ps.setObject(1, d.getNombre());
+            ps.setObject(2, d.getApellido());
+            ps.setObject(3, d.getDni());
+            ps.setObject(4, d.getEstado());
+            ps.setObject(5, d.getId_docente());
+            ps.executeUpdate();
+        }
     }
 
     // inserta el registro recibido en la tabla correspondiente
@@ -51,65 +79,33 @@ public class Docente_dao extends Consulta_academica_dao implements Dao<Docente, 
     // consulta un registro usando su identificador
     @Override
     public Docente obtenerPorId(Integer id) {
-        Docente docente = null;
-        String consulta = "SELECT * FROM docente WHERE id_docente = ?";
-
+        String consulta = "SELECT * FROM docente WHERE id_docente=?";
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta)) {
-
             ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    docente = new Docente();
-
-                    docente.setId_docente(rs.getInt("id_docente"));
-                    docente.setId_usuario((Integer) rs.getObject("id_usuario"));
-                    docente.setNombre(rs.getString("nombre"));
-                    docente.setApellido(rs.getString("apellido"));
-                    docente.setDni(rs.getString("dni"));
-                    docente.setLegajo(rs.getString("legajo"));
-                    docente.setEstado(rs.getString("estado"));
-                }
+            try (ResultSet registros = ps.executeQuery()) {
+                return registros.next() ? leerEntidad(registros) : null;
             }
-
         } catch (SQLException error) {
-            System.err.println("Error al obtener el docente por ID: " + error.getMessage());
-            error.printStackTrace();
+            throw new IllegalStateException("No se pudo consultar el registro de docente.", error);
         }
-
-        return docente;
     }
 
     // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Docente> obtenerTodos() {
-        List<Docente> listaDocentes = new ArrayList<>();
         String consulta = "SELECT * FROM docente";
-
+        List<Docente> lista = new ArrayList<>();
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta);
-                ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                Docente docente = new Docente();
-
-                docente.setId_docente(rs.getInt("id_docente"));
-                docente.setId_usuario((Integer) rs.getObject("id_usuario"));
-                docente.setNombre(rs.getString("nombre"));
-                docente.setApellido(rs.getString("apellido"));
-                docente.setDni(rs.getString("dni"));
-                docente.setLegajo(rs.getString("legajo"));
-                docente.setEstado(rs.getString("estado"));
-
-                listaDocentes.add(docente);
+                ResultSet registros = ps.executeQuery()) {
+            while (registros.next()) {
+                lista.add(leerEntidad(registros));
             }
-
         } catch (SQLException error) {
-            System.err.println("Error al obtener la lista de docentes: " + error.getMessage());
-            error.printStackTrace();
+            throw new IllegalStateException("No se pudo consultar el listado de docente.", error);
         }
-
-        return listaDocentes;
+        return lista;
     }
 
     // actualiza los datos del registro seleccionado
@@ -152,6 +148,79 @@ public class Docente_dao extends Consulta_academica_dao implements Dao<Docente, 
         } catch (SQLException error) {
             System.err.println("Error al eliminar el docente: " + error.getMessage());
             error.printStackTrace();
+        }
+    }
+
+    public clases.Docente porUsuario(java.sql.Connection db, int usuario)
+            throws java.sql.SQLException {
+        var filas = seleccionar(db, "SELECT * FROM docente WHERE id_usuario=? FOR UPDATE", usuario);
+        return filas.isEmpty() ? null : filas.getFirst();
+    }
+
+    public void inactivar(java.sql.Connection db, int usuario) throws java.sql.SQLException {
+        String consulta = "UPDATE docente SET estado='Inactivo' WHERE id_usuario=?";
+        try (java.sql.PreparedStatement ps = db.prepareStatement(consulta)) {
+            ps.setObject(1, usuario);
+            ps.executeUpdate();
+        }
+    }
+
+    protected Docente leerEntidad(java.sql.ResultSet registros) throws java.sql.SQLException {
+        Docente objeto = new Docente();
+        objeto.setId_docente((Integer) registros.getObject("id_docente"));
+        objeto.setId_usuario((Integer) registros.getObject("id_usuario"));
+        objeto.setNombre(registros.getString("nombre"));
+        objeto.setApellido(registros.getString("apellido"));
+        objeto.setDni(registros.getString("dni"));
+        objeto.setLegajo(registros.getString("legajo"));
+        objeto.setEstado(registros.getString("estado"));
+        return objeto;
+    }
+
+    // ejecutamos la consulta con sus valores y pasamos cada fila a un objeto Docente
+    private java.util.List<Docente> seleccionar(
+            java.sql.Connection conexion, String consulta, Object... valores)
+            throws java.sql.SQLException {
+        java.util.List<Docente> lista = new java.util.ArrayList<>();
+        try (java.sql.PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            for (int i = 0; i < valores.length; i++) {
+                ps.setObject(i + 1, valores[i]);
+            }
+            try (java.sql.ResultSet registros = ps.executeQuery()) {
+                while (registros.next()) {
+                    lista.add(leerEntidad(registros));
+                }
+            }
+        }
+        return lista;
+    }
+
+    // recibimos la conexión del servicio para no separar las consultas de una transacción
+    public java.util.List<Docente> listarTabla(java.sql.Connection conexion)
+            throws java.sql.SQLException {
+        return seleccionar(conexion, "SELECT * FROM docente");
+    }
+
+    public Docente buscar(java.sql.Connection conexion, int id) throws java.sql.SQLException {
+        var filas = seleccionar(conexion, "SELECT * FROM docente WHERE id_docente=?", id);
+        return filas.isEmpty() ? null : filas.getFirst();
+    }
+
+    // bloqueamos el registro mientras se revisa para evitar dos cambios al mismo tiempo
+    public Docente requerir(java.sql.Connection conexion, int id) throws java.sql.SQLException {
+        var filas =
+                seleccionar(conexion, "SELECT * FROM docente WHERE id_docente=? FOR UPDATE", id);
+        if (filas.isEmpty())
+            throw new IllegalArgumentException("El registro ya no existe. Actualizá el listado.");
+        return filas.getFirst();
+    }
+
+    public int contar(java.sql.Connection conexion) throws java.sql.SQLException {
+        String consulta = "SELECT COUNT(*) FROM docente";
+        try (java.sql.PreparedStatement ps = conexion.prepareStatement(consulta);
+                java.sql.ResultSet registros = ps.executeQuery()) {
+            registros.next();
+            return registros.getInt(1);
         }
     }
 }

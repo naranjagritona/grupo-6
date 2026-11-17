@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 // guardamos el valor anterior, el nuevo y el motivo de una modificación de nota
 public class Calificacion_Historial {
-    private Integer id_historial;
+    private Integer id_calificacion_historial;
     private Integer id_calificacion;
     private Double nota_anterior;
     private Double nota_nueva;
@@ -14,13 +14,13 @@ public class Calificacion_Historial {
     public Calificacion_Historial() {}
 
     public Calificacion_Historial(
-            Integer id_historial,
+            Integer id_calificacion_historial,
             Integer id_calificacion,
             Double nota_anterior,
             Double nota_nueva,
             LocalDateTime fecha_modificacion,
             String motivo) {
-        this.id_historial = id_historial;
+        this.id_calificacion_historial = id_calificacion_historial;
         this.id_calificacion = id_calificacion;
         this.nota_anterior = nota_anterior;
         this.nota_nueva = nota_nueva;
@@ -29,12 +29,12 @@ public class Calificacion_Historial {
     }
 
     // consultamos y modificamos los datos del objeto con sus métodos de acceso
-    public Integer getId_historial() {
-        return id_historial;
+    public Integer getId_calificacion_historial() {
+        return id_calificacion_historial;
     }
 
-    public void setId_historial(Integer id_historial) {
-        this.id_historial = id_historial;
+    public void setId_calificacion_historial(Integer id_calificacion_historial) {
+        this.id_calificacion_historial = id_calificacion_historial;
     }
 
     public Integer getId_calificacion() {

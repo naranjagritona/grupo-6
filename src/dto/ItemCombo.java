@@ -1,8 +1,7 @@
-package clases;
+package dto;
 
 // mostramos un texto en el selector y conservamos el identificador para las consultas
 public class ItemCombo {
-
     private Integer id;
     private String texto;
 

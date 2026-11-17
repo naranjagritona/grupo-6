@@ -4,10 +4,11 @@ import clases.Alumno;
 import clases.Curso;
 import clases.Inscripcion;
 
+import conexion.Conexion;
+
 import dao.Alumno_dao;
 import dao.Curso_dao;
 import dao.Inscripcion_dao;
-import dao.Resultado_Materia_dao;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,14 +20,12 @@ public class Inscripcion_servicio {
     private Inscripcion_dao inscripcionDao;
     private Alumno_dao alumnoDao;
     private Curso_dao cursoDao;
-    private Resultado_Materia_dao resultadoMateriaDao;
 
     // recibimos el dao que se utiliza para compartir la conexión durante los cambios
     public Inscripcion_servicio(Inscripcion_dao inscripciones) {
         this.inscripcionDao = inscripciones;
         this.alumnoDao = new Alumno_dao();
         this.cursoDao = new Curso_dao();
-        this.resultadoMateriaDao = new Resultado_Materia_dao();
     }
 
     // preparamos los daos para validar y consultar los datos de inscripción
@@ -34,7 +33,6 @@ public class Inscripcion_servicio {
         this.inscripcionDao = new Inscripcion_dao();
         this.alumnoDao = new Alumno_dao();
         this.cursoDao = new Curso_dao();
-        this.resultadoMateriaDao = new Resultado_Materia_dao();
     }
 
     // consulta al alumno por su id usando el alumno dao
@@ -51,7 +49,8 @@ public class Inscripcion_servicio {
         for (Inscripcion ins : inscripciones) {
             if (ins.getId_alumno().equals(idAlumno) && ins.getId_curso().equals(idCurso)) {
                 if ("Confirmada".equalsIgnoreCase(ins.getEstado())
-                        || "Pendiente".equalsIgnoreCase(ins.getEstado()) || "Recuperacion".equalsIgnoreCase(ins.getEstado())) {
+                        || "Pendiente".equalsIgnoreCase(ins.getEstado())
+                        || "Recuperacion".equalsIgnoreCase(ins.getEstado())) {
                     return true;
                 }
             }
@@ -69,7 +68,8 @@ public class Inscripcion_servicio {
         List<Inscripcion> inscripciones = inscripcionDao.obtenerTodos();
         for (Inscripcion ins : inscripciones) {
             if (ins.getId_curso().equals(idCurso)
-                    && java.util.List.of("Confirmada", "Pendiente", "Recuperacion").contains(ins.getEstado())) {
+                    && java.util.List.of("Confirmada", "Pendiente", "Recuperacion")
+                            .contains(ins.getEstado())) {
                 confirmadas++;
             }
         }
@@ -125,21 +125,42 @@ public class Inscripcion_servicio {
     // validamos los permisos, el alumno y el cupo antes de guardar una inscripción
     public void registrar(Inscripcion inscripcion, Integer idUsuario) {
         try {
-            inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
-                if (!java.util.List.of("Pendiente", "Confirmada").contains(inscripcion.getEstado())) {
-                    throw new IllegalArgumentException("La inscripción se registra como Pendiente o Confirmada.");
-                }
-                if (!"Activo".equals(inscripcionDao.alumno(conexion, inscripcion.getId_alumno()).get("estado"))) {
-                    throw new IllegalArgumentException("El alumno no está activo.");
-                }
-                validarDestino(conexion, inscripcion.getId_alumno(), inscripcion.getId_curso());
-                if (inscripcion.getFecha_inscripcion() == null) throw new IllegalArgumentException("Ingresá una fecha válida.");
-                int id = inscripcionDao.crear(conexion, inscripcion);
-                inscripcionDao.movimiento(conexion, id, null, inscripcion.getEstado(), "Registro de inscripción", idUsuario);
-                avisarAsignacion(conexion, inscripcion.getId_alumno(), inscripcion.getId_curso(), id, idUsuario);
-                return null;
-            });
+            Conexion.transaccion(
+                    conexion -> {
+                        Permisos_servicio.verificar(
+                                conexion, idUsuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
+                        if (!java.util.List.of("Pendiente", "Confirmada")
+                                .contains(inscripcion.getEstado())) {
+                            throw new IllegalArgumentException(
+                                    "La inscripción se registra como Pendiente o Confirmada.");
+                        }
+                        if (!"Activo"
+                                .equals(
+                                        new dao.Alumno_dao()
+                                                .requerir(conexion, inscripcion.getId_alumno())
+                                                .getEstado())) {
+                            throw new IllegalArgumentException("El alumno no está activo.");
+                        }
+                        validarDestino(
+                                conexion, inscripcion.getId_alumno(), inscripcion.getId_curso());
+                        if (inscripcion.getFecha_inscripcion() == null)
+                            throw new IllegalArgumentException("Ingresá una fecha válida.");
+                        int id = inscripcionDao.crear(conexion, inscripcion);
+                        movimiento(
+                                conexion,
+                                id,
+                                null,
+                                inscripcion.getEstado(),
+                                "Registro de inscripción",
+                                idUsuario);
+                        avisarAsignacion(
+                                conexion,
+                                inscripcion.getId_alumno(),
+                                inscripcion.getId_curso(),
+                                id,
+                                idUsuario);
+                        return null;
+                    });
             enviarAvisos(idUsuario);
         } catch (Exception error) {
             throw new IllegalArgumentException(error.getMessage(), error);
@@ -149,26 +170,52 @@ public class Inscripcion_servicio {
     // conservamos el alumno y el curso originales y modificamos solamente una inscripción abierta
     public void modificar(Inscripcion inscripcion, Integer idUsuario) {
         try {
-            inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, idUsuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
-                var anterior = inscripcionDao.bloquear(conexion, inscripcion.getId_inscripcion());
-                validarAbierta(anterior);
-                if (!java.util.List.of("Pendiente", "Confirmada").contains(inscripcion.getEstado())) {
-                    throw new IllegalArgumentException("Para cerrar o trasladar la inscripción utilizá su opción correspondiente.");
-                }
-                if (dao.Consulta_academica_dao.numero(anterior, "id_alumno") != inscripcion.getId_alumno()
-                        || dao.Consulta_academica_dao.numero(anterior, "id_curso") != inscripcion.getId_curso()) {
-                    throw new IllegalArgumentException("El curso y el alumno se conservan. Utilizá la opción de cambio de división.");
-                }
-                if ("Recuperacion".equals(anterior.get("estado"))) {
-                    throw new IllegalArgumentException("La recuperación se resuelve al aprobar las materias y revisar la promoción.");
-                }
-                if (inscripcion.getFecha_inscripcion() == null) throw new IllegalArgumentException("Ingresá una fecha válida.");
-                inscripcionDao.fecha(conexion, inscripcion.getId_inscripcion(), inscripcion.getFecha_inscripcion());
-                inscripcionDao.estado(conexion, inscripcion.getId_inscripcion(), inscripcion.getEstado(), "");
-                inscripcionDao.movimiento(conexion, inscripcion.getId_inscripcion(), anterior.get("estado").toString(), inscripcion.getEstado(), "Modificación administrativa", idUsuario);
-                return null;
-            });
+            Conexion.transaccion(
+                    conexion -> {
+                        Permisos_servicio.verificar(
+                                conexion, idUsuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
+                        var anterior =
+                                new ConsultasInscripcion_servicio(inscripcionDao)
+                                        .bloquear(conexion, inscripcion.getId_inscripcion());
+                        validarAbierta(anterior);
+                        if (!java.util.List.of("Pendiente", "Confirmada")
+                                .contains(inscripcion.getEstado())) {
+                            throw new IllegalArgumentException(
+                                    "Para cerrar o trasladar la inscripción utilizá su opción"
+                                            + " correspondiente.");
+                        }
+                        if (dto.Vistas.numero(anterior, "id_alumno") != inscripcion.getId_alumno()
+                                || dto.Vistas.numero(anterior, "id_curso")
+                                        != inscripcion.getId_curso()) {
+                            throw new IllegalArgumentException(
+                                    "El curso y el alumno se conservan. Utilizá la opción de cambio"
+                                            + " de división.");
+                        }
+                        if ("Recuperacion".equals(anterior.get("estado"))) {
+                            throw new IllegalArgumentException(
+                                    "La recuperación se resuelve al aprobar las materias y revisar"
+                                            + " la promoción.");
+                        }
+                        if (inscripcion.getFecha_inscripcion() == null)
+                            throw new IllegalArgumentException("Ingresá una fecha válida.");
+                        inscripcionDao.fecha(
+                                conexion,
+                                inscripcion.getId_inscripcion(),
+                                inscripcion.getFecha_inscripcion());
+                        inscripcionDao.estado(
+                                conexion,
+                                inscripcion.getId_inscripcion(),
+                                inscripcion.getEstado(),
+                                "");
+                        movimiento(
+                                conexion,
+                                inscripcion.getId_inscripcion(),
+                                anterior.get("estado").toString(),
+                                inscripcion.getEstado(),
+                                "Modificación administrativa",
+                                idUsuario);
+                        return null;
+                    });
         } catch (Exception error) {
             throw new IllegalArgumentException(error.getMessage(), error);
         }
@@ -178,14 +225,24 @@ public class Inscripcion_servicio {
     public void darDeBaja(Integer id, String motivo, Integer usuario) {
         try {
             String razon = motivo(motivo);
-            inscripcionDao.transaccion(conexion -> {
-                Permisos_servicio.verificar(conexion, inscripcionDao, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
-                var anterior = inscripcionDao.bloquear(conexion, id);
-                validarAbierta(anterior);
-                inscripcionDao.estado(conexion, id, "Cancelada", razon);
-                inscripcionDao.movimiento(conexion, id, anterior.get("estado").toString(), "Cancelada", razon, usuario);
-                return null;
-            });
+            Conexion.transaccion(
+                    conexion -> {
+                        Permisos_servicio.verificar(
+                                conexion, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
+                        var anterior =
+                                new ConsultasInscripcion_servicio(inscripcionDao)
+                                        .bloquear(conexion, id);
+                        validarAbierta(anterior);
+                        inscripcionDao.estado(conexion, id, "Cancelada", razon);
+                        movimiento(
+                                conexion,
+                                id,
+                                anterior.get("estado").toString(),
+                                "Cancelada",
+                                razon,
+                                usuario);
+                        return null;
+                    });
         } catch (Exception error) {
             throw new IllegalArgumentException(error.getMessage(), error);
         }
@@ -201,68 +258,142 @@ public class Inscripcion_servicio {
 
     // revisamos el estado para impedir cambios en inscripciones que ya fueron cerradas
     public static void validarAbierta(java.util.Map<String, Object> inscripcion) {
-        if (!java.util.List.of("Pendiente", "Confirmada", "Recuperacion").contains(inscripcion.get("estado"))) {
-            throw new IllegalArgumentException("La inscripción está cerrada y conserva sus notas e historial.");
+        if (!java.util.List.of("Pendiente", "Confirmada", "Recuperacion")
+                .contains(inscripcion.get("estado"))) {
+            throw new IllegalArgumentException(
+                    "La inscripción está cerrada y conserva sus notas e historial.");
         }
     }
 
     // revisamos que el destino esté activo, tenga lugar y no duplique la inscripción del alumno
-    private void validarDestino(java.sql.Connection conexion, int alumno, int curso) throws Exception {
-        var destino = inscripcionDao.curso(conexion, curso);
-        if (!"Activo".equals(destino.get("estado"))) throw new IllegalArgumentException("El curso de destino no está activo.");
-        if (inscripcionDao.duplicada(conexion, alumno, curso)) throw new IllegalArgumentException("El alumno ya tiene una inscripción activa en el destino.");
-        if (inscripcionDao.ocupacion(conexion, curso) >= dao.Consulta_academica_dao.numero(destino, "cupo_maximo")) throw new IllegalArgumentException("El destino no tiene cupo disponible.");
+    private void validarDestino(java.sql.Connection conexion, int alumno, int curso)
+            throws Exception {
+        var destino = new ConsultasInscripcion_servicio(inscripcionDao).curso(conexion, curso);
+        if (!"Activo".equals(destino.get("estado")))
+            throw new IllegalArgumentException("El curso de destino no está activo.");
+        if (inscripcionDao.duplicada(conexion, alumno, curso))
+            throw new IllegalArgumentException(
+                    "El alumno ya tiene una inscripción activa en el destino.");
+        if (inscripcionDao.ocupacion(conexion, curso) >= dto.Vistas.numero(destino, "cupo_maximo"))
+            throw new IllegalArgumentException("El destino no tiene cupo disponible.");
     }
 
     // trasladamos al alumno a otra división del mismo año y período sin mover sus calificaciones
-    public void cambiarCurso(Integer origen, Integer destino, String motivo, Integer usuario) throws Exception {
+    public void cambiarCurso(Integer origen, Integer destino, String motivo, Integer usuario)
+            throws Exception {
         String razon = motivo(motivo);
-        inscripcionDao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, inscripcionDao, usuario, clases.Rol.SECRETARIA);
-            trasladar(conexion, origen, destino, razon, usuario, false, "Trasladado");
-            return null;
-        });
+        Conexion.transaccion(
+                conexion -> {
+                    Permisos_servicio.verificar(conexion, usuario, clases.Rol.SECRETARIA);
+                    trasladar(conexion, origen, destino, razon, usuario, false, "Trasladado");
+                    return null;
+                });
         enviarAvisos(usuario);
     }
 
     // cerramos la inscripción anterior y generamos la de destino dentro de la misma transacción
-    public int trasladar(java.sql.Connection conexion, int origen, int destino, String motivo, int usuario, boolean excepcional, String estadoOrigen) throws Exception {
-        var anterior = inscripcionDao.bloquear(conexion, origen);
+    public int trasladar(
+            java.sql.Connection conexion,
+            int origen,
+            int destino,
+            String motivo,
+            int usuario,
+            boolean excepcional,
+            String estadoOrigen)
+            throws Exception {
+        var anterior = new ConsultasInscripcion_servicio(inscripcionDao).bloquear(conexion, origen);
         validarAbierta(anterior);
-        if ("Pendiente".equals(anterior.get("estado"))) throw new IllegalArgumentException("Primero confirmá la inscripción.");
-        if (!"Activo".equals(anterior.get("estado_alumno"))) throw new IllegalArgumentException("El alumno no está activo.");
-        var curso = inscripcionDao.curso(conexion, destino);
-        if (dao.Consulta_academica_dao.numero(anterior, "id_curso") == destino) throw new IllegalArgumentException("Seleccioná una división de destino diferente.");
-        if (!excepcional && (!anterior.get("año").toString().equals(curso.get("año").toString())
-                || dao.Consulta_academica_dao.numero(anterior, "id_periodo") != dao.Consulta_academica_dao.numero(curso, "id_periodo"))) {
-            throw new IllegalArgumentException("El cambio de división conserva el año y el período. Para otro año enviá una solicitud a dirección.");
+        if ("Pendiente".equals(anterior.get("estado")))
+            throw new IllegalArgumentException("Primero confirmá la inscripción.");
+        if (!"Activo".equals(anterior.get("estado_alumno")))
+            throw new IllegalArgumentException("El alumno no está activo.");
+        var curso = new ConsultasInscripcion_servicio(inscripcionDao).curso(conexion, destino);
+        if (dto.Vistas.numero(anterior, "id_curso") == destino)
+            throw new IllegalArgumentException("Seleccioná una división de destino diferente.");
+        if (!excepcional
+                && (!anterior.get("año").toString().equals(curso.get("año").toString())
+                        || dto.Vistas.numero(anterior, "id_periodo")
+                                != dto.Vistas.numero(curso, "id_periodo"))) {
+            throw new IllegalArgumentException(
+                    "El cambio de división conserva el año y el período. Para otro año enviá una"
+                            + " solicitud a dirección.");
         }
-        validarDestino(conexion, dao.Consulta_academica_dao.numero(anterior, "id_alumno"), destino);
+        validarDestino(conexion, dto.Vistas.numero(anterior, "id_alumno"), destino);
         inscripcionDao.estado(conexion, origen, estadoOrigen, motivo);
-        int nueva = inscripcionDao.destino(conexion, dao.Consulta_academica_dao.numero(anterior, "id_alumno"), destino, origen);
-        inscripcionDao.movimiento(conexion, origen, anterior.get("estado").toString(), estadoOrigen, motivo, usuario);
-        inscripcionDao.movimiento(conexion, nueva, null, "Confirmada", "Inscripción de destino vinculada a la anterior #" + origen, usuario);
-        avisarAsignacion(conexion, dao.Consulta_academica_dao.numero(anterior, "id_alumno"), destino, nueva, usuario);
+        int nueva =
+                inscripcionDao.destino(
+                        conexion, dto.Vistas.numero(anterior, "id_alumno"), destino, origen);
+        movimiento(
+                conexion, origen, anterior.get("estado").toString(), estadoOrigen, motivo, usuario);
+        movimiento(
+                conexion,
+                nueva,
+                null,
+                "Confirmada",
+                "Inscripción de destino vinculada a la anterior #" + origen,
+                usuario);
+        avisarAsignacion(
+                conexion, dto.Vistas.numero(anterior, "id_alumno"), destino, nueva, usuario);
         return nueva;
     }
 
-    // el aviso comparte la transacción de la nueva inscripción y no se envía antes de su confirmación
-    protected void avisarAsignacion(java.sql.Connection db, int alumno, int curso, int inscripcion, int actor) throws Exception {
+    // el aviso comparte la transacción de la nueva inscripción y no se envía antes de su
+    // confirmación
+    protected void avisarAsignacion(
+            java.sql.Connection db, int alumno, int curso, int inscripcion, int actor)
+            throws Exception {
         var avisos = new dao.Notificacion_Correo_dao();
-        new Notificaciones_servicio(avisos).asignacion(db, avisos.usuarioAlumno(db, alumno), curso, "inscripcion-" + inscripcion, actor);
+        new Notificaciones_servicio(avisos)
+                .asignacion(
+                        db,
+                        new dao.Alumno_dao().requerir(db, alumno).getId_usuario(),
+                        curso,
+                        "inscripcion-" + inscripcion,
+                        actor);
     }
 
     // iniciamos el envío sólo cuando ya terminó correctamente la transacción
-    protected void enviarAvisos(int actor) { Notificaciones_servicio.enviarPendientes(actor); }
+    protected void enviarAvisos(int actor) {
+        Notificaciones_servicio.enviarPendientes(actor);
+    }
 
-    public record Ficha(java.util.Map<String, Object> datos, java.util.List<java.util.Map<String, Object>> notas,
-            java.util.List<java.util.Map<String, Object>> resultados, java.util.List<java.util.Map<String, Object>> movimientos) {}
+    public record Ficha(
+            java.util.Map<String, Object> datos,
+            java.util.List<java.util.Map<String, Object>> notas,
+            java.util.List<java.util.Map<String, Object>> resultados,
+            java.util.List<java.util.Map<String, Object>> movimientos) {}
 
-    // consultamos los datos del alumno y de la inscripción para mostrarlos en una ventana de detalle
+    // consultamos los datos del alumno y de la inscripción para mostrarlos en una ventana de
+    // detalle
     public Ficha ficha(int id, Integer usuario) throws Exception {
-        return inscripcionDao.transaccion(conexion -> {
-            Permisos_servicio.verificar(conexion, inscripcionDao, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
-            return new Ficha(inscripcionDao.ficha(conexion, id), inscripcionDao.notas(conexion, id), inscripcionDao.resultados(conexion, id), inscripcionDao.movimientos(conexion, id));
-        });
+        return Conexion.transaccion(
+                conexion -> {
+                    Permisos_servicio.verificar(
+                            conexion, usuario, clases.Rol.SECRETARIA, clases.Rol.DIRECTIVO);
+                    return new Ficha(
+                            new ConsultasInscripcion_servicio(inscripcionDao).ficha(conexion, id),
+                            new ConsultasInscripcion_servicio(inscripcionDao).notas(conexion, id),
+                            new ConsultasInscripcion_servicio(inscripcionDao)
+                                    .resultados(conexion, id),
+                            new ConsultasInscripcion_servicio(inscripcionDao)
+                                    .movimientos(conexion, id));
+                });
+    }
+
+    static void movimiento(
+            java.sql.Connection db,
+            int id,
+            String anterior,
+            String nuevo,
+            String motivo,
+            int usuario)
+            throws java.sql.SQLException {
+        clases.Inscripcion_Movimiento movimiento = new clases.Inscripcion_Movimiento();
+        movimiento.setId_inscripcion(id);
+        movimiento.setEstado_anterior(anterior);
+        movimiento.setEstado_nuevo(nuevo);
+        movimiento.setMotivo(motivo);
+        movimiento.setId_usuario(usuario);
+        new dao.Inscripcion_Movimiento_dao().crear(db, movimiento);
     }
 }

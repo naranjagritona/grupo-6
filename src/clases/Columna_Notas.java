@@ -4,10 +4,6 @@ import java.time.LocalDate;
 
 // representamos una evaluación con su fecha, escala y estado
 public class Columna_Notas {
-    // guardamos la materia para identificar la evaluación cuando se muestra la planilla
-    private String nombre_materia;
-    public String getNombre_materia() { return nombre_materia; }
-    public void setNombre_materia(String nombre) { nombre_materia = nombre; }
     private Integer id_columna_notas;
     private Integer id_curso;
     private String titulo;
@@ -17,6 +13,7 @@ public class Columna_Notas {
     private LocalDate fecha_evaluacion;
     private LocalDate fecha_cierre;
     private String estado;
+    private Integer id_materia;
 
     public Columna_Notas() {}
 
@@ -112,5 +109,13 @@ public class Columna_Notas {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public Integer getId_materia() {
+        return id_materia;
+    }
+
+    public void setId_materia(Integer id_materia) {
+        this.id_materia = id_materia;
     }
 }

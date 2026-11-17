@@ -2,6 +2,15 @@ package clases;
 
 // guardamos los datos del alumno y su relación con la cuenta y el responsable
 public class Alumno {
+    // usamos el año y el número de la cuenta para que cada alumno tenga una matrícula distinta
+    // %06d agrega ceros adelante hasta completar seis dígitos, por ejemplo 2026-000072
+    public static String generarMatricula(int anio, int idUsuario) {
+        if (anio < 1900 || idUsuario <= 0) {
+            throw new IllegalArgumentException("Revisá el año y la cuenta del alumno.");
+        }
+        return String.format(java.util.Locale.ROOT, "%04d-%06d", anio, idUsuario);
+    }
+
     private Integer id_alumno;
     private Integer id_usuario;
     private Integer id_responsable;

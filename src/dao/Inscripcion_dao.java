@@ -5,7 +5,6 @@ import clases.Inscripcion;
 import conexion.Conexion;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,98 +12,60 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos y modificamos los registros de inscripcion en la base de datos
-public class Inscripcion_dao extends Consulta_academica_dao implements Dao<Inscripcion, Integer> {
-
+public class Inscripcion_dao implements Dao<Inscripcion, Integer> {
     // inserta una nueva inscripcion en la base de datos
     @Override
     public void insertar(Inscripcion objeto) {
-        new servicios.Inscripcion_servicio(this).registrar(objeto, servicios.Auditoria_servicio.usuarioActual());
+        new servicios.Inscripcion_servicio(this)
+                .registrar(objeto, servicios.Auditoria_servicio.usuarioActual());
     }
 
     // obtiene una inscripcion especifica buscando por su id
     @Override
     public Inscripcion obtenerPorId(Integer id) {
-        Inscripcion inscripcion = null;
-        String consulta =
-                "SELECT i.*,c.año año_curso FROM inscripcion i JOIN curso c ON"
-                        + " c.id_curso=i.id_curso WHERE i.id_inscripcion = ?";
-
+        String consulta = "SELECT * FROM inscripcion WHERE id_inscripcion=?";
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta)) {
-
             ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    inscripcion = new Inscripcion();
-
-                    inscripcion.setId_inscripcion(rs.getInt("id_inscripcion"));
-                    inscripcion.setId_alumno(rs.getInt("id_alumno"));
-                    inscripcion.setId_curso(rs.getInt("id_curso"));
-
-                    Date fecha = rs.getDate("fecha_inscripcion");
-                    inscripcion.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
-
-                    inscripcion.setEstado(rs.getString("estado"));
-                    inscripcion.setMotivo_baja(rs.getString("motivo_baja"));
-                    inscripcion.setAño_curso(rs.getInt("año_curso"));
-                }
+            try (ResultSet registros = ps.executeQuery()) {
+                return registros.next() ? leerEntidad(registros) : null;
             }
-
         } catch (SQLException error) {
-            System.err.println("Error al obtener la inscripción por ID: " + error.getMessage());
-            error.printStackTrace();
+            throw new IllegalStateException(
+                    "No se pudo consultar el registro de inscripcion.", error);
         }
-
-        return inscripcion;
     }
 
     // devuelve una lista con todas las inscripciones registradas
     @Override
     public List<Inscripcion> obtenerTodos() {
-        List<Inscripcion> listaInscripciones = new ArrayList<>();
-        String consulta =
-                "SELECT i.*,c.año año_curso FROM inscripcion i JOIN curso c ON"
-                        + " c.id_curso=i.id_curso";
-
+        String consulta = "SELECT * FROM inscripcion";
+        List<Inscripcion> lista = new ArrayList<>();
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta);
-                ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                Inscripcion inscripcion = new Inscripcion();
-
-                inscripcion.setId_inscripcion(rs.getInt("id_inscripcion"));
-                inscripcion.setId_alumno(rs.getInt("id_alumno"));
-                inscripcion.setId_curso(rs.getInt("id_curso"));
-
-                Date fecha = rs.getDate("fecha_inscripcion");
-                inscripcion.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
-
-                inscripcion.setEstado(rs.getString("estado"));
-                inscripcion.setMotivo_baja(rs.getString("motivo_baja"));
-                inscripcion.setAño_curso(rs.getInt("año_curso"));
-
-                listaInscripciones.add(inscripcion);
+                ResultSet registros = ps.executeQuery()) {
+            while (registros.next()) {
+                lista.add(leerEntidad(registros));
             }
-
         } catch (SQLException error) {
-            System.err.println("Error al obtener la lista de inscripciones: " + error.getMessage());
-            error.printStackTrace();
+            throw new IllegalStateException(
+                    "No se pudo consultar el listado de inscripcion.", error);
         }
-
-        return listaInscripciones;
+        return lista;
     }
 
     // actualiza los datos de una inscripcion existente
     @Override
     public void modificar(Inscripcion objeto) {
-        new servicios.Inscripcion_servicio(this).modificar(objeto, servicios.Auditoria_servicio.usuarioActual());
+        new servicios.Inscripcion_servicio(this)
+                .modificar(objeto, servicios.Auditoria_servicio.usuarioActual());
     }
 
     // elimina una inscripcion por su id
     @Override
     public void eliminar(Integer id) {
-        throw new IllegalStateException("Las inscripciones se conservan con su historial. Usá la baja con motivo.");
+        throw new IllegalStateException(
+                "Las inscripciones se conservan con su historial. Usá la baja con motivo.");
     }
 
     // realiza la transaccion para cancelar la inscripcion actual y generar la nueva en el curso
@@ -112,7 +73,8 @@ public class Inscripcion_dao extends Consulta_academica_dao implements Dao<Inscr
     public void cambiarCursoTransaccional(
             Integer idInscripcionActual, Integer idNuevoCurso, String motivoBaja)
             throws SQLException {
-        throw new IllegalStateException("Usá el servicio de inscripciones para validar y registrar el traslado.");
+        throw new IllegalStateException(
+                "Usá el servicio de inscripciones para validar y registrar el traslado.");
     }
 
     // busca por alumno (nombre, apellido, DNI), id de curso o estado
@@ -136,16 +98,7 @@ public class Inscripcion_dao extends Consulta_academica_dao implements Dao<Inscr
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Inscripcion ins = new Inscripcion();
-                    ins.setId_inscripcion(rs.getInt("id_inscripcion"));
-                    ins.setId_alumno(rs.getInt("id_alumno"));
-                    ins.setId_curso(rs.getInt("id_curso"));
-                    Date fecha = rs.getDate("fecha_inscripcion");
-                    ins.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
-                    ins.setEstado(rs.getString("estado"));
-                    ins.setMotivo_baja(rs.getString("motivo_baja"));
-                    ins.setAño_curso(rs.getInt("año_curso"));
-                    lista.add(ins);
+                    lista.add(leerEntidad(rs));
                 }
             }
         } catch (SQLException error) {
@@ -167,16 +120,7 @@ public class Inscripcion_dao extends Consulta_academica_dao implements Dao<Inscr
             ps.setString(1, estado);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Inscripcion ins = new Inscripcion();
-                    ins.setId_inscripcion(rs.getInt("id_inscripcion"));
-                    ins.setId_alumno(rs.getInt("id_alumno"));
-                    ins.setId_curso(rs.getInt("id_curso"));
-                    Date fecha = rs.getDate("fecha_inscripcion");
-                    ins.setFecha_inscripcion(fecha != null ? fecha.toLocalDate() : null);
-                    ins.setEstado(rs.getString("estado"));
-                    ins.setMotivo_baja(rs.getString("motivo_baja"));
-                    ins.setAño_curso(rs.getInt("año_curso"));
-                    lista.add(ins);
+                    lista.add(leerEntidad(rs));
                 }
             }
         } catch (SQLException error) {
@@ -184,84 +128,192 @@ public class Inscripcion_dao extends Consulta_academica_dao implements Dao<Inscr
         }
         return lista;
     }
-    // bloqueamos la inscripción y consultamos los datos que se necesitan para validar el cambio
-    public java.util.Map<String, Object> bloquear(Connection conexion, int id) throws SQLException {
-        return uno(conexion, "SELECT i.*,c.año,c.division,c.id_periodo,a.estado estado_alumno FROM inscripcion i JOIN curso c ON c.id_curso=i.id_curso JOIN alumno a ON a.id_alumno=i.id_alumno WHERE i.id_inscripcion=? FOR UPDATE", id);
-    }
-
-    // consultamos y bloqueamos el curso para que el cupo no cambie durante la operación
-    public java.util.Map<String, Object> curso(Connection conexion, int id) throws SQLException {
-        return uno(conexion, "SELECT c.*,p.fecha_inicio inicio_periodo FROM curso c JOIN periodo_lectivo p ON p.id_periodo_lectivo=c.id_periodo WHERE c.id_curso=? FOR UPDATE", id);
-    }
 
     // contamos las inscripciones que reservan lugar en el curso
     public int ocupacion(Connection conexion, int curso) throws SQLException {
-        return numero(uno(conexion, "SELECT COUNT(*) cantidad FROM inscripcion WHERE id_curso=? AND estado IN ('Pendiente','Confirmada','Recuperacion')", curso), "cantidad");
+        String consulta =
+                "SELECT COUNT(*) FROM inscripcion WHERE id_curso=? AND estado IN"
+                        + " ('Pendiente','Confirmada','Recuperacion')";
+        try (PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            ps.setInt(1, curso);
+            try (ResultSet registros = ps.executeQuery()) {
+                registros.next();
+                return registros.getInt(1);
+            }
+        }
     }
 
     // buscamos si el alumno ya tiene otra inscripción activa en el mismo curso
     public boolean duplicada(Connection conexion, int alumno, int curso) throws SQLException {
-        return !consultar(conexion, "SELECT id_inscripcion FROM inscripcion WHERE id_alumno=? AND id_curso=? AND estado IN ('Pendiente','Confirmada','Recuperacion') FOR UPDATE", alumno, curso).isEmpty();
+        return !seleccionar(
+                        conexion,
+                        "SELECT * FROM inscripcion WHERE id_alumno=? AND id_curso=? AND estado IN"
+                                + " ('Pendiente','Confirmada','Recuperacion') FOR UPDATE",
+                        alumno,
+                        curso)
+                .isEmpty();
     }
 
     // cerramos la inscripción anterior sin cambiar el curso ni las notas que le corresponden
-    public void estado(Connection conexion, int id, String estado, String motivo) throws SQLException {
-        if (ejecutar(conexion, "UPDATE inscripcion SET estado=?,motivo_baja=? WHERE id_inscripcion=? AND estado IN ('Pendiente','Confirmada','Recuperacion')", estado, motivo, id) != 1) {
-            throw new IllegalArgumentException("La inscripción ya fue cerrada. Actualizá el listado.");
+    public void estado(Connection conexion, int id, String estado, String motivo)
+            throws SQLException {
+        String consulta =
+                "UPDATE inscripcion SET estado=?,motivo_baja=? WHERE id_inscripcion=? AND estado IN"
+                        + " ('Pendiente','Confirmada','Recuperacion')";
+        int filasActualizadas;
+        try (java.sql.PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            ps.setObject(1, estado);
+            ps.setObject(2, motivo);
+            ps.setObject(3, id);
+            filasActualizadas = ps.executeUpdate();
+        }
+        if (filasActualizadas != 1) {
+            throw new IllegalArgumentException(
+                    "La inscripción ya fue cerrada. Actualizá el listado.");
         }
     }
 
     // generamos otra inscripción para el destino y dejamos el vínculo con la anterior
     public int destino(Connection conexion, int alumno, int curso, int origen) throws SQLException {
-        return insertarRegistro(conexion, "INSERT INTO inscripcion(id_alumno,id_curso,fecha_inscripcion,estado,motivo_baja,id_inscripcion_origen) VALUES(?,?,CURRENT_DATE,'Confirmada','',?)", alumno, curso, origen);
-    }
-
-    // guardamos quién cambió el estado, cuándo lo hizo y cuál fue el motivo
-    public void movimiento(Connection conexion, int id, String anterior, String nuevo, String motivo, int usuario) throws SQLException {
-        ejecutar(conexion, "INSERT INTO inscripcion_movimiento(id_inscripcion,estado_anterior,estado_nuevo,motivo,id_usuario) VALUES(?,?,?,?,?)", id, anterior, nuevo, motivo, usuario);
-    }
-
-    // consultamos los alumnos confirmados y en recuperación del curso que se va a promocionar
-    public List<java.util.Map<String, Object>> alumnosPromocion(Connection conexion, int curso) throws SQLException {
-        return consultar(conexion, "SELECT i.id_inscripcion,CONCAT(a.apellido,', ',a.nombre) alumno FROM inscripcion i JOIN alumno a ON a.id_alumno=i.id_alumno WHERE i.id_curso=? AND i.estado IN ('Confirmada','Recuperacion') ORDER BY i.id_inscripcion FOR UPDATE", curso);
-    }
-
-    // consultamos todas las materias del curso, incluso las que todavía no tienen resultado
-    public List<java.util.Map<String, Object>> resultados(Connection conexion, int inscripcion) throws SQLException {
-        return consultar(conexion, "SELECT m.id_materia,m.nombre_materia,r.promedio,r.resultado FROM inscripcion i JOIN curso_materia cm ON cm.id_curso=i.id_curso JOIN materia m ON m.id_materia=cm.id_materia LEFT JOIN resultado_materia r ON r.id_inscripcion=i.id_inscripcion AND r.id_materia=cm.id_materia WHERE i.id_inscripcion=? ORDER BY m.nombre_materia", inscripcion);
-    }
-
-    // buscamos la inscripción con el alumno, el curso, el período y el vínculo con su origen
-    public java.util.Map<String, Object> ficha(Connection conexion, int id) throws SQLException {
-        return uno(conexion, "SELECT i.*,a.nombre,a.apellido,a.dni,a.matricula,c.año,c.division,c.turno,p.nombre periodo FROM inscripcion i JOIN alumno a ON a.id_alumno=i.id_alumno JOIN curso c ON c.id_curso=i.id_curso JOIN periodo_lectivo p ON p.id_periodo_lectivo=c.id_periodo WHERE i.id_inscripcion=?", id);
-    }
-
-    // buscamos las notas de la inscripción sin trasladarlas a otro curso
-    public List<java.util.Map<String, Object>> notas(Connection conexion, int id) throws SQLException {
-        return consultar(conexion, "SELECT m.nombre_materia materia,n.titulo,n.tipo,n.fecha_evaluacion,c.nota,c.observaciones FROM calificacion c JOIN columna_notas n ON n.id_columna_notas=c.id_columna_notas JOIN materia m ON m.id_materia=n.id_materia WHERE c.id_inscripcion=? ORDER BY m.nombre_materia,n.fecha_evaluacion", id);
-    }
-
-    // consultamos los movimientos anteriores para mostrarlos en la ficha
-    public List<java.util.Map<String, Object>> movimientos(Connection conexion, int id) throws SQLException {
-        return consultar(conexion, "SELECT m.estado_anterior,m.estado_nuevo,m.motivo,u.nombre_usuario usuario,m.fecha FROM inscripcion_movimiento m JOIN usuario u ON u.id_usuario=m.id_usuario WHERE m.id_inscripcion=? ORDER BY m.id_movimiento", id);
-    }
-
-    // guardamos las condiciones académicas que define dirección para el curso
-    public void regla(Connection conexion, int curso, double materia, double promocion, String recuperatorio) throws SQLException {
-        ejecutar(conexion, "UPDATE curso SET nota_aprobacion_materia=?,promedio_promocion=?,criterio_recuperatorio=? WHERE id_curso=?", materia, promocion, recuperatorio, curso);
-    }
-    // buscamos y bloqueamos al alumno antes de registrar su inscripción
-    public java.util.Map<String, Object> alumno(Connection conexion, int id) throws SQLException {
-        return uno(conexion, "SELECT * FROM alumno WHERE id_alumno=? FOR UPDATE", id);
+        String consulta =
+                "INSERT INTO"
+                    + " inscripcion(id_alumno,id_curso,fecha_inscripcion,estado,motivo_baja,id_inscripcion_origen)"
+                    + " VALUES(?,?,CURRENT_DATE,'Confirmada','',?)";
+        try (java.sql.PreparedStatement ps =
+                conexion.prepareStatement(consulta, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+            ps.setObject(1, alumno);
+            ps.setObject(2, curso);
+            ps.setObject(3, origen);
+            ps.executeUpdate();
+            // usamos el ID que generó la base para relacionar el registro con los demás datos
+            try (java.sql.ResultSet claves = ps.getGeneratedKeys()) {
+                if (!claves.next())
+                    throw new java.sql.SQLException("No se obtuvo el identificador del registro.");
+                return claves.getInt(1);
+            }
+        }
     }
 
     // la modificación administrativa de la fecha conserva el alumno y el curso de la inscripción
     public void fecha(Connection db, int id, java.time.LocalDate fecha) throws SQLException {
-        ejecutar(db, "UPDATE inscripcion SET fecha_inscripcion=? WHERE id_inscripcion=?", fecha, id);
+        String consulta = "UPDATE inscripcion SET fecha_inscripcion=? WHERE id_inscripcion=?";
+        try (java.sql.PreparedStatement ps = db.prepareStatement(consulta)) {
+            ps.setObject(1, fecha);
+            ps.setObject(2, id);
+            ps.executeUpdate();
+        }
     }
 
     // insertamos la inscripción con el estado y la fecha que se validaron en el servicio
     public int crear(Connection conexion, Inscripcion inscripcion) throws SQLException {
-        return insertarRegistro(conexion, "INSERT INTO inscripcion(id_alumno,id_curso,fecha_inscripcion,estado,motivo_baja) VALUES(?,?,?,?, '')", inscripcion.getId_alumno(), inscripcion.getId_curso(), inscripcion.getFecha_inscripcion(), inscripcion.getEstado());
+        String consulta =
+                "INSERT INTO inscripcion(id_alumno,id_curso,fecha_inscripcion,estado,motivo_baja)"
+                        + " VALUES(?,?,?,?, '')";
+        try (java.sql.PreparedStatement ps =
+                conexion.prepareStatement(consulta, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+            ps.setObject(1, inscripcion.getId_alumno());
+            ps.setObject(2, inscripcion.getId_curso());
+            ps.setObject(3, inscripcion.getFecha_inscripcion());
+            ps.setObject(4, inscripcion.getEstado());
+            ps.executeUpdate();
+            // usamos el ID que generó la base para relacionar el registro con los demás datos
+            try (java.sql.ResultSet claves = ps.getGeneratedKeys()) {
+                if (!claves.next())
+                    throw new java.sql.SQLException("No se obtuvo el identificador del registro.");
+                return claves.getInt(1);
+            }
+        }
+    }
+
+    public List<Inscripcion> delCurso(java.sql.Connection db, int curso)
+            throws java.sql.SQLException {
+        return seleccionar(
+                db,
+                "SELECT * FROM inscripcion WHERE id_curso=? ORDER BY id_inscripcion FOR UPDATE",
+                curso);
+    }
+
+    public boolean perteneceUsuario(java.sql.Connection db, int curso, int usuario)
+            throws java.sql.SQLException {
+        return !seleccionar(
+                        db,
+                        "SELECT i.* FROM inscripcion i JOIN alumno a ON a.id_alumno=i.id_alumno"
+                                + " WHERE i.id_curso=? AND a.id_usuario=?",
+                        curso,
+                        usuario)
+                .isEmpty();
+    }
+
+    protected Inscripcion leerEntidad(java.sql.ResultSet registros) throws java.sql.SQLException {
+        Inscripcion objeto = new Inscripcion();
+        objeto.setId_inscripcion((Integer) registros.getObject("id_inscripcion"));
+        objeto.setId_alumno((Integer) registros.getObject("id_alumno"));
+        objeto.setId_curso((Integer) registros.getObject("id_curso"));
+        objeto.setFecha_inscripcion(
+                (registros.getDate("fecha_inscripcion") == null
+                        ? null
+                        : registros.getDate("fecha_inscripcion").toLocalDate()));
+        objeto.setEstado(registros.getString("estado"));
+        objeto.setMotivo_baja(registros.getString("motivo_baja"));
+        objeto.setFecha_creacion(
+                (registros.getTimestamp("fecha_creacion") == null
+                        ? null
+                        : registros.getTimestamp("fecha_creacion").toLocalDateTime()));
+        objeto.setFecha_modificacion(
+                (registros.getTimestamp("fecha_modificacion") == null
+                        ? null
+                        : registros.getTimestamp("fecha_modificacion").toLocalDateTime()));
+        objeto.setId_inscripcion_origen((Integer) registros.getObject("id_inscripcion_origen"));
+        return objeto;
+    }
+
+    // ejecutamos la consulta con sus valores y pasamos cada fila a un objeto Inscripcion
+    private java.util.List<Inscripcion> seleccionar(
+            java.sql.Connection conexion, String consulta, Object... valores)
+            throws java.sql.SQLException {
+        java.util.List<Inscripcion> lista = new java.util.ArrayList<>();
+        try (java.sql.PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            for (int i = 0; i < valores.length; i++) {
+                ps.setObject(i + 1, valores[i]);
+            }
+            try (java.sql.ResultSet registros = ps.executeQuery()) {
+                while (registros.next()) {
+                    lista.add(leerEntidad(registros));
+                }
+            }
+        }
+        return lista;
+    }
+
+    // recibimos la conexión del servicio para no separar las consultas de una transacción
+    public java.util.List<Inscripcion> listarTabla(java.sql.Connection conexion)
+            throws java.sql.SQLException {
+        return seleccionar(conexion, "SELECT * FROM inscripcion");
+    }
+
+    public Inscripcion buscar(java.sql.Connection conexion, int id) throws java.sql.SQLException {
+        var filas = seleccionar(conexion, "SELECT * FROM inscripcion WHERE id_inscripcion=?", id);
+        return filas.isEmpty() ? null : filas.getFirst();
+    }
+
+    // bloqueamos el registro mientras se revisa para evitar dos cambios al mismo tiempo
+    public Inscripcion requerir(java.sql.Connection conexion, int id) throws java.sql.SQLException {
+        var filas =
+                seleccionar(
+                        conexion,
+                        "SELECT * FROM inscripcion WHERE id_inscripcion=? FOR UPDATE",
+                        id);
+        if (filas.isEmpty())
+            throw new IllegalArgumentException("El registro ya no existe. Actualizá el listado.");
+        return filas.getFirst();
+    }
+
+    public int contar(java.sql.Connection conexion) throws java.sql.SQLException {
+        String consulta = "SELECT COUNT(*) FROM inscripcion";
+        try (java.sql.PreparedStatement ps = conexion.prepareStatement(consulta);
+                java.sql.ResultSet registros = ps.executeQuery()) {
+            registros.next();
+            return registros.getInt(1);
+        }
     }
 }

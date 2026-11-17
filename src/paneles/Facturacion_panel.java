@@ -276,7 +276,7 @@ public class Facturacion_panel extends JPanel {
                 });
     }
 
-    // el nombre y el mes vienen de la base; el formulario no permite modificarlos.
+    // el nombre y el mes vienen de la base, el formulario no permite modificarlos.
     private void modificarCuota() {
         if (!servicios.Permisos_servicio.gestionarFacturacion(usuario)) {
             return;

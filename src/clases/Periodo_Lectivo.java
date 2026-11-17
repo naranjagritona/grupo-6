@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 // guardamos el nombre y las fechas del período escolar
 public class Periodo_Lectivo {
-    private Integer id_periodo;
+    private Integer id_periodo_lectivo;
     private String nombre;
     private String tipo;
     private LocalDate fecha_inicio;
@@ -14,13 +14,13 @@ public class Periodo_Lectivo {
     public Periodo_Lectivo() {}
 
     public Periodo_Lectivo(
-            Integer id_periodo,
+            Integer id_periodo_lectivo,
             String nombre,
             String tipo,
             LocalDate fecha_inicio,
             LocalDate fecha_fin,
             String estado) {
-        this.id_periodo = id_periodo;
+        this.id_periodo_lectivo = id_periodo_lectivo;
         this.nombre = nombre;
         this.tipo = tipo;
         this.fecha_inicio = fecha_inicio;
@@ -29,12 +29,12 @@ public class Periodo_Lectivo {
     }
 
     // consultamos y modificamos los datos del objeto con sus métodos de acceso
-    public Integer getId_periodo() {
-        return id_periodo;
+    public Integer getId_periodo_lectivo() {
+        return id_periodo_lectivo;
     }
 
-    public void setId_periodo(Integer id_periodo) {
-        this.id_periodo = id_periodo;
+    public void setId_periodo_lectivo(Integer id_periodo_lectivo) {
+        this.id_periodo_lectivo = id_periodo_lectivo;
     }
 
     public String getNombre() {

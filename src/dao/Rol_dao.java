@@ -12,12 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 // consultamos y modificamos los registros de rol en la base de datos
-public class Rol_dao extends Consulta_academica_dao implements Dao<Rol, Integer> {
+public class Rol_dao implements Dao<Rol, Integer> {
     // consultamos los roles disponibles con la conexión de la operación administrativa
     public List<Rol> listar(Connection db) throws SQLException {
-        List<Rol> roles=new ArrayList<>();
-        for(var fila:consultar(db,"SELECT id_rol,nombre,descripcion_rol FROM rol ORDER BY id_rol"))roles.add(new Rol(numero(fila,"id_rol"),(String)fila.get("nombre"),(String)fila.get("descripcion_rol")));
-        return roles;
+        return seleccionar(db, "SELECT * FROM rol ORDER BY id_rol");
     }
 
     // inserta el registro recibido en la tabla correspondiente
@@ -42,57 +40,33 @@ public class Rol_dao extends Consulta_academica_dao implements Dao<Rol, Integer>
     // consulta un registro usando su identificador
     @Override
     public Rol obtenerPorId(Integer id) {
-        Rol rol = null;
-        String consulta = "SELECT * FROM rol WHERE id_rol = ?";
-
+        String consulta = "SELECT * FROM rol WHERE id_rol=?";
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta)) {
-
             ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    rol = new Rol();
-
-                    rol.setId_rol(rs.getInt("id_rol"));
-                    rol.setNombre(rs.getString("nombre"));
-                    rol.setDescripcion_rol(rs.getString("descripcion_rol"));
-                }
+            try (ResultSet registros = ps.executeQuery()) {
+                return registros.next() ? leerEntidad(registros) : null;
             }
-
         } catch (SQLException error) {
-            System.err.println("Error al obtener el rol por ID: " + error.getMessage());
-            error.printStackTrace();
+            throw new IllegalStateException("No se pudo consultar el registro de rol.", error);
         }
-
-        return rol;
     }
 
     // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Rol> obtenerTodos() {
-        List<Rol> listaRoles = new ArrayList<>();
         String consulta = "SELECT * FROM rol";
-
+        List<Rol> lista = new ArrayList<>();
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta);
-                ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                Rol rol = new Rol();
-
-                rol.setId_rol(rs.getInt("id_rol"));
-                rol.setNombre(rs.getString("nombre"));
-                rol.setDescripcion_rol(rs.getString("descripcion_rol"));
-
-                listaRoles.add(rol);
+                ResultSet registros = ps.executeQuery()) {
+            while (registros.next()) {
+                lista.add(leerEntidad(registros));
             }
-
         } catch (SQLException error) {
-            System.err.println("Error al obtener la lista de roles: " + error.getMessage());
-            error.printStackTrace();
+            throw new IllegalStateException("No se pudo consultar el listado de rol.", error);
         }
-
-        return listaRoles;
+        return lista;
     }
 
     // actualiza los datos del registro seleccionado
@@ -130,5 +104,50 @@ public class Rol_dao extends Consulta_academica_dao implements Dao<Rol, Integer>
             System.err.println("Error al eliminar el rol: " + error.getMessage());
             error.printStackTrace();
         }
+    }
+
+    protected Rol leerEntidad(java.sql.ResultSet registros) throws java.sql.SQLException {
+        Rol objeto = new Rol();
+        objeto.setId_rol((Integer) registros.getObject("id_rol"));
+        objeto.setNombre(registros.getString("nombre"));
+        objeto.setDescripcion_rol(registros.getString("descripcion_rol"));
+        return objeto;
+    }
+
+    // ejecutamos la consulta con sus valores y pasamos cada fila a un objeto Rol
+    private java.util.List<Rol> seleccionar(
+            java.sql.Connection conexion, String consulta, Object... valores)
+            throws java.sql.SQLException {
+        java.util.List<Rol> lista = new java.util.ArrayList<>();
+        try (java.sql.PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            for (int i = 0; i < valores.length; i++) {
+                ps.setObject(i + 1, valores[i]);
+            }
+            try (java.sql.ResultSet registros = ps.executeQuery()) {
+                while (registros.next()) {
+                    lista.add(leerEntidad(registros));
+                }
+            }
+        }
+        return lista;
+    }
+
+    // recibimos la conexión del servicio para no separar las consultas de una transacción
+    public java.util.List<Rol> listarTabla(java.sql.Connection conexion)
+            throws java.sql.SQLException {
+        return seleccionar(conexion, "SELECT * FROM rol");
+    }
+
+    public Rol buscar(java.sql.Connection conexion, int id) throws java.sql.SQLException {
+        var filas = seleccionar(conexion, "SELECT * FROM rol WHERE id_rol=?", id);
+        return filas.isEmpty() ? null : filas.getFirst();
+    }
+
+    // bloqueamos el registro mientras se revisa para evitar dos cambios al mismo tiempo
+    public Rol requerir(java.sql.Connection conexion, int id) throws java.sql.SQLException {
+        var filas = seleccionar(conexion, "SELECT * FROM rol WHERE id_rol=? FOR UPDATE", id);
+        if (filas.isEmpty())
+            throw new IllegalArgumentException("El registro ya no existe. Actualizá el listado.");
+        return filas.getFirst();
     }
 }

@@ -1,11 +1,13 @@
 package paneles;
 
 import servicios.Inscripcion_servicio;
+
 import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -22,10 +24,13 @@ public class Ficha_Inscripcion_dialog extends JDialog {
         var registro = ficha.datos();
         Object[][] campos = {
             {"Alumno", registro.get("apellido") + ", " + registro.get("nombre")},
-            {"DNI", registro.get("dni")}, {"Matrícula", registro.get("matricula")},
+            {"DNI", registro.get("dni")},
+            {"Matrícula", registro.get("matricula")},
             {"Año y división", registro.get("año") + "° " + registro.get("division")},
-            {"Período", registro.get("periodo")}, {"Turno", registro.get("turno")},
-            {"Estado", registro.get("estado")}, {"Fecha de inscripción", registro.get("fecha_inscripcion")},
+            {"Período", registro.get("periodo")},
+            {"Turno", registro.get("turno")},
+            {"Estado", registro.get("estado")},
+            {"Fecha de inscripción", registro.get("fecha_inscripcion")},
             {"Inscripción anterior", registro.get("id_inscripcion_origen")},
             {"Motivo de baja o traslado", registro.get("motivo_baja")}
         };
@@ -43,9 +48,31 @@ public class Ficha_Inscripcion_dialog extends JDialog {
             datos.add(valor);
         }
         pestañas.addTab("Inscripción", new JScrollPane(datos));
-        pestañas.addTab("Notas", new JScrollPane(tabla(ficha.notas(), "materia", "titulo", "tipo", "fecha_evaluacion", "nota", "observaciones")));
-        pestañas.addTab("Materias", new JScrollPane(tabla(ficha.resultados(), "nombre_materia", "promedio", "resultado")));
-        pestañas.addTab("Historial", new JScrollPane(tabla(ficha.movimientos(), "estado_anterior", "estado_nuevo", "motivo", "usuario", "fecha")));
+        pestañas.addTab(
+                "Notas",
+                new JScrollPane(
+                        tabla(
+                                ficha.notas(),
+                                "materia",
+                                "titulo",
+                                "tipo",
+                                "fecha_evaluacion",
+                                "nota",
+                                "observaciones")));
+        pestañas.addTab(
+                "Materias",
+                new JScrollPane(
+                        tabla(ficha.resultados(), "nombre_materia", "promedio", "resultado")));
+        pestañas.addTab(
+                "Historial",
+                new JScrollPane(
+                        tabla(
+                                ficha.movimientos(),
+                                "estado_anterior",
+                                "estado_nuevo",
+                                "motivo",
+                                "usuario",
+                                "fecha")));
         add(pestañas, BorderLayout.CENTER);
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         acciones.setBackground(Color.WHITE);
@@ -71,16 +98,26 @@ public class Ficha_Inscripcion_dialog extends JDialog {
 
     // completamos la tabla y mantenemos sus celdas de solo lectura
     public static JTable tabla(List<Map<String, Object>> filas, String... columnas) {
-        String[] etiquetas = Arrays.stream(columnas).map(c -> switch (c) {
-            case "nombre_materia" -> "Materia";
-            case "titulo" -> "Título";
-            case "id_solicitud" -> "Solicitud";
-            case "observacion", "observaciones" -> "Observaciones";
-            default -> c.substring(0, 1).toUpperCase(Locale.ROOT) + c.substring(1).replace('_', ' ');
-        }).toArray(String[]::new);
-        DefaultTableModel modelo = new DefaultTableModel(etiquetas, 0) {
-            public boolean isCellEditable(int fila, int columna) { return false; }
-        };
+        String[] etiquetas =
+                Arrays.stream(columnas)
+                        .map(
+                                c ->
+                                        switch (c) {
+                                            case "nombre_materia" -> "Materia";
+                                            case "titulo" -> "Título";
+                                            case "id_solicitud" -> "Solicitud";
+                                            case "observacion", "observaciones" -> "Observaciones";
+                                            default ->
+                                                    c.substring(0, 1).toUpperCase(Locale.ROOT)
+                                                            + c.substring(1).replace('_', ' ');
+                                        })
+                        .toArray(String[]::new);
+        DefaultTableModel modelo =
+                new DefaultTableModel(etiquetas, 0) {
+                    public boolean isCellEditable(int fila, int columna) {
+                        return false;
+                    }
+                };
         for (var fila : filas) modelo.addRow(Arrays.stream(columnas).map(fila::get).toArray());
         JTable tabla = new JTable(modelo);
         tabla.setFont(new Font("Tahoma", Font.PLAIN, 12));
@@ -97,13 +134,18 @@ public class Ficha_Inscripcion_dialog extends JDialog {
     public static <T> void ejecutar(Component padre, Callable<T> tarea, Consumer<T> terminado) {
         padre.setCursor(new Cursor(Cursor.WAIT_CURSOR));
         new SwingWorker<T, Void>() {
-            protected T doInBackground() throws Exception { return tarea.call(); }
+            protected T doInBackground() throws Exception {
+                return tarea.call();
+            }
+
             protected void done() {
                 padre.setCursor(Cursor.getDefaultCursor());
-                try { terminado.accept(get()); }
-                catch (Exception error) {
+                try {
+                    terminado.accept(get());
+                } catch (Exception error) {
                     Throwable motivo = error.getCause() == null ? error : error.getCause();
-                    JOptionPane.showMessageDialog(padre, motivo.getMessage(), "Validación", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(
+                            padre, motivo.getMessage(), "Validación", JOptionPane.WARNING_MESSAGE);
                 }
             }
         }.execute();

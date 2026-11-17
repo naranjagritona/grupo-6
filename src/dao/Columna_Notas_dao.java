@@ -5,7 +5,6 @@ import clases.Columna_Notas;
 import conexion.Conexion;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,7 +13,6 @@ import java.util.List;
 
 // consultamos y modificamos los registros de columna notas en la base de datos
 public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
-
     public void insertarVerificando(Columna_Notas objeto) throws SQLException {
         String sql =
                 "INSERT INTO columna_notas (id_curso, titulo, tipo, nota_maxima, nota_aprobacion,"
@@ -66,80 +64,34 @@ public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
     // consulta un registro usando su identificador
     @Override
     public Columna_Notas obtenerPorId(Integer id) {
-        Columna_Notas columna = null;
-        String consulta = "SELECT * FROM columna_notas WHERE id_columna_notas = ?";
-
+        String consulta = "SELECT * FROM columna_notas WHERE id_columna_notas=?";
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta)) {
-
             ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    columna = new Columna_Notas();
-
-                    columna.setId_columna_notas(rs.getInt("id_columna_notas"));
-                    columna.setId_curso(rs.getInt("id_curso"));
-                    columna.setTitulo(rs.getString("titulo"));
-                    columna.setTipo(rs.getString("tipo"));
-                    columna.setNota_maxima(rs.getDouble("nota_maxima"));
-                    columna.setNota_aprobacion(rs.getDouble("nota_aprobacion"));
-
-                    Date fEval = rs.getDate("fecha_evaluacion");
-                    columna.setFecha_evaluacion(fEval != null ? fEval.toLocalDate() : null);
-
-                    Date fCierre = rs.getDate("fecha_cierre");
-                    columna.setFecha_cierre(fCierre != null ? fCierre.toLocalDate() : null);
-
-                    columna.setEstado(rs.getString("estado"));
-                }
+            try (ResultSet registros = ps.executeQuery()) {
+                return registros.next() ? leerEntidad(registros) : null;
             }
-
         } catch (SQLException error) {
-            System.err.println(
-                    "Error al obtener la columna de notas por ID: " + error.getMessage());
-            error.printStackTrace();
+            throw new IllegalStateException(
+                    "No se pudo consultar el registro de columna_notas.", error);
         }
-
-        return columna;
     }
 
     // consulta los registros y los devuelve como una lista de objetos
     @Override
     public List<Columna_Notas> obtenerTodos() {
-        List<Columna_Notas> lista = new ArrayList<>();
         String consulta = "SELECT * FROM columna_notas";
-
+        List<Columna_Notas> lista = new ArrayList<>();
         try (Connection conexion = Conexion.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(consulta);
-                ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                Columna_Notas columna = new Columna_Notas();
-
-                columna.setId_columna_notas(rs.getInt("id_columna_notas"));
-                columna.setId_curso(rs.getInt("id_curso"));
-                columna.setTitulo(rs.getString("titulo"));
-                columna.setTipo(rs.getString("tipo"));
-                columna.setNota_maxima(rs.getDouble("nota_maxima"));
-                columna.setNota_aprobacion(rs.getDouble("nota_aprobacion"));
-
-                Date fEval = rs.getDate("fecha_evaluacion");
-                columna.setFecha_evaluacion(fEval != null ? fEval.toLocalDate() : null);
-
-                Date fCierre = rs.getDate("fecha_cierre");
-                columna.setFecha_cierre(fCierre != null ? fCierre.toLocalDate() : null);
-
-                columna.setEstado(rs.getString("estado"));
-
-                lista.add(columna);
+                ResultSet registros = ps.executeQuery()) {
+            while (registros.next()) {
+                lista.add(leerEntidad(registros));
             }
-
         } catch (SQLException error) {
-            System.err.println(
-                    "Error al obtener la lista de columnas de notas: " + error.getMessage());
-            error.printStackTrace();
+            throw new IllegalStateException(
+                    "No se pudo consultar el listado de columna_notas.", error);
         }
-
         return lista;
     }
 
@@ -187,5 +139,124 @@ public class Columna_Notas_dao implements Dao<Columna_Notas, Integer> {
             System.err.println("Error al eliminar la columna de notas: " + error.getMessage());
             error.printStackTrace();
         }
+    }
+
+    public List<clases.Columna_Notas> delCurso(java.sql.Connection db, int curso)
+            throws java.sql.SQLException {
+        return seleccionar(
+                db,
+                "SELECT * FROM columna_notas WHERE id_curso=? ORDER BY id_columna_notas",
+                curso);
+    }
+
+    public void crearEvaluacion(java.sql.Connection db, clases.Columna_Notas c)
+            throws java.sql.SQLException {
+        String consulta =
+                "INSERT INTO"
+                    + " columna_notas(id_curso,titulo,tipo,nota_maxima,nota_aprobacion,fecha_evaluacion,fecha_cierre,estado,id_materia)"
+                    + " VALUES(?,?,?,?,?,?,?,?,?)";
+        try (java.sql.PreparedStatement ps = db.prepareStatement(consulta)) {
+            ps.setObject(1, c.getId_curso());
+            ps.setObject(2, c.getTitulo());
+            ps.setObject(3, c.getTipo());
+            ps.setObject(4, c.getNota_maxima());
+            ps.setObject(5, c.getNota_aprobacion());
+            ps.setObject(6, c.getFecha_evaluacion());
+            ps.setObject(7, c.getFecha_cierre());
+            ps.setObject(8, c.getEstado());
+            ps.setObject(9, c.getId_materia());
+            ps.executeUpdate();
+        }
+    }
+
+    public void cerrar(java.sql.Connection db, int id) throws java.sql.SQLException {
+        String consulta =
+                "UPDATE columna_notas SET estado='Cerrada',fecha_cierre=CURRENT_DATE WHERE"
+                        + " id_columna_notas=?";
+        try (java.sql.PreparedStatement ps = db.prepareStatement(consulta)) {
+            ps.setObject(1, id);
+            ps.executeUpdate();
+        }
+    }
+
+    public boolean existeEnAnio(java.sql.Connection db, int anio, int materia)
+            throws java.sql.SQLException {
+        return !seleccionar(
+                        db,
+                        "SELECT cn.* FROM columna_notas cn JOIN curso c ON c.id_curso=cn.id_curso"
+                                + " WHERE CAST(c.año AS UNSIGNED)=? AND cn.id_materia=? LIMIT 1",
+                        anio,
+                        materia)
+                .isEmpty();
+    }
+
+    protected Columna_Notas leerEntidad(java.sql.ResultSet registros) throws java.sql.SQLException {
+        Columna_Notas objeto = new Columna_Notas();
+        objeto.setId_columna_notas((Integer) registros.getObject("id_columna_notas"));
+        objeto.setId_curso((Integer) registros.getObject("id_curso"));
+        objeto.setTitulo(registros.getString("titulo"));
+        objeto.setTipo(registros.getString("tipo"));
+        objeto.setNota_maxima(
+                (registros.getObject("nota_maxima") == null
+                        ? null
+                        : registros.getDouble("nota_maxima")));
+        objeto.setNota_aprobacion(
+                (registros.getObject("nota_aprobacion") == null
+                        ? null
+                        : registros.getDouble("nota_aprobacion")));
+        objeto.setFecha_evaluacion(
+                (registros.getDate("fecha_evaluacion") == null
+                        ? null
+                        : registros.getDate("fecha_evaluacion").toLocalDate()));
+        objeto.setFecha_cierre(
+                (registros.getDate("fecha_cierre") == null
+                        ? null
+                        : registros.getDate("fecha_cierre").toLocalDate()));
+        objeto.setEstado(registros.getString("estado"));
+        objeto.setId_materia((Integer) registros.getObject("id_materia"));
+        return objeto;
+    }
+
+    // ejecutamos la consulta con sus valores y pasamos cada fila a un objeto Columna_Notas
+    private java.util.List<Columna_Notas> seleccionar(
+            java.sql.Connection conexion, String consulta, Object... valores)
+            throws java.sql.SQLException {
+        java.util.List<Columna_Notas> lista = new java.util.ArrayList<>();
+        try (java.sql.PreparedStatement ps = conexion.prepareStatement(consulta)) {
+            for (int i = 0; i < valores.length; i++) {
+                ps.setObject(i + 1, valores[i]);
+            }
+            try (java.sql.ResultSet registros = ps.executeQuery()) {
+                while (registros.next()) {
+                    lista.add(leerEntidad(registros));
+                }
+            }
+        }
+        return lista;
+    }
+
+    // recibimos la conexión del servicio para no separar las consultas de una transacción
+    public java.util.List<Columna_Notas> listarTabla(java.sql.Connection conexion)
+            throws java.sql.SQLException {
+        return seleccionar(conexion, "SELECT * FROM columna_notas");
+    }
+
+    public Columna_Notas buscar(java.sql.Connection conexion, int id) throws java.sql.SQLException {
+        var filas =
+                seleccionar(conexion, "SELECT * FROM columna_notas WHERE id_columna_notas=?", id);
+        return filas.isEmpty() ? null : filas.getFirst();
+    }
+
+    // bloqueamos el registro mientras se revisa para evitar dos cambios al mismo tiempo
+    public Columna_Notas requerir(java.sql.Connection conexion, int id)
+            throws java.sql.SQLException {
+        var filas =
+                seleccionar(
+                        conexion,
+                        "SELECT * FROM columna_notas WHERE id_columna_notas=? FOR UPDATE",
+                        id);
+        if (filas.isEmpty())
+            throw new IllegalArgumentException("El registro ya no existe. Actualizá el listado.");
+        return filas.getFirst();
     }
 }

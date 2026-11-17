@@ -11,9 +11,9 @@ public class Inscripcion {
     private LocalDate fecha_inscripcion;
     private String estado;
     private String motivo_baja;
-    private Integer año_curso;
     private LocalDateTime fecha_creacion;
     private LocalDateTime fecha_modificacion;
+    private Integer id_inscripcion_origen;
 
     public Inscripcion() {}
 
@@ -85,15 +85,6 @@ public class Inscripcion {
         this.motivo_baja = motivo_baja;
     }
 
-    // devuelve el año del curso para mostrarlo sin usar su identificador
-    public Integer getAño_curso() {
-        return año_curso;
-    }
-
-    public void setAño_curso(Integer año_curso) {
-        this.año_curso = año_curso;
-    }
-
     public LocalDateTime getFecha_creacion() {
         return fecha_creacion;
     }
@@ -108,5 +99,13 @@ public class Inscripcion {
 
     public void setFecha_modificacion(LocalDateTime fecha_modificacion) {
         this.fecha_modificacion = fecha_modificacion;
+    }
+
+    public Integer getId_inscripcion_origen() {
+        return id_inscripcion_origen;
+    }
+
+    public void setId_inscripcion_origen(Integer id_inscripcion_origen) {
+        this.id_inscripcion_origen = id_inscripcion_origen;
     }
 }

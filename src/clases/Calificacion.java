@@ -1,6 +1,6 @@
 package clases;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 // guardamos la nota de un alumno para una evaluación
 public class Calificacion {
@@ -8,7 +8,7 @@ public class Calificacion {
     private Integer id_inscripcion;
     private Integer id_columna_notas;
     private Double nota;
-    private LocalDate fecha_carga;
+    private LocalDateTime fecha_carga;
     private String observaciones;
 
     public Calificacion() {}
@@ -18,7 +18,7 @@ public class Calificacion {
             Integer id_inscripcion,
             Integer id_columna_notas,
             Double nota,
-            LocalDate fecha_carga,
+            LocalDateTime fecha_carga,
             String observaciones) {
         this.id_calificacion = id_calificacion;
         this.id_inscripcion = id_inscripcion;
@@ -61,11 +61,11 @@ public class Calificacion {
         this.nota = nota;
     }
 
-    public LocalDate getFecha_carga() {
+    public LocalDateTime getFecha_carga() {
         return fecha_carga;
     }
 
-    public void setFecha_carga(LocalDate fecha_carga) {
+    public void setFecha_carga(LocalDateTime fecha_carga) {
         this.fecha_carga = fecha_carga;
     }
 
